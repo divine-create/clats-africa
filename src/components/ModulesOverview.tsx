@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Child, Module, Lesson, Language, AgeGroup } from "../types";
 import { C } from "../utils/config";
 import { CURRICULUM } from "../data/curriculum";
@@ -76,6 +76,25 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
   const [notifyEmail, setNotifyEmail] = useState<string>("");
   const [isNotifiedMap, setIsNotifiedMap] = useState<Record<string, boolean>>({});
   const [notificationSuccess, setNotificationSuccess] = useState<string | null>(null);
+
+  // Sticky bottom CTA: show when the in-panel Start Journey button is out of view
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const journeyBtnRef = useRef<HTMLButtonElement>(null);
+
+  // IntersectionObserver — watch the in-panel button; when it leaves viewport show sticky bar
+  useEffect(() => {
+    const btn = journeyBtnRef.current;
+    if (!btn) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // If the in-panel button is NOT visible → show sticky bar
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(btn);
+    return () => observer.disconnect();
+  }, [activeSelId]); // re-run when selection changes so observer attaches to new ref
 
   // Load Academy details dynamically based on active academy selection and age group
   const getAcademyData = () => {
@@ -760,6 +779,7 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
 
                       return (
                         <button
+                          ref={journeyBtnRef}
                           onClick={() => handleLaunchJourney(selectedModule)}
                           className="w-full bg-[#2EC4B6] hover:bg-[#28ad9f] text-white font-black py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-[#1f8a80] active:translate-y-1 active:border-b-2"
                           style={{ cursor: "pointer", fontWeight: 900, fontSize: 16 }}
@@ -787,6 +807,104 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
         </div>
 
       </div>
+
+      {/* ── STICKY BOTTOM CTA BAR ──
+          Shown only on mobile when the in-panel Start Journey button has scrolled out of view.
+          Uses IntersectionObserver to detect button visibility — zero cost on desktop.
+      */}
+      {selectedModule && !selectedModule.comingSoon && showStickyBar && (() => {
+        const selectedIndex = (academy?.modules ?? []).findIndex(m => m.id === selectedModule.id);
+        const isLocked = !child.is_premium && selectedIndex >= 1;
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 9999,
+              padding: '12px 16px',
+              paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+              background: isDark
+                ? 'linear-gradient(to top, rgba(15,23,42,0.98) 80%, transparent)'
+                : 'linear-gradient(to top, rgba(248,250,252,0.98) 80%, transparent)',
+              backdropFilter: 'blur(10px)',
+              borderTop: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.06)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              // Only render on mobile — hide on md+ breakpoints via class
+            }}
+            className="md:hidden"
+          >
+            {/* Mini module context row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 2 }}>
+              <span style={{ fontSize: 20 }}>{selectedModule.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  margin: 0,
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  color: '#2EC4B6',
+                  fontFamily: 'monospace'
+                }}>Selected Track</p>
+                <p style={{
+                  margin: 0,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: isDark ? '#F8FAFC' : '#1E293B',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>{selectedModule.title}</p>
+              </div>
+            </div>
+
+            {/* Action button */}
+            {isLocked ? (
+              <div style={{
+                background: 'rgba(239,68,68,0.1)',
+                border: '2px solid #ef4444',
+                color: '#ef4444',
+                fontWeight: 800,
+                borderRadius: 16,
+                padding: '12px 16px',
+                textAlign: 'center',
+                fontSize: 13
+              }}>
+                🔒 Premium — Ask your parents to unlock!
+              </div>
+            ) : (
+              <button
+                onClick={() => handleLaunchJourney(selectedModule)}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #2EC4B6, #20a89c)',
+                  color: 'white',
+                  fontWeight: 900,
+                  fontSize: 16,
+                  borderRadius: 18,
+                  padding: '15px 20px',
+                  border: 'none',
+                  borderBottom: '4px solid #1f8a80',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 20px rgba(46,196,182,0.35)',
+                  letterSpacing: '0.01em'
+                }}
+              >
+                <span>🚀 Start Lesson Journey</span>
+                <ArrowRight style={{ width: 20, height: 20 }} />
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
     </div>
   );
