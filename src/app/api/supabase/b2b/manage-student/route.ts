@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const getSB = () => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key || url.includes("your-project-id")) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+};
+
+/**
+ * DELETE /api/supabase/b2b/manage-student
+ * Deletes a student profile.
+ */
+export async function DELETE(req: NextRequest) {
+  const sb = getSB();
+  if (!sb) return NextResponse.json({ ok: false, msg: "Supabase not configured." }, { status: 503 });
+
+  try {
+    const { childId } = await req.json();
+
+    if (!childId) {
+      return NextResponse.json({ ok: false, msg: "childId is required." }, { status: 400 });
+    }
+
+    const { error } = await sb
+      .from("clats_children")
+      .delete()
+      .eq("id", childId);
+
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ ok: true, msg: "Student profile removed successfully." });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, msg: err.message }, { status: 500 });
+  }
+}
+
+/**
+ * PATCH /api/supabase/b2b/manage-student
+ * Updates a student profile fields (e.g. Reset PIN, Edit name/avatar/ageGroup).
+ */
+export async function PATCH(req: NextRequest) {
+  const sb = getSB();
+  if (!sb) return NextResponse.json({ ok: false, msg: "Supabase not configured." }, { status: 503 });
+
+  try {
+    const { childId, name, pin, ageGroup, avatar } = await req.json();
+
+    if (!childId) {
+      return NextResponse.json({ ok: false, msg: "childId is required." }, { status: 400 });
+    }
+
+    // Build update object dynamically
+    const updatePayload: any = {};
+    if (name !== undefined) updatePayload.name = name.trim();
+    if (pin !== undefined) {
+      if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+        return NextResponse.json({ ok: false, msg: "PIN must be exactly 4 digits." }, { status: 400 });
+      }
+      updatePayload.pin = pin;
+    }
+    if (ageGroup !== undefined) updatePayload.age_group = ageGroup;
+    if (avatar !== undefined) updatePayload.avatar = avatar;
+
+    const { data: updatedChild, error } = await sb
+      .from("clats_children")
+      .update(updatePayload)
+      .eq("id", childId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return NextResponse.json({ ok: true, student: updatedChild });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, msg: err.message }, { status: 500 });
+  }
+}

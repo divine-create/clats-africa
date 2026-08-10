@@ -1,0 +1,42 @@
+
+> clats-nextjs@0.1.0 build
+> next build
+
+▲ Next.js 16.3.0 (Turbopack)
+✓ Running next.config.ts took 48ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.8s
+  Skipping validation of types
+  Finished TypeScript config validation in 16ms ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/8) ...
+  Generating static pages using 3 workers (2/8) 
+  Generating static pages using 3 workers (4/8) 
+Could not parse cached companion configurations ReferenceError: localStorage is not defined
+    at new <anonymous> (src\utils\audio.ts:159:22)
+    at module evaluation (src\utils\audio.ts:405:31)
+    at module evaluation (src\app\page.tsx:25:1)
+  157 |   constructor() {
+  158 |     try {
+> 159 |       const cached = localStorage.getItem(this.CACHE_KEY);
+      |                      ^
+  160 |       if (cached) {
+  161 |         this.configs = JSON.parse(cached);
+  162 |       }
+  Generating static pages using 3 workers (6/8) 
+✓ Generating static pages using 3 workers (8/8) in 935ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/chat
+├ ƒ /api/supabase/health-check
+├ ƒ /api/supabase/status
+└ ƒ /api/supabase/storage/files
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
