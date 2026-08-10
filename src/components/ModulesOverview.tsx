@@ -400,6 +400,7 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
               {academy.modules.map((item, index) => {
                 const isActiveSel = item.id === activeSelId;
                 const isTiny = ageGroup === "early explorers";
+                const isLocked = !child.is_premium && index >= 1;
 
                 // Resolve badge outline
                 const isComingSoon = item.comingSoon;
@@ -475,7 +476,11 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
 
                     {/* Progress indicator percentage or Lock indicator on extreme right */}
                     <div className="flex-shrink-0 text-right">
-                      {isComingSoon ? (
+                      {isLocked ? (
+                        <div className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${isDark ? "bg-slate-800 text-rose-400 border border-slate-700" : "bg-rose-50 border border-rose-200 text-rose-500"} flex items-center gap-1`}>
+                          <span>🔒</span> LOCKED
+                        </div>
+                      ) : isComingSoon ? (
                         <div className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${isDark ? "bg-slate-800 text-slate-500 border border-slate-700" : "bg-slate-50 border border-slate-200 text-slate-400"}`}>
                           SOON
                         </div>
@@ -740,14 +745,30 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
                     </div>
 
                     {/* Launch button */}
-                    <button
-                      onClick={() => handleLaunchJourney(selectedModule)}
-                      className="w-full bg-[#2EC4B6] hover:bg-[#28ad9f] text-white font-black py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-[#1f8a80] active:translate-y-1 active:border-b-2"
-                      style={{ cursor: "pointer", fontWeight: 900, fontSize: 16 }}
-                    >
-                      <span>🚀 Start Lesson Journey</span>
-                      <ArrowRight className="w-5 h-5 text-white" />
-                    </button>
+                    {(() => {
+                      const selectedIndex = academy.modules.findIndex(m => m.id === selectedModule.id);
+                      const isSelectedLocked = !child.is_premium && selectedIndex >= 1;
+
+                      if (isSelectedLocked) {
+                        return (
+                          <div className="w-full bg-rose-500/10 border-2 border-rose-500 text-rose-600 font-black py-4 px-6 rounded-2xl flex flex-col items-center justify-center gap-1">
+                            <span className="text-xl">🔒 Premium Content</span>
+                            <span className="text-xs font-bold text-center">Ask your parents to unlock this module from their dashboard!</span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => handleLaunchJourney(selectedModule)}
+                          className="w-full bg-[#2EC4B6] hover:bg-[#28ad9f] text-white font-black py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-[#1f8a80] active:translate-y-1 active:border-b-2"
+                          style={{ cursor: "pointer", fontWeight: 900, fontSize: 16 }}
+                        >
+                          <span>🚀 Start Lesson Journey</span>
+                          <ArrowRight className="w-5 h-5 text-white" />
+                        </button>
+                      );
+                    })()}
                   </div>
                 )}
 

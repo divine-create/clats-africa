@@ -37,6 +37,7 @@ export interface Parent {
   email: string;
   name: string;
   children: Child[];
+  is_premium?: boolean;
   tutorial_completed?: boolean;
   user_id?: string;
   avatar_url?: string;

@@ -63,8 +63,10 @@ import {
   FileText,
   UserPlus,
   Play,
-  RefreshCw
+  RefreshCw,
+  Crown
 } from "lucide-react";
+import { PaywallModal } from "./PaywallModal";
 
 interface ParentDashboardProps {
   parent: Parent;
@@ -104,6 +106,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [communityEvents, setCommunityEvents] = useState<any[]>([]);
   const [rsvpedEvents, setRsvpedEvents] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [showPaywall, setShowPaywall] = useState<Child | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -776,16 +779,34 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     </div>
 
                     {/* View Action CTA */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEnterChildMode(c);
-                      }}
-                      className="mt-5 w-full py-2 px-4 rounded-lg text-xs font-bold tracking-wider uppercase text-center transition-all bg-[#2EC4B6]/10 text-[#2EC4B6] border border-[#2EC4B6]/20 hover:bg-[#2EC4B6] hover:text-white flex items-center justify-center gap-1.5"
-                    >
-                      <span>Enter Child Portal</span>
-                      <ArrowRight size={12} />
-                    </button>
+                    <div className="mt-5 space-y-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEnterChildMode(c);
+                        }}
+                        className="w-full py-2 px-4 rounded-lg text-xs font-bold tracking-wider uppercase text-center transition-all bg-[#2EC4B6]/10 text-[#2EC4B6] border border-[#2EC4B6]/20 hover:bg-[#2EC4B6] hover:text-white flex items-center justify-center gap-1.5"
+                      >
+                        <span>Enter Child Portal</span>
+                        <ArrowRight size={12} />
+                      </button>
+
+                      {!c.is_premium ? (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPaywall(c);
+                          }}
+                          className="w-full bg-gradient-to-r from-[#2EC4B6] to-teal-400 hover:to-teal-500 text-white rounded-lg py-2 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-teal-500/20 flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <Crown size={12} /> Upgrade {c.name}
+                        </button>
+                      ) : (
+                        <div className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-lg py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 opacity-90 cursor-default">
+                          <Crown size={12} /> Premium Active
+                        </div>
+                      )}
+                    </div>
 
                   </div>
                 );
@@ -1778,6 +1799,27 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             
           </div>
         </div>
+      )}
+
+      {showPaywall && (
+        <PaywallModal
+          parentEmail={parent.email}
+          childId={showPaywall.id}
+          childName={showPaywall.name}
+          isDark={isDark}
+          onClose={() => setShowPaywall(null)}
+          onSuccess={() => {
+            const upgradedChild = showPaywall.name;
+            setShowPaywall(null);
+            showToast(`Payment Successful! ${upgradedChild} is now a Premium Member 👑`);
+            if (onRefreshParent) {
+              const updatedChildren = parent.children?.map(c => 
+                c.id === showPaywall.id ? { ...c, is_premium: true } : c
+              );
+              onRefreshParent({ ...parent, children: updatedChildren });
+            }
+          }}
+        />
       )}
 
     </div>

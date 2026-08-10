@@ -267,6 +267,20 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
               >
                 Sign Up
               </span>
+              <span style={{ display: "block", marginTop: 8 }}>
+                Are you a school coordinator?{" "}
+                <a
+                  href="/coordinator/login"
+                  style={{
+                    color: "#7A6FF0",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    fontWeight: 700
+                  }}
+                >
+                  Coordinator Portal 🎓
+                </a>
+              </span>
             </Txt>
           ) : (
             <Txt size={13.5} color={isDark ? "#94A3B8" : "#475569"} style={{ display: "block", marginBottom: 20 }}>

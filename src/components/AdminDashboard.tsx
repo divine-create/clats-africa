@@ -622,6 +622,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [newAdminPassword, setNewAdminPassword] = useState("");
   const [newAdminRole, setNewAdminRole] = useState<AdminRole>("Support Staff");
 
+  // Payment Gateways Settings
+  const [paystackKey, setPaystackKey] = useState("");
+  const [paystackSecret, setPaystackSecret] = useState("");
+  const [paystackActive, setPaystackActive] = useState(false);
+
+  const [flutterwaveKey, setFlutterwaveKey] = useState("");
+  const [flutterwaveSecret, setFlutterwaveSecret] = useState("");
+  const [flutterwaveActive, setFlutterwaveActive] = useState(false);
+
+  // Pricing Settings
+  const [monthlyPrice, setMonthlyPrice] = useState("5000");
+  const [yearlyPrice, setYearlyPrice] = useState("50000");
+  const [currency, setCurrency] = useState("NGN");
+
+  const fetchGatewaysAndPricing = async () => {
+    try {
+      const res = await fetch("/api/supabase/payment_gateways");
+      const data = await res.json();
+      if (data.ok && data.gateways) {
+        data.gateways.forEach((gw: any) => {
+          if (gw.gateway_name === "paystack") {
+            setPaystackKey(gw.public_key || "");
+            setPaystackSecret(gw.secret_key || "");
+            setPaystackActive(gw.is_active || false);
+          } else if (gw.gateway_name === "flutterwave") {
+            setFlutterwaveKey(gw.public_key || "");
+            setFlutterwaveSecret(gw.secret_key || "");
+            setFlutterwaveActive(gw.is_active || false);
+          }
+        });
+      }
+      
+      const priceRes = await fetch("/api/supabase/pricing");
+      const priceData = await priceRes.json();
+      if (priceData.ok && priceData.plans) {
+        priceData.plans.forEach((plan: any) => {
+          if (plan.plan_name === "Monthly Premium") {
+            setMonthlyPrice(plan.price.toString());
+            setCurrency(plan.currency);
+          } else if (plan.plan_name === "Yearly Premium") {
+            setYearlyPrice(plan.price.toString());
+            setCurrency(plan.currency);
+          }
+        });
+      }
+    } catch (e) {}
+  };
+
   // Fetch community events
   const fetchCommunityEvents = async () => {
     if (!supabaseConnected) return;
@@ -642,8 +690,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   useEffect(() => {
     if (activeTab === "community") {
       fetchCommunityEvents();
+    } else if (activeTab === "settings" && currentRole === "Super Admin") {
+      fetchGatewaysAndPricing();
     }
-  }, [activeTab, supabaseConnected]);
+  }, [activeTab, supabaseConnected, currentRole]);
 
   const handleAddCommunityEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -4557,18 +4607,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     </div>
 
                     <div>
-                      <div className="flex justify-between items-center mb-1">
+                      <div className="flex justify-between items-center mb-1 mt-4">
                         <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-0">
-                          Stripe Gateway Merchant secret (Subscription Revenue API)
+                          Paystack Integration
                         </span>
-                        <span className="text-[8px] bg-[#B8A0FF]/15 text-[#B8A0FF] font-bold px-1.5 py-0.2 rounded font-mono">
-                          SUPER ADMIN & CTO
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] text-slate-500 font-bold uppercase">Active?</label>
+                          <input type="checkbox" checked={paystackActive} onChange={e => setPaystackActive(e.target.checked)} className="cursor-pointer" />
+                        </div>
                       </div>
                       <input
+                        type="text"
+                        placeholder="Paystack Public Key"
+                        value={paystackKey}
+                        onChange={(e) => setPaystackKey(e.target.value)}
+                        className={`w-full border rounded p-2 mb-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                      />
+                      <input
                         type="password"
-                        value={stripeSecret}
-                        onChange={(e) => setStripeSecret(e.target.value)}
+                        placeholder="Paystack Secret Key"
+                        value={paystackSecret}
+                        onChange={(e) => setPaystackSecret(e.target.value)}
+                        className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1 mt-4">
+                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-0">
+                          Flutterwave Integration
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] text-slate-500 font-bold uppercase">Active?</label>
+                          <input type="checkbox" checked={flutterwaveActive} onChange={e => setFlutterwaveActive(e.target.checked)} className="cursor-pointer" />
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Flutterwave Public Key"
+                        value={flutterwaveKey}
+                        onChange={(e) => setFlutterwaveKey(e.target.value)}
+                        className={`w-full border rounded p-2 mb-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                      />
+                      <input
+                        type="password"
+                        placeholder="Flutterwave Secret Key"
+                        value={flutterwaveSecret}
+                        onChange={(e) => setFlutterwaveSecret(e.target.value)}
                         className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
                       />
                     </div>
@@ -4576,13 +4661,96 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
                   <div className="pt-2">
                     <button
-                      onClick={() => {
-                        showToast("Environments parameters updated live.");
+                      onClick={async () => {
+                        try {
+                          await fetch("/api/supabase/payment_gateways", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ gateway_name: "paystack", public_key: paystackKey, secret_key: paystackSecret, is_active: paystackActive })
+                          });
+                          await fetch("/api/supabase/payment_gateways", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ gateway_name: "flutterwave", public_key: flutterwaveKey, secret_key: flutterwaveSecret, is_active: flutterwaveActive })
+                          });
+                          showToast("Payment Gateway Credentials Updated Live!");
+                        } catch (e) {
+                          showToast("Error updating gateways");
+                        }
                       }}
                       className="bg-[#2EC4B6] text-white px-3.5 py-2 rounded-xl text-xs font-bold"
                     >
                       Update Key Store Credentials
                     </button>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-slate-300 dark:border-slate-800 space-y-3">
+                    <h4 className={`text-xs font-bold uppercase tracking-wider font-mono m-0 flex items-center gap-1.5 ${textPrimary}`}>
+                      💰 Global Pricing Configuration
+                    </h4>
+                    <p className={`text-[10px] mb-3 ${textSecondary}`}>
+                      Set the prices parents will pay to unlock premium pathways.
+                    </p>
+                    
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Currency</span>
+                        <select 
+                          value={currency} 
+                          onChange={e => setCurrency(e.target.value)}
+                          className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                        >
+                          <option value="NGN">NGN (Naira)</option>
+                          <option value="GHS">GHS (Cedis)</option>
+                          <option value="KES">KES (Shilling)</option>
+                          <option value="ZAR">ZAR (Rand)</option>
+                          <option value="USD">USD (Dollars)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Monthly Price</span>
+                        <input
+                          type="number"
+                          value={monthlyPrice}
+                          onChange={(e) => setMonthlyPrice(e.target.value)}
+                          className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Yearly Price</span>
+                        <input
+                          type="number"
+                          value={yearlyPrice}
+                          onChange={(e) => setYearlyPrice(e.target.value)}
+                          className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await fetch("/api/supabase/pricing", {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan_name: "Monthly Premium", price: Number(monthlyPrice), currency })
+                            });
+                            await fetch("/api/supabase/pricing", {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan_name: "Yearly Premium", price: Number(yearlyPrice), currency })
+                            });
+                            showToast("Global Pricing Updated successfully!");
+                          } catch (e) {
+                            showToast("Error updating pricing");
+                          }
+                        }}
+                        className="bg-indigo-500 hover:bg-indigo-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-colors"
+                      >
+                        Update Pricing Plans
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-300 dark:border-slate-800 space-y-3">
