@@ -51,6 +51,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
   // Active steps in the lesson progression
   const [learningStep, setLearningStep] = useState<"video" | "quiz" | "reward">("video");
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   // Story Slideshow state for Ages 2-5 or lessons with story elements
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -562,14 +563,59 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
                 }}
               >
-                <div style={{ width: "100%", height: 260, position: "relative" }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=0&rel=0&cc_load_policy=1`}
-                    title={currentVideoData.title}
-                    style={{ width: "100%", height: "100%", border: "none" }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
+                <div style={{ width: "100%", height: 260, position: "relative", backgroundColor: "#000" }}>
+                  {!isVideoPlaying ? (
+                    <div 
+                      onClick={() => setIsVideoPlaying(true)}
+                      style={{ 
+                        width: "100%", 
+                        height: "100%", 
+                        position: "absolute",
+                        backgroundImage: `url(https://img.youtube.com/vi/${currentVideoData.embedId}/hqdefault.jpg)`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                    >
+                      {/* Dark overlay for better button contrast */}
+                      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.3)" }}></div>
+                      
+                      {/* Beautiful Play Button */}
+                      <div style={{ 
+                        width: 70, height: 70, 
+                        backgroundColor: "#FF3366", 
+                        borderRadius: "50%", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center",
+                        position: "relative",
+                        boxShadow: "0 8px 16px rgba(255,51,102,0.4)",
+                        transition: "transform 0.2s"
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
+                      onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+                      >
+                        <div style={{
+                          width: 0, height: 0,
+                          borderTop: "12px solid transparent",
+                          borderBottom: "12px solid transparent",
+                          borderLeft: "20px solid white",
+                          marginLeft: 6
+                        }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1`}
+                      title={currentVideoData.title}
+                      style={{ width: "100%", height: "100%", border: "none", position: "absolute", top: 0, left: 0 }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  )}
                 </div>
                 <div style={{ background: "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
