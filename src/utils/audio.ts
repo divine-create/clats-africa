@@ -233,9 +233,9 @@ class CompanionVoice {
   isNarrationEnabled(ageGroup: string): boolean {
     const ag = ageGroup?.toLowerCase() || "";
     if (ag.includes("early") || ag.includes("explorers") || ag === "early explorers") {
-      // Ages 2-5 ("early explorers") is enabled by default
+      // Ages 2-5 ("early explorers") was previously enabled by default, now disabled by default
       const stored = localStorage.getItem(this.TOGGLE_KEY + "_early");
-      return stored === null ? true : stored === "true";
+      return stored === "true";
     }
     // Ages 6-18 ("young innovators", "future builders") has toggle (default off till turned on)
     const stored = localStorage.getItem(this.TOGGLE_KEY + "_" + ag.replace(/\s+/g, "_"));

@@ -39,7 +39,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>("en");
   const [theme, setThemeState] = useState<"light" | "dark">("light");
   const [parent, setParentState] = useState<Parent | null>(null);
-  const [activeChild, setActiveChild] = useState<Child | null>(null);
+  const [activeChild, setActiveChildState] = useState<Child | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("clats_active_child");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return null;
+  });
   const [dbConnected, setDbConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -135,10 +143,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     else S.clearSess();
   };
 
+  const setActiveChild = (c: Child | null) => {
+    setActiveChildState(c);
+    if (c) {
+      if (typeof window !== "undefined") localStorage.setItem("clats_active_child", JSON.stringify(c));
+    } else {
+      if (typeof window !== "undefined") localStorage.removeItem("clats_active_child");
+    }
+  };
+
   const logout = () => {
     S.clearSess();
+    if (typeof window !== "undefined") localStorage.removeItem("clats_active_child");
     setParentState(null);
-    setActiveChild(null);
+    setActiveChildState(null);
     if (typeof window !== "undefined") window.location.href = "/";
   };
 
