@@ -64,9 +64,10 @@ export default function DashboardPage() {
       return;
     }
     setMounted(true);
-    // Show welcome modal for new users
+    setMounted(true);
+    // Show welcome modal for new users ONLY if not completed in DB
     const welcomed = localStorage.getItem('clats_welcomed');
-    if (!welcomed) {
+    if (!welcomed && parent.tutorial_completed !== true) {
       setShowWelcome(true);
       localStorage.setItem('clats_welcomed', 'true');
     }
@@ -96,6 +97,11 @@ export default function DashboardPage() {
   const handleWelcomeSkip = () => {
     setShowWelcome(false);
     localStorage.setItem('tutorialSkipped', 'true');
+    
+    if (parent) {
+      const updatedParent = { ...parent, tutorial_completed: true };
+      setParent(updatedParent);
+    }
   };
 
   if (!mounted || !parent) {

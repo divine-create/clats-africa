@@ -52,9 +52,9 @@ export default function ChildAppPage() {
       return;
     }
     setMounted(true);
-    // Show tour for child first session
+    // Show tour for child first session ONLY if not completed in DB
     const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
-    if (!localStorage.getItem(tourKey)) {
+    if (!localStorage.getItem(tourKey) && activeChild.child_tutorial_completed !== true) {
       setShowChildTour(true);
       localStorage.setItem(tourKey, 'true');
     }
@@ -112,11 +112,17 @@ export default function ChildAppPage() {
         <TutorialTour
           role="child"
           childAgeGroup={activeChild.ageGroup || "young innovators"}
-          onComplete={() => setShowChildTour(false)}
+          onComplete={() => {
+            setShowChildTour(false);
+            const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
+            localStorage.setItem(tourKey, 'true');
+            handleChildUpdate({ ...activeChild, child_tutorial_completed: true });
+          }}
           onSkip={() => {
             setShowChildTour(false);
             const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
             localStorage.setItem(tourKey, 'true');
+            handleChildUpdate({ ...activeChild, child_tutorial_completed: true });
           }}
           onSetChildTab={handleTabChange}
         />
