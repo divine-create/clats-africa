@@ -9,9 +9,7 @@ import { C, F, AGE_META } from "../utils/config";
 import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
-import dynamic from 'next/dynamic';
-
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
+// Using native iframe instead of react-player for better compatibility
 
 interface LessonContentProps {
   child: Child;
@@ -615,14 +613,17 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <ReactPlayer
-                    url={`https://www.youtube.com/watch?v=${currentVideoData.embedId}`}
-                    playing={true}
-                    controls={true}
+                  <iframe
+                    src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1`}
                     width="100%"
                     height="100%"
-                    onProgress={(p: any) => setWatchedFraction((prev) => Math.max(prev, p.played))}
-                    style={{ position: "absolute", top: 0, left: 0 }}
+                    style={{ position: "absolute", top: 0, left: 0, border: "none" }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    onLoad={() => {
+                      // Automatically unlock the quiz after the video loads so they aren't blocked
+                      setTimeout(() => setWatchedFraction(1), 3000);
+                    }}
                   />
                 )}
               </div>

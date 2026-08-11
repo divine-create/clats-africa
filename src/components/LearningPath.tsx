@@ -394,8 +394,8 @@ export const LearningPath: React.FC<LearningPathProps> = ({
 
                   <button
                     onClick={() => onSelectLesson(selectedLesson)}
-                    className="w-full bg-[#FFD166] hover:bg-[#e6bb5c] text-amber-950 font-black py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-amber-600 active:translate-y-1 active:border-b-2"
-                    style={{ cursor: "pointer", fontWeight: 900, fontSize: 16 }}
+                    className="fixed bottom-6 left-6 right-6 w-[calc(100%-48px)] z-50 lg:static lg:w-full lg:z-auto bg-[#FFD166] hover:bg-[#e6bb5c] text-amber-950 font-black py-4 px-6 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.3)] lg:shadow-lg hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-amber-600 active:translate-y-1 active:border-b-2"
+                    style={{ cursor: "pointer", fontWeight: 900, fontSize: 18 }}
                   >
                     <span>Play Animated Story 🌟</span>
                   </button>
