@@ -81,6 +81,7 @@ export interface Lesson {
     };
   };
   project?: Localized<string>;
+  video_url?: string;
   quiz: QuizQuestion[];
 }
 

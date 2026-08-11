@@ -1069,6 +1069,7 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
                   ig: rl.description || baseDetails.story?.ig || "Metere ihe omumu gbara ozi.",
                   yo: rl.description || baseDetails.story?.yo || "Eko ekunrere lori ohun."
                 },
+                video_url: rl.video_url || undefined,
                 quiz: quizQuestions.length > 0 ? quizQuestions : (baseDetails.quiz || [])
               } as Lesson;
             });

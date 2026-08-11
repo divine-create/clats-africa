@@ -130,7 +130,30 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     const titleEn = lesson.title.en;
     const titleLower = titleEn.toLowerCase();
 
-    // specific highly-matched learning videos
+    // 1. Use Database Video URL if provided
+    if (lesson.video_url) {
+      // Extract YouTube ID from full link or assume it's already an ID
+      let embedId = lesson.video_url;
+      const watchMatch = lesson.video_url.match(/[?&]v=([^&]+)/);
+      const shortMatch = lesson.video_url.match(/youtu\.be\/([^?]+)/);
+      const embedMatch = lesson.video_url.match(/youtube\.com\/embed\/([^?]+)/);
+      
+      if (watchMatch && watchMatch[1]) {
+        embedId = watchMatch[1];
+      } else if (shortMatch && shortMatch[1]) {
+        embedId = shortMatch[1];
+      } else if (embedMatch && embedMatch[1]) {
+        embedId = embedMatch[1];
+      }
+
+      return {
+        embedId,
+        title: titleEn,
+        duration: lesson.duration || "5 min"
+      };
+    }
+
+    // 2. Fallback to smart keyword matching
     if (lid.endsWith("-l1") || titleLower.includes("what is technology")) {
       return {
         embedId: "Fno0L_XsdWM",
