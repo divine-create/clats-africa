@@ -6,12 +6,13 @@
 import React, { useState } from "react";
 
 interface CLATSLogoProps {
-  height?: number;
+  height?: number | string;
   style?: React.CSSProperties;
+  inline?: boolean;
 }
 
-export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {} }) => {
-  const [imgSrc, setImgSrc] = useState<string>("/assets/input_file_3.png");
+export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {}, inline = false }) => {
+  const [imgSrc, setImgSrc] = useState<string>("/logo-3.png");
   const [retryStage, setRetryStage] = useState(0);
 
   const handleImgError = () => {
@@ -21,7 +22,7 @@ export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {} })
       setRetryStage(1);
     } else if (retryStage === 1) {
       // Fallback 2: relative assets path
-      setImgSrc("./assets/input_file_3.png");
+      setImgSrc("/assets/input_file_3.png");
       setRetryStage(2);
     } else {
       // Fallback 3: native SVG fallback
@@ -31,9 +32,12 @@ export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {} })
 
   // If we fallback to native SVG markup
   if (!imgSrc) {
+    // If height is a string like "1em", we can't easily compute raw SVG widths. We fallback to 100%.
+    const isStringHeight = typeof height === "string";
+    const numericHeight = isStringHeight ? 44 : (height as number);
     const ratio = 2.6;
-    const width = Math.round(height * ratio);
-    const fontSize = height * 0.72;
+    const width = Math.round(numericHeight * ratio);
+    const fontSize = numericHeight * 0.72;
     return (
       <svg
         width={width}
@@ -77,18 +81,22 @@ export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {} })
     );
   }
 
-  // Calculate proportional width (approx 2:1 ratio for the logo image)
-  const width = Math.round(height * 2.0);
+  // Calculate proportional width (approx 2.6:1 ratio for the logo image)
+  const isStringHeight = typeof height === "string";
+  const numericHeight = isStringHeight ? 44 : (height as number);
+  const wrapperWidth = isStringHeight ? "auto" : Math.round(numericHeight * 2.6);
 
   return (
     <div
       style={{
-        display: "inline-flex",
+        display: inline ? "inline-flex" : "flex",
         alignItems: "center",
         justifyContent: "center",
         height: height,
-        width: width,
-        overflow: "hidden",
+        width: wrapperWidth,
+        overflow: "visible",
+        verticalAlign: inline ? "middle" : "baseline",
+        margin: inline ? "0 0.2em" : 0,
         ...style,
       }}
     >

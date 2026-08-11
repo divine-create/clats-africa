@@ -447,6 +447,47 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         </div>
       )}
 
+      {/* Screen Time Blocked Overlay */}
+      {blocked && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: isDark ? "#0f172a" : "#ffffff",
+            zIndex: 99999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20
+          }}
+        >
+          <div style={{ fontSize: 64, marginBottom: 20 }}>⏱️</div>
+          <Heading size={28} className="font-black mb-2 text-center" style={{ color: isDark ? "#fff" : "#111" }}>
+            Time is up!
+          </Heading>
+          <Txt size={16} className="font-bold text-center mb-8" color={isDark ? "#94a3b8" : "#64748b"}>
+            You've reached your learning time limit for this session. Take a break and come back later!
+          </Txt>
+          <button
+            onClick={onExit}
+            style={{
+              background: "#2EC4B6",
+              color: "white",
+              padding: "16px 32px",
+              borderRadius: 16,
+              fontWeight: 900,
+              fontSize: 16,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(46, 196, 182, 0.3)"
+            }}
+          >
+            Exit Portal
+          </button>
+        </div>
+      )}
+
       {/* Screen 1: Course Selection / Child Hub */}
       {activeTab === "home" && (
         <ChildWelcomeScreen

@@ -219,14 +219,11 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
       {/* CURRICULUM ARCHITECTURE HEADER */}
       <div className="mb-8 text-center md:text-left">
         <Chip color="#0284c7" bg="rgba(2, 132, 199, 0.1)" style={{ fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
-          🎯 CLATS CURRICULUM ARCHITECTURE
+          CLATS CURRICULUM ARCHITECTURE
         </Chip>
         <Heading size={32} className="text-theme-sensitive font-black tracking-tight" style={{ fontWeight: 900 }}>
           Future-Tech Learning Academies
         </Heading>
-        <Txt size={15} className="text-theme-sensitive-muted font-semibold block mt-1">
-          Immersive, age-adaptive technical domains built to grow with learners from ages 2 to 18.
-        </Txt>
       </div>
 
       {/* ACTIVE TRACK SECTION */}

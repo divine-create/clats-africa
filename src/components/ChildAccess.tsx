@@ -106,7 +106,7 @@ export const ChildLoginScreen: React.FC<ChildLoginScreenProps> = ({
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
@@ -121,70 +121,37 @@ export const ChildLoginScreen: React.FC<ChildLoginScreenProps> = ({
 
     setLoading(true);
 
-    // Playful check delay
-    setTimeout(() => {
-      const parentData = S.getParents();
-      let matchedChild: Child | null = null;
-      let associatedChildren: Child[] = [];
+    setLoading(true);
 
-      const normalizedQuery = username.trim().toLowerCase();
-      const parentMatch = Object.values(parentData).find(
-        (p: any) => p.email && p.email.trim().toLowerCase() === normalizedQuery
-      ) as any;
+    try {
+      const res = await fetch("/api/supabase/child/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
 
-      if (parentMatch) {
-        // Dual Mode A: Parent Gmail + Student's Private PIN code
-        if (parentMatch.children && Array.isArray(parentMatch.children)) {
-          const matchedByPin = parentMatch.children.find(
-            (c: any) => c.pin.trim() === password.trim()
-          );
-          if (matchedByPin) {
-            matchedChild = matchedByPin;
-          }
+      if (res.ok && data.ok) {
+        if (data.type === "child" && data.child) {
+          sfx.playCoin();
+          onLoginSuccess(data.child);
+        } else if (data.type === "parent_with_children" && data.children) {
+          sfx.playCoin();
+          setParentWithGoogleChildren(data.children);
+        } else {
+          sfx.playBuzzer();
+          setErrorMsg("Login successful but no profile returned.");
         }
-
-        // Dual Mode B: Parent Gmail + Parent General Account Password
-        if (!matchedChild && (parentMatch.password || "").trim() === password.trim()) {
-          if (parentMatch.children && parentMatch.children.length > 0) {
-            associatedChildren = parentMatch.children;
-          } else {
-            setErrorMsg("Your parent credentials are correct, but they have not completed enrolling any student profile yet!");
-            setLoading(false);
-            return;
-          }
-        }
-      }
-
-      // Dual Mode C: Fallback to direct Child Username/Name + PIN login representation
-      if (!matchedChild && associatedChildren.length === 0) {
-        Object.values(parentData).forEach((p: any) => {
-          if (p.children && Array.isArray(p.children)) {
-            p.children.forEach((c: Child) => {
-              const matchesUsername = c.username && c.username.trim().toLowerCase() === normalizedQuery;
-              const matchesName = c.name.trim().toLowerCase() === normalizedQuery;
-              if (
-                (matchesUsername || matchesName) &&
-                c.pin.trim() === password.trim()
-              ) {
-                matchedChild = c;
-              }
-            });
-          }
-        });
-      }
-
-      if (matchedChild) {
-        sfx.playCoin();
-        onLoginSuccess(matchedChild);
-      } else if (associatedChildren.length > 0) {
-        sfx.playCoin();
-        setParentWithGoogleChildren(associatedChildren);
       } else {
         sfx.playBuzzer();
-        setErrorMsg("Incorrect credentials / PIN. Please try again or ask your parent!");
+        setErrorMsg(data.msg || "Incorrect credentials / PIN. Please try again or ask your parent!");
       }
+    } catch (err: any) {
+      sfx.playBuzzer();
+      setErrorMsg("Failed to connect to the authentication server.");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   const isDark = theme === "dark";
