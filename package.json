@@ -9,6 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@google/genai": "^2.16.0",
     "@supabase/supabase-js": "^2.112.2",
     "es-toolkit": "^1.50.0",

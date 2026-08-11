@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CLATS</string>
+    <string name="title_activity_main">CLATS</string>
+    <string name="package_name">com.clats.app</string>
+    <string name="custom_url_scheme">com.clats.app</string>
+</resources>
