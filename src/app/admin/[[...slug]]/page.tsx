@@ -38,7 +38,6 @@ export default function AdminPage({ params }: { params: Promise<{ slug?: string[
   } = useApp();
   const isDark = theme === 'dark';
 
-  // Unwrap params using React.use for Next.js 16 dynamic API
   const resolvedParams = use(params);
   
   if (resolvedParams.slug && resolvedParams.slug.length > 1) {
@@ -46,14 +45,6 @@ export default function AdminPage({ params }: { params: Promise<{ slug?: string[
   }
   
   const initialTab = resolvedParams.slug?.[0] || 'overview';
-
-  useEffect(() => {
-    if (!parent) {
-      router.push('/auth/login');
-    }
-  }, [parent, router]);
-
-  if (!parent) return <LoadingScreen />;
 
   const handleBack = () => {
     router.push('/dashboard');
@@ -71,12 +62,9 @@ export default function AdminPage({ params }: { params: Promise<{ slug?: string[
       <Suspense fallback={<LoadingScreen />}>
         <AdminDashboard
           initialTab={initialTab}
-          parent={parent}
           lang={lang}
           theme={theme}
-          dbConnected={dbConnected}
-          isSyncing={isSyncing}
-          onBack={handleBack}
+          onBackToPortal={handleBack}
         />
       </Suspense>
     </div>
