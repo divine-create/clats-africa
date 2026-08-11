@@ -1,7 +1,7 @@
 'use client';
 
-import { lazy, Suspense, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { lazy, Suspense, use, useEffect } from 'react';
+import { useRouter, notFound } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { C, F } from '@/utils/config';
 
@@ -40,7 +40,20 @@ export default function AdminPage({ params }: { params: Promise<{ slug?: string[
 
   // Unwrap params using React.use for Next.js 16 dynamic API
   const resolvedParams = use(params);
+  
+  if (resolvedParams.slug && resolvedParams.slug.length > 1) {
+    notFound();
+  }
+  
   const initialTab = resolvedParams.slug?.[0] || 'overview';
+
+  useEffect(() => {
+    if (!parent) {
+      router.push('/auth/login');
+    }
+  }, [parent, router]);
+
+  if (!parent) return <LoadingScreen />;
 
   const handleBack = () => {
     router.push('/dashboard');

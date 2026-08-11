@@ -1699,9 +1699,9 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-between items-center gap-4">
           <span>© 2026 CLATS Future Tech Academy. All rights reserved.</span>
           <div className="flex gap-4">
-            <a href="#" className="hover:underline">Help Center</a>
-            <a href="#" className="hover:underline">Privacy Policy</a>
-            <a href="#" className="hover:underline">Terms of Service</a>
+            <a href="/help" className="hover:underline">Help Center</a>
+            <a href="/privacy" className="hover:underline">Privacy Policy</a>
+            <a href="/terms" className="hover:underline">Terms of Service</a>
           </div>
         </div>
       </footer>
