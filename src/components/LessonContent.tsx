@@ -9,6 +9,9 @@ import { C, F, AGE_META } from "../utils/config";
 import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
+import dynamic from 'next/dynamic';
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 interface LessonContentProps {
   child: Child;
@@ -52,6 +55,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   // Active steps in the lesson progression
   const [learningStep, setLearningStep] = useState<"video" | "quiz" | "reward">("video");
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [watchedFraction, setWatchedFraction] = useState(0);
 
   // Story Slideshow state for Ages 2-5 or lessons with story elements
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -560,63 +564,67 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   border: `3px solid ${C.teal}`,
                   borderRadius: 24,
                   overflow: "hidden",
-                  boxShadow: "0 10px 20px rgba(0,0,0,0.1)"
+                  boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
+                  aspectRatio: "16/9",
+                  width: "100%",
+                  position: "relative"
                 }}
               >
-                <div style={{ width: "100%", height: 260, position: "relative", backgroundColor: "#000" }}>
-                  {!isVideoPlaying ? (
-                    <div 
-                      onClick={() => setIsVideoPlaying(true)}
-                      style={{ 
-                        width: "100%", 
-                        height: "100%", 
-                        position: "absolute",
-                        backgroundImage: `url(https://img.youtube.com/vi/${currentVideoData.embedId}/hqdefault.jpg)`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
+                {!isVideoPlaying ? (
+                  <div 
+                    onClick={() => setIsVideoPlaying(true)}
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      position: "absolute",
+                      backgroundImage: `url(https://img.youtube.com/vi/${currentVideoData.embedId}/hqdefault.jpg)`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    {/* Dark overlay for better button contrast */}
+                    <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.3)" }}></div>
+                    
+                    {/* Beautiful Play Button (Dynamic Theme) */}
+                    <div style={{ 
+                      width: 70, height: 70, 
+                      backgroundColor: child.ageGroup === "early explorers" ? "#f59e0b" : "#8b5cf6", 
+                      borderRadius: "50%", 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      position: "relative",
+                      boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
+                      transition: "transform 0.2s"
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
+                    onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
                     >
-                      {/* Dark overlay for better button contrast */}
-                      <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.3)" }}></div>
-                      
-                      {/* Beautiful Play Button */}
-                      <div style={{ 
-                        width: 70, height: 70, 
-                        backgroundColor: "#FF3366", 
-                        borderRadius: "50%", 
-                        display: "flex", 
-                        alignItems: "center", 
-                        justifyContent: "center",
-                        position: "relative",
-                        boxShadow: "0 8px 16px rgba(255,51,102,0.4)",
-                        transition: "transform 0.2s"
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
-                      onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
-                      >
-                        <div style={{
-                          width: 0, height: 0,
-                          borderTop: "12px solid transparent",
-                          borderBottom: "12px solid transparent",
-                          borderLeft: "20px solid white",
-                          marginLeft: 6
-                        }}></div>
-                      </div>
+                      <div style={{
+                        width: 0, height: 0,
+                        borderTop: "12px solid transparent",
+                        borderBottom: "12px solid transparent",
+                        borderLeft: "20px solid white",
+                        marginLeft: 6
+                      }}></div>
                     </div>
-                  ) : (
-                    <iframe
-                      src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1`}
-                      title={currentVideoData.title}
-                      style={{ width: "100%", height: "100%", border: "none", position: "absolute", top: 0, left: 0 }}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <ReactPlayer
+                    url={`https://www.youtube.com/watch?v=${currentVideoData.embedId}`}
+                    playing={true}
+                    controls={true}
+                    width="100%"
+                    height="100%"
+                    onProgress={(p: any) => setWatchedFraction((prev) => Math.max(prev, p.played))}
+                    style={{ position: "absolute", top: 0, left: 0 }}
+                  />
+                )}
+              </div>
                 <div style={{ background: "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <Txt size={16} weight={900} color="#0f172a">{currentVideoData.title}</Txt>
@@ -782,20 +790,24 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 sfx.playTap();
                 setLearningStep("quiz");
               }}
+              disabled={watchedFraction < 0.8 && !!currentVideoData}
               style={{
                 width: "100%",
-                background: `linear-gradient(135deg, #2EC4B6, #208a80)`,
+                background: watchedFraction < 0.8 && currentVideoData ? "#cbd5e1" : `linear-gradient(135deg, #2EC4B6, #208a80)`,
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 20,
                 padding: "16px 24px",
                 fontSize: 18,
                 fontWeight: 950,
-                cursor: "pointer",
-                boxShadow: "0 8px 24px rgba(46,196,182,0.2)"
+                cursor: watchedFraction < 0.8 && currentVideoData ? "not-allowed" : "pointer",
+                boxShadow: watchedFraction < 0.8 && currentVideoData ? "none" : "0 8px 24px rgba(46,196,182,0.2)"
               }}
             >
-              TAKE LESSON QUIZ 🧩
+              {watchedFraction < 0.8 && currentVideoData
+                ? `WATCH THE VIDEO FIRST (${Math.floor(watchedFraction * 100)}%) ⏳`
+                : "TAKE LESSON QUIZ 🧩"
+              }
             </button>
           </div>
         )}
