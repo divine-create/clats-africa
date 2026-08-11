@@ -558,7 +558,8 @@ export const LessonContent: React.FC<LessonContentProps> = ({
             
             {/* If video player is available */}
             {currentVideoData ? (
-              <div
+              <>
+                <div
                 style={{
                   background: "#000000",
                   border: `3px solid ${C.teal}`,
@@ -632,7 +633,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                   <Chip color={C.teal} bg="rgba(46,196,182,0.1)">HD CC</Chip>
                 </div>
-              </div>
+              </>
             ) : (
               // Story-first Interactive Card Slideshow (Required for Ages 2-5, and as dynamic text renderer)
               <div
