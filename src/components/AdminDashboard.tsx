@@ -186,7 +186,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     status: "Active",
                     parentId: c.parent_email,
                     progress: `${completedCount * 10}%`,
-                    lessonsDone: completedCount
+                    lessonsDone: completedCount,
+                    is_premium: c.is_premium || false
                   };
                 });
                 setLearners(mappedKids);
@@ -2608,7 +2609,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         className={`p-4 rounded-2xl border transition-all hover:border-[#2EC4B6] relative ${isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-200"}`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className={`font-black text-sm ${textPrimary}`}>{ch.name}</span>
+                          <span className={`font-black text-sm ${textPrimary}`}>
+                            {ch.name} 
+                            {ch.is_premium && <span className="ml-2 text-xs bg-amber-400/20 text-amber-500 px-2 py-0.5 rounded-full" title="Premium Access">👑 PRO</span>}
+                          </span>
                           <span className={`px-2 py-0.5 rounded text-[8px] font-mono tracking-wider font-extrabold block uppercase ${
                             ch.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-rose-500"
                           }`}>
@@ -2650,6 +2654,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                           >
                             Award Badge
                           </button>
+                          {!ch.is_premium && (
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Upgrade ${ch.name} to Premium?`)) {
+                                  try {
+                                    const res = await fetch("/api/supabase/child/upgrade", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ child_id: ch.id })
+                                    });
+                                    if (res.ok) {
+                                      setLearners(learners.map(l => l.id === ch.id ? { ...l, is_premium: true } : l));
+                                      showToast(`Upgraded ${ch.name} to Premium!`);
+                                    } else {
+                                      showToast("Failed to upgrade child.");
+                                    }
+                                  } catch (e) {
+                                    showToast("Error upgrading child.");
+                                  }
+                                }
+                              }}
+                              className="text-[9px] bg-amber-400/20 text-amber-500 font-bold px-2 py-1 rounded"
+                            >
+                              👑 Upgrade
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               const next = ch.status === "Active" ? "Suspended" : "Active";
