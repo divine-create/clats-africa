@@ -320,15 +320,16 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   };
 
   // Calendar Days representation
-  const calendarDays: MilestoneDay[] = [
-    { dayName: "M", isCompleted: true, isToday: false },
-    { dayName: "T", isCompleted: true, isToday: false },
-    { dayName: "W", isCompleted: true, isToday: false },
-    { dayName: "T", isCompleted: true, isToday: false },
-    { dayName: "F", isCompleted: true, isToday: false },
-    { dayName: "S", isCompleted: true, isToday: false },
-    { dayName: "S", isCompleted: true, isToday: true }
-  ];
+  const calendarDays: MilestoneDay[] = Array.from({ length: 7 }, (_, i) => {
+    const todayIndex = 6;
+    const isToday = i === todayIndex;
+    const isCompleted = i > (todayIndex - streak) && i <= todayIndex;
+    return {
+      dayName: ["M", "T", "W", "T", "F", "S", "S"][i],
+      isCompleted,
+      isToday
+    };
+  });
 
   return (
     <div
