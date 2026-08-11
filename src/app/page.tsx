@@ -139,23 +139,9 @@ export default function HomePage() {
               fontWeight: 500,
             }}
           >
-            Child Learning & Activity Tracking System
+            Building Tomorrow's Tech Minds Today!
           </p>
         </div>
-
-        {/* Tagline */}
-        <p
-          style={{
-            fontSize: '0.95rem',
-            textAlign: 'center',
-            color: isDark ? 'rgba(248,250,252,0.55)' : 'rgba(30,41,59,0.5)',
-            maxWidth: '340px',
-            lineHeight: 1.6,
-          }}
-        >
-          Empowering families to guide, track, and celebrate every learning milestone — together.
-        </p>
-
         {/* Divider */}
         <div
           style={{
