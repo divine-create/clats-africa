@@ -13,21 +13,9 @@ interface CLATSLogoProps {
 
 export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {}, inline = false }) => {
   const [imgSrc, setImgSrc] = useState<string>("/logo-3.png");
-  const [retryStage, setRetryStage] = useState(0);
-
   const handleImgError = () => {
-    if (retryStage === 0) {
-      // Fallback 1: absolute path of container
-      setImgSrc("/input_file_3.png");
-      setRetryStage(1);
-    } else if (retryStage === 1) {
-      // Fallback 2: relative assets path
-      setImgSrc("/assets/input_file_3.png");
-      setRetryStage(2);
-    } else {
-      // Fallback 3: native SVG fallback
-      setImgSrc("");
-    }
+    // If the primary logo fails to load, gracefully fallback to the native SVG markup
+    setImgSrc("");
   };
 
   // If we fallback to native SVG markup

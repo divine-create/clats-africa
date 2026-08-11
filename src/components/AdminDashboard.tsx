@@ -1468,7 +1468,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   }
 
   return (
-    <div className={`min-h-screen ${bgMain} flex flex-col lg:flex-row font-sans transition-colors duration-200`}>
+    <div className={`min-h-screen ${bgMain} flex flex-col lg:flex-row font-sans transition-colors duration-200 ${isDark ? "dark" : ""}`}>
       {/* Toast popup */}
       {toast && (
         <div className="fixed top-4 right-4 z-[9999] bg-[#1A1A1A] text-[#2EC4B6] border border-[#2EC4B6]/30 px-4 py-3 rounded-xl shadow-2xl text-xs font-mono font-bold flex items-center gap-2">
@@ -1478,7 +1478,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
       )}
 
       {/* ADMIN LEVEL SIDEBAR */}
-      <aside className={`w-full lg:w-[280px] border-r lg:flex flex-col flex-shrink-0 transition-colors duration-200 ${
+      <aside className={`w-full lg:w-[280px] border-r flex flex-col flex-shrink-0 transition-colors duration-200 ${
         isDark
           ? "bg-[#111827] text-slate-300 border-slate-800"
           : "bg-white text-[#1A1A1A] border-slate-200 shadow-sm"
@@ -1603,7 +1603,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                 }`}
               >
                 <span className="flex items-center gap-2.5">
-                  <Icon size={14} className={active ? "text-[#14B8A6]" : "text-slate-450"} />
+                  <Icon size={14} className={active ? "text-[#14B8A6]" : "text-slate-400"} />
                   <span>{item.label}</span>
                 </span>
                 {active && <span className="h-1.5 w-1.5 rounded-full bg-[#14B8A6]" />}
@@ -1899,7 +1899,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                           className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
                             selectedTicketId === ticket.id 
                               ? "bg-[#2EC4B6]/5 border-[#2EC4B6]" 
-                              : "bg-slate-450/5 border-slate-400/10 hover:border-slate-400/30"
+                              : "bg-slate-400/5 border-slate-400/10 hover:border-slate-400/30"
                           }`}
                           onClick={() => {
                             setSelectedTicketId(selectedTicketId === ticket.id ? null : ticket.id);
@@ -2047,7 +2047,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         }
                       }}
                       disabled={healthChecking}
-                      className="bg-slate-900 hover:bg-slate-950 text-white dark:bg-slate-850 dark:hover:bg-slate-750 text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-950 dark:border-slate-700 shadow flex items-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50"
+                      className="bg-slate-900 hover:bg-slate-950 text-white dark:bg-slate-800 dark:hover:bg-slate-750 text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-950 dark:border-slate-700 shadow flex items-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50"
                     >
                       {healthChecking ? "⏳ Checking..." : "🔍 Run Health Check"}
                     </button>
@@ -2075,7 +2075,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     </div>
                     <button
                       onClick={() => setHealthReport(null)}
-                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-350 text-[10px] font-extrabold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-[10px] font-extrabold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                     >
                       Dismiss ✕
                     </button>
@@ -2092,7 +2092,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                               : "bg-rose-500/5 dark:bg-rose-500/10 border-rose-550/20 dark:border-rose-800/40"
                           }`}
                         >
-                          <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-350 truncate">
+                          <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 truncate">
                             {tbl}
                           </span>
                           <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
@@ -2880,7 +2880,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                             key={mod.id}
                             onClick={() => setSelectedModuleId(mod.id)}
                             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                              selectedModuleId === mod.id ? "border-[#B8A0FF] bg-[#B8A0FF]/5" : "border-slate-205 border-slate-100 dark:border-slate-800"
+                              selectedModuleId === mod.id ? "border-[#B8A0FF] bg-[#B8A0FF]/5" : "border-slate-200 border-slate-100 dark:border-slate-800"
                             }`}
                           >
                             <div className="flex justify-between items-start">
@@ -3120,7 +3120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                   </div>
 
                   {/* INTERACTIVE QUIZ QUESTION MATRIX BUILDER */}
-                  <div className="pt-6 border-t border-slate-20e border-slate-105 border-slate-100 dark:border-slate-800 space-y-4">
+                  <div className="pt-6 border-t border-slate-200 border-slate-100 border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="flex justify-between items-center">
                       <div>
                         <h3 className={`text-xs font-mono font-bold uppercase tracking-wider text-slate-500 m-0`}>
@@ -3194,7 +3194,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                               value={quizQuestion}
                               onChange={(e) => setQuizQuestion(e.target.value)}
                               placeholder="e.g. What does API stand for?"
-                              className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-850 dark:text-white"
+                              className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-800 dark:text-white"
                             />
                             <div className="grid grid-cols-2 gap-2">
                               <input
@@ -3202,28 +3202,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                                 value={quizOptionA}
                                 onChange={(e) => setQuizOptionA(e.target.value)}
                                 placeholder="Option A (Required)"
-                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-850 dark:text-white"
+                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-800 dark:text-white"
                               />
                               <input
                                 type="text"
                                 value={quizOptionB}
                                 onChange={(e) => setQuizOptionB(e.target.value)}
                                 placeholder="Option B (Required)"
-                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-850 dark:text-white"
+                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-800 dark:text-white"
                               />
                               <input
                                 type="text"
                                 value={quizOptionC}
                                 onChange={(e) => setQuizOptionC(e.target.value)}
                                 placeholder="Option C (Optional)"
-                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-850 dark:text-white"
+                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-800 dark:text-white"
                               />
                               <input
                                 type="text"
                                 value={quizOptionD}
                                 onChange={(e) => setQuizOptionD(e.target.value)}
                                 placeholder="Option D (Optional)"
-                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-850 dark:text-white"
+                                className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1.5 text-slate-800 dark:text-white"
                               />
                             </div>
                             <div className="flex items-center gap-3">
@@ -3231,7 +3231,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                               <select
                                 value={quizCorrectAnswer}
                                 onChange={(e) => setQuizCorrectAnswer(e.target.value)}
-                                className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1 text-slate-850 dark:text-white text-xs"
+                                className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded p-1 text-slate-800 dark:text-white text-xs"
                               >
                                 <option value="A">A</option>
                                 <option value="B">B</option>
@@ -3242,7 +3242,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                             <div className="flex gap-2">
                               <button
                                 onClick={handleSaveQuizQuestion}
-                                className="flex-1 bg-yellow-500 hover:bg-yellow-650 text-slate-950 font-bold py-1.5 rounded-lg text-xs"
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-slate-950 font-bold py-1.5 rounded-lg text-xs"
                               >
                                 {editingQuizId ? "💾 Save Question" : "➕ Append Question"}
                               </button>
@@ -3999,7 +3999,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         </span>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-205/5 flex justify-end gap-1.5">
+                      <div className="pt-3 border-t border-slate-200/5 flex justify-end gap-1.5">
                         <button
                           onClick={() => showToast(`Playing media clip preview: ${file.name}`)}
                           className="text-[9px] bg-[#2EC4B6]/15 hover:bg-[#2EC4B6]/25 text-[#2EC4B6] font-bold px-2 py-1 rounded"
@@ -4088,7 +4088,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                       <div className="overflow-x-auto font-mono">
                         <table className="w-full text-left text-xs font-mono">
                           <thead>
-                            <tr className="border-b border-slate-205/5 text-slate-400 text-[11px]">
+                            <tr className="border-b border-slate-200/5 text-slate-400 text-[11px]">
                               <th className="pb-2 font-black">Institution Name</th>
                               <th className="pb-2 font-black">Region/State</th>
                               <th className="pb-2 font-black">Advisor Email</th>
@@ -4100,7 +4100,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                           </thead>
                           <tbody>
                             {schoolsList.map((school, i) => (
-                              <tr key={i} className="border-b border-slate-205/5 text-[11px] hover:bg-slate-100/5 transition">
+                              <tr key={i} className="border-b border-slate-200/5 text-[11px] hover:bg-slate-100/5 transition">
                                 <td className={`py-3 font-bold ${textPrimary}`}>{school.name}</td>
                                 <td className={`py-3 ${textSecondary}`}>{school.region}</td>
                                 <td className={`py-3 ${textSecondary}`}>{school.email}</td>
@@ -4203,7 +4203,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
                 {/* ADD A SCHOOL FORM */}
                 <div className={`p-5 rounded-2xl border ${bgCard} space-y-4 h-fit`}>
-                  <div className="border-b border-slate-205/5 pb-2">
+                  <div className="border-b border-slate-200/5 pb-2">
                     <h4 className={`text-xs font-black uppercase tracking-wider ${textPrimary}`}>
                       🏫 Pipeline Registration Tool
                     </h4>
@@ -4378,7 +4378,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                       <div className="overflow-x-auto font-mono">
                         <table className="w-full text-left text-xs font-mono">
                           <thead>
-                            <tr className="border-b border-slate-205/5 text-slate-400">
+                            <tr className="border-b border-slate-200/5 text-slate-400">
                               <th className="pb-2 font-black">Affiliation Agency/Sponsor</th>
                               <th className="pb-2 font-black">Sponsorship Type</th>
                               <th className="pb-2 font-black">Region / State Beneficiary</th>
@@ -4389,7 +4389,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                           </thead>
                           <tbody>
                             {regionsServed.map((sponsor, i) => (
-                              <tr key={i} className="border-b border-slate-205/5 text-[11px] hover:bg-slate-100/5 transition">
+                              <tr key={i} className="border-b border-slate-200/5 text-[11px] hover:bg-slate-100/5 transition">
                                 <td className={`py-3 font-bold ${textPrimary}`}>{sponsor.sponsorName}</td>
                                 <td className={`py-3 text-slate-400`}>
                                   <span className="bg-[#B8A0FF]/15 text-[#B8A0FF] font-semibold px-2 py-0.5 rounded text-[9px]">
@@ -4437,7 +4437,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
                 {/* ADD SPONSORSHIP FORM */}
                 <div className={`p-5 rounded-2xl border ${bgCard} space-y-4 h-fit`}>
-                  <div className="border-b border-slate-205/5 pb-2">
+                  <div className="border-b border-slate-200/5 pb-2">
                     <h4 className={`text-xs font-black uppercase tracking-wider ${textPrimary}`}>
                       🏛️ Record Sponsor / Grant Proposal
                     </h4>
@@ -5538,7 +5538,7 @@ ON CONFLICT (email) DO NOTHING;
               <button
                 onClick={() => setShowLogoutConfirm(false)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  isDark ? "bg-slate-800 text-slate-350 hover:bg-slate-750" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  isDark ? "bg-slate-800 text-slate-300 hover:bg-slate-750" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 Cancel
@@ -5564,3 +5564,4 @@ ON CONFLICT (email) DO NOTHING;
     </div>
   );
 };
+
