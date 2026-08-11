@@ -94,6 +94,12 @@ export const LearningPath: React.FC<LearningPathProps> = ({
     }
     sfx.playTap();
     setSelectedLesson(lesson);
+    // Smoothly scroll back up to the card on mobile devices
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.getElementById('lesson-preview-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
   };
 
   // Speaks title label and story text out loud inside container iFrame
@@ -335,7 +341,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
             </div>
 
             {/* Right Interactive Sidebar */}
-            <div className="col-span-1 lg:col-span-5 lg:sticky lg:top-24">
+            <div id="lesson-preview-card" className="col-span-1 lg:col-span-5 lg:sticky lg:top-24 order-first lg:order-last">
               {selectedLesson ? (
                 <Card className={`border-3 rounded-3xl p-6 shadow-md relative overflow-hidden ${
                   isDark ? "bg-slate-950/90 border-[#2EC4B6]/35 text-white" : "bg-white border-emerald-100 text-slate-800"
@@ -394,7 +400,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
 
                   <button
                     onClick={() => onSelectLesson(selectedLesson)}
-                    className="fixed bottom-6 left-6 right-6 w-[calc(100%-48px)] z-50 lg:static lg:w-full lg:z-auto bg-[#FFD166] hover:bg-[#e6bb5c] text-amber-950 font-black py-4 px-6 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.3)] lg:shadow-lg hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-amber-600 active:translate-y-1 active:border-b-2"
+                    className="w-full bg-[#FFD166] hover:bg-[#e6bb5c] text-amber-950 font-black py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-2 border-b-6 border-amber-600"
                     style={{ cursor: "pointer", fontWeight: 900, fontSize: 18 }}
                   >
                     <span>Play Animated Story 🌟</span>
@@ -567,7 +573,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
             </div>
 
             {/* Right Action Sidebar */}
-            <div className="col-span-1 lg:col-span-4 lg:sticky lg:top-24">
+            <div id="lesson-preview-card" className="col-span-1 lg:col-span-4 lg:sticky lg:top-24 order-first lg:order-last">
               {selectedLesson ? (
                 <Card className={`border-3 rounded-3xl p-5 shadow-md relative overflow-hidden ${
                   isDark ? "bg-slate-950/90 border-[#2EC4B6]/40 text-white" : "bg-white border-[#2EC4B6]/25 text-slate-900"
@@ -764,7 +770,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
             </div>
 
             {/* Right Action Sidebar */}
-            <div className="col-span-1 lg:col-span-5 lg:sticky lg:top-24">
+            <div id="lesson-preview-card" className="col-span-1 lg:col-span-5 lg:sticky lg:top-24 order-first lg:order-last">
               {selectedLesson ? (
                 <Card className={`border-2 rounded-2xl p-6 shadow-sm relative overflow-hidden ${
                   isDark ? "bg-slate-950/90 border-[#2EC4B6]/35 text-white" : "bg-white border-slate-205 text-slate-900"
