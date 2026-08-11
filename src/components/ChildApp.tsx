@@ -498,6 +498,27 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             setSelectedAcademyId(acadId || "academy-1");
             setActiveTab("modules");
           }}
+          onResume={() => {
+            const course = CURRICULUM[child.ageGroup || "early explorers"];
+            if (!course || !course.modules) return;
+        
+            for (const mod of course.modules) {
+              for (const les of mod.lessons) {
+                if (!child.completed?.[les.id]) {
+                  setSelModule(mod);
+                  setSelLesson(les);
+                  setActiveTab("chat");
+                  return;
+                }
+              }
+            }
+            // If all completed, restart the first one
+            if (course.modules[0] && course.modules[0].lessons[0]) {
+              setSelModule(course.modules[0]);
+              setSelLesson(course.modules[0].lessons[0]);
+              setActiveTab("chat");
+            }
+          }}
           lang={lang}
           theme={theme}
         />
@@ -509,7 +530,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           child={child}
           onSelectModule={(m) => {
             setSelModule(m);
-            setActiveTab("module-details");
+            setActiveTab("lessons"); // Bypassing module-details!
           }}
           lang={lang}
           onBack={() => setActiveTab("home")}

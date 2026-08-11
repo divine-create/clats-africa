@@ -32,6 +32,7 @@ interface ChildWelcomeScreenProps {
   slotUsed: number;
   slotLimit: number;
   onEnterAIPathway: (academyId?: string) => void;
+  onResume?: () => void;
   lang: Language;
   theme?: "light" | "dark";
 }
@@ -41,6 +42,7 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
   slotUsed,
   slotLimit,
   onEnterAIPathway,
+  onResume,
   lang,
   theme = "dark"
 }) => {
@@ -173,9 +175,22 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
             <Heading size={24} className="text-slate-900 font-black tracking-tight" style={{ fontWeight: 900 }}>
               {T[lang].hello}, {child.name}!
             </Heading>
-            <Txt size={14} className="text-slate-600 font-medium block">
+            <Txt size={14} className="text-slate-600 font-medium block mb-3">
               Which high-tech pathway shall we explore today? 🌴
             </Txt>
+            {onResume && (
+              <button
+                onClick={() => {
+                  sfx.playTap();
+                  onResume();
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold px-6 py-2 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                style={{ fontSize: 13 }}
+              >
+                <span>Resume Mission</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
