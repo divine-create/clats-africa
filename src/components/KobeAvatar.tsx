@@ -48,7 +48,7 @@ export const KobeAvatar: React.FC<KobeAvatarProps> = ({
 
   // Let's configure recursive fallback urls for maximum rendering safety
   const initialUrl = character === "kobe" 
-    ? "/kobi-boy-img.png"
+    ? "/kobe-final.png"
     : "/chibi-girl-img.png";
 
   const [imgSrc, setImgSrc] = useState<string>(initialUrl);
@@ -56,14 +56,14 @@ export const KobeAvatar: React.FC<KobeAvatarProps> = ({
 
   // Sync state if character changes dynamically
   useEffect(() => {
-    setImgSrc(character === "kobe" ? "/kobi-boy-img.png" : "/chibi-girl-img.png");
+    setImgSrc(character === "kobe" ? "/kobe-final.png" : "/chibi-girl-img.png");
     setRetryStage(0);
   }, [character]);
 
   const handleImgError = () => {
     if (retryStage === 0) {
       // Fallback: try loading from root just in case
-      setImgSrc(character === "kobe" ? "/kobi-boy-img.png" : "/chibi-girl-img.png");
+      setImgSrc(character === "kobe" ? "/kobe-final.png" : "/chibi-girl-img.png");
       setRetryStage(1);
     } else {
       // Defer to high-fidelity SVG/emoji rendering

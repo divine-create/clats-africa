@@ -23,7 +23,7 @@ interface MascotImageProps {
 
 export const MascotImage: React.FC<MascotImageProps> = ({ character, className = "", style = {}, height = 140 }) => {
   const initialUrl = character === "kobe" 
-    ? "/kobi-boy-img.png"
+    ? "/kobe-final.png"
     : "/chibi-girl-img.png";
 
   const [imgSrc, setImgSrc] = useState<string>(initialUrl);
@@ -31,7 +31,7 @@ export const MascotImage: React.FC<MascotImageProps> = ({ character, className =
 
   const handleImgError = () => {
     if (retryStage === 0) {
-      setImgSrc(character === "kobe" ? "/kobi-boy-img.png" : "/chibi-girl-img.png");
+      setImgSrc(character === "kobe" ? "/kobe-final.png" : "/chibi-girl-img.png");
       setRetryStage(1);
     } else {
       setImgSrc("");
