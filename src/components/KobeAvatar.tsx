@@ -48,29 +48,25 @@ export const KobeAvatar: React.FC<KobeAvatarProps> = ({
 
   // Let's configure recursive fallback urls for maximum rendering safety
   const initialUrl = character === "kobe" 
-    ? "/assets/input_file_0.png"  // Attachment index 0 (Boy)
-    : "/assets/input_file_1.png"; // Attachment index 1 (Girl)
+    ? "/kobi-boy-img.png"
+    : "/chibi-girl-img.png";
 
   const [imgSrc, setImgSrc] = useState<string>(initialUrl);
   const [retryStage, setRetryStage] = useState(0);
 
   // Sync state if character changes dynamically
   useEffect(() => {
-    setImgSrc(character === "kobe" ? "/assets/input_file_0.png" : "/assets/input_file_1.png");
+    setImgSrc(character === "kobe" ? "/kobi-boy-img.png" : "/chibi-girl-img.png");
     setRetryStage(0);
   }, [character]);
 
   const handleImgError = () => {
     if (retryStage === 0) {
-      // Fallback 1: Try serving from absolute root path directly
-      setImgSrc(character === "kobe" ? "/input_file_0.png" : "/input_file_1.png");
+      // Fallback: try loading from root just in case
+      setImgSrc(character === "kobe" ? "/kobi-boy-img.png" : "/chibi-girl-img.png");
       setRetryStage(1);
-    } else if (retryStage === 1) {
-      // Fallback 2: Try relative path inside the assets build directory 
-      setImgSrc(character === "kobe" ? "./assets/input_file_0.png" : "./assets/input_file_1.png");
-      setRetryStage(2);
     } else {
-      // Fallback 3: Defer to high-fidelity SVG/emoji rendering
+      // Defer to high-fidelity SVG/emoji rendering
       setImgSrc("");
     }
   };
@@ -128,9 +124,7 @@ export const KobeAvatar: React.FC<KobeAvatarProps> = ({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              objectPosition: "center 22%",
-              transform: character === "kobe" ? "scale(2.5)" : "scale(2.25)",
-              transformOrigin: "center 22%",
+              objectPosition: "center",
               transition: "transform 0.2s"
             }}
           />
