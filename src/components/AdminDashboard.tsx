@@ -434,26 +434,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
       const saved = localStorage.getItem("cl_content_releases");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return [
-      {
-        id: "rel1",
-        title: "AI Foundations - Lesson 1: What is Technology?",
-        academy_id: "young",
-        module_id: "ym1",
-        lesson_id: "yl1",
-        release_date: "2026-06-26",
-        status: "Scheduled"
-      },
-      {
-        id: "rel2",
-        title: "AI Foundations - Lesson 2: What is Artificial Intelligence?",
-        academy_id: "young",
-        module_id: "ym1",
-        lesson_id: "yl2",
-        release_date: "2026-07-10",
-        status: "Scheduled"
-      }
-    ];
+    return [];
   });
 
   // Curriculum State Separated cleanly or filtered
