@@ -586,11 +586,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           
           {/* Logo Brand Frame */}
           <div className="flex items-center gap-3.5">
-            <div className="bg-[#2EC4B6] h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm">
-              C
-            </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight leading-none uppercase text-[#2EC4B6]">CLATS</h1>
+              <CLATSLogo height="1.8em" />
               <span className="text-[10px] font-semibold text-slate-400 tracking-wider block mt-1">INTELLIGENCE CENTER</span>
             </div>
           </div>
