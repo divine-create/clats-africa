@@ -1031,7 +1031,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {onNextLesson && earnsBadge && (
+                {onNextLesson && (
                   <button
                     onClick={() => {
                       sfx.playTap();

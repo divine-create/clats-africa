@@ -76,6 +76,33 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const isEarly = child.ageGroup === "early explorers";
   const [narrationOn, setNarrationOn] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
 
+  // Auto-Start on Login for Early Explorers
+  useEffect(() => {
+    if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem("hasAutoStarted_" + child.id)) {
+      sessionStorage.setItem("hasAutoStarted_" + child.id, "true");
+      if (child.ageGroup === "early explorers") {
+        const course = CURRICULUM["early explorers"];
+        if (course && course.modules) {
+          for (const mod of course.modules) {
+            for (const les of mod.lessons) {
+              if (!child.completed?.[les.id]) {
+                setSelModule(mod);
+                setSelLesson(les);
+                setActiveTab("chat");
+                return;
+              }
+            }
+          }
+          if (course.modules[0] && course.modules[0].lessons[0]) {
+            setSelModule(course.modules[0]);
+            setSelLesson(course.modules[0].lessons[0]);
+            setActiveTab("chat");
+          }
+        }
+      }
+    }
+  }, [child]);
+
   // Stop current voice playback whenever changing screens
   useEffect(() => {
     companionVoice.stop();
