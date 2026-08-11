@@ -6,15 +6,6 @@ export const metadata: Metadata = {
   title: "CLATS – Coding & Learning for African Tech Students",
   description:
     "CLATS is an interactive coding and learning platform for African children, with parent dashboards, child progress tracking, and gamified learning modules.",
-  icons: {
-    icon: [
-      { url: "/favicon.jpg", type: "image/jpeg" },
-    ],
-    apple: [
-      { url: "/favicon.jpg", type: "image/jpeg" },
-    ],
-    shortcut: "/favicon.jpg",
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

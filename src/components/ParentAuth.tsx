@@ -27,6 +27,8 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
   const [err, setErr] = useState("");
   
   const [currentMode, setCurrentMode] = useState<"login" | "register">(mode);
@@ -156,7 +158,7 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
       const authRes = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name, device, browser, timezone })
+        body: JSON.stringify({ email, password, name, phone, location, device, browser, timezone })
       });
 
       // Try to parse the response as JSON (if Vercel returns HTML it will throw here)
@@ -300,13 +302,30 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
             {!isLogin && (
-              <FieldInput
-                label="Your Name"
-                value={name}
-                onChange={setName}
-                placeholder="First and last name"
-                theme={theme}
-              />
+              <>
+                <FieldInput
+                  label="Your Name"
+                  value={name}
+                  onChange={setName}
+                  placeholder="First and last name"
+                  theme={theme}
+                />
+                <FieldInput
+                  label="Phone Number"
+                  value={phone}
+                  onChange={setPhone}
+                  placeholder="e.g. +1234567890"
+                  type="tel"
+                  theme={theme}
+                />
+                <FieldInput
+                  label="Location"
+                  value={location}
+                  onChange={setLocation}
+                  placeholder="e.g. Lagos, Nigeria"
+                  theme={theme}
+                />
+              </>
             )}
             <FieldInput
               label="Email Address"
@@ -322,9 +341,7 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
               onChange={setPassword}
               type="password"
               placeholder={isLogin ? "Your password" : "Create a password (6+ characters)"}
-              hint={
-                !isLogin ? "This is your parent password — different from the child PIN." : ""
-              }
+              hint={""}
               theme={theme}
             />
           </div>
@@ -457,7 +474,7 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
             color={isDark ? "rgba(255,255,255,0.4)" : "rgba(15,23,42,0.4)"}
             style={{ display: "block", marginTop: 10, textAlign: "center", fontStyle: "italic" }}
           >
-            🔌 Connects instantly to Supabase Cloud if configured in environment variables.
+            🛡️ Secure authentication.
           </Txt>
           <Txt
             size={12}

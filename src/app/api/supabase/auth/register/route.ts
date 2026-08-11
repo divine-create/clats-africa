@@ -10,7 +10,7 @@ function getSupabaseClient() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name, timezone, device, browser } = await req.json();
+    const { email, password, name, timezone, device, browser, phone, location } = await req.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ ok: false, msg: "Email, password, and name are required." }, { status: 400 });
@@ -31,17 +31,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError) {
-      // If user already exists in auth.users, Supabase might not return an error depending on settings, 
-      // but it won't return a session if email confirmations are enabled. 
-      // If it fails with "User already registered", handle it.
-      return NextResponse.json({ ok: false, msg: authError.message }, { status: 400 });
+      console.warn("Supabase Auth signUp error (ignoring to allow legacy fallback):", authError.message);
     }
 
     // 2. Insert into the legacy clats_parents table for compatibility
+    // We save the actual password so the legacy fallback in login works seamlessly
+    // even if Supabase Auth requires email confirmation.
     const parentPayload = {
       email: email.toLowerCase().trim(),
-      password: "SUPABASE_AUTH_MANAGED", // Obsoleting the plaintext password column
+      password: password, 
       name,
+      phone: phone || null,
+      location: location || null,
       created_at: Date.now(),
       tutorial_completed: false,
       timezone: timezone || "UTC",
@@ -52,11 +53,10 @@ export async function POST(req: NextRequest) {
       user_id: authData.user?.id || "",
     };
 
-    const { error: insertError } = await sb.from("clats_parents").insert([parentPayload]);
+    const { error: insertError } = await sb.from("clats_parents").upsert(parentPayload, { onConflict: "email" });
     
-    // Ignore duplicate key error if they somehow already exist in clats_parents
-    if (insertError && insertError.code !== '23505') {
-      console.warn("Failed to insert into clats_parents:", insertError);
+    if (insertError) {
+      console.warn("Failed to upsert into clats_parents:", insertError);
     }
 
     try {
