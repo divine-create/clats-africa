@@ -86,55 +86,37 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
     });
   };
 
-  const comingSoonData = [
-    {
-      id: "lit",
-      title: "Digital Literacy",
-      icon: <Globe className="w-6 h-6 text-indigo-500" />,
-      desc: "Master key typing, internet safety, search engines, and respectful email chatting.",
-      emoji: "🌐"
-    },
-    {
-      id: "cyber",
-      title: "Cybersecurity",
-      icon: <Shield className="w-6 h-6 text-red-500" />,
-      desc: "Lock passwords, identify scams, prevent hacks, and guard personal files online.",
-      emoji: "🔒"
-    },
-    {
-      id: "web3",
-      title: "Blockchain & Web3",
-      icon: <Coins className="w-6 h-6 text-amber-500" />,
-      desc: "Learn blockchain ledger grids, cryptographic security keys, and virtual tokens.",
-      emoji: "⛓"
-    },
-    {
-      id: "creativity",
-      title: "Design & Creativity",
-      icon: <Palette className="w-6 h-6 text-pink-500" />,
-      desc: "Build sleek UI/UX sitemaps, paint digital illustrations, and animate smart models.",
-      emoji: "🎨"
-    },
-    {
-      id: "devops",
-      title: "DevOps & Systems",
-      icon: <Terminal className="w-6 h-6 text-slate-500" />,
-      desc: "Uncover back-end command prompts, servers, cloud modules, and pipeline tools.",
-      emoji: "⚙"
-    },
-    {
-      id: "career",
-      title: "Career Readiness",
-      icon: <Briefcase className="w-6 h-6 text-emerald-500" />,
-      desc: "Pitch Nigerian startup concepts, draft professional cases, and align with global remote work.",
-      emoji: "🚀"
-    }
-  ];
+  // Dynamically compute active and preview pathways
+  const activePathways: any[] = [];
+  const previewPathways: any[] = [];
 
-  // Dynamically compute preview academies list based on active/inactive states
-  const previewAcademies = [];
-  if (child.ageGroup !== "young innovators") {
-    previewAcademies.push({
+  const dynamicPathways = aiCourse?.pathways || [];
+  
+  if (dynamicPathways.length > 0) {
+    dynamicPathways.forEach((p, idx) => {
+      // Find modules belonging to this pathway
+      const pModules = aiCourse.modules.filter(m => m.pathwayId === p.id || m.id.includes(p.id));
+      // A pathway is active if it has at least one module with lessons
+      const isActive = pModules.some(m => m.lessons && m.lessons.length > 0);
+      
+      const emojiMap = ["🤖", "🔒", "🎨", "🚀", "🌱", "🌐", "⛓", "⚙"];
+      const emoji = emojiMap[idx % emojiMap.length];
+      
+      const pData = {
+        id: p.id,
+        title: p.title,
+        desc: p.description,
+        icon: <Compass className="w-6 h-6 text-emerald-500" />,
+        emoji: emoji,
+        badgeColor: isActive ? "text-emerald-300 bg-emerald-950/30" : "text-amber-300 bg-amber-950/30"
+      };
+
+      if (isActive) activePathways.push(pData);
+      else previewPathways.push(pData);
+    });
+  } else {
+    // Fallback if DB is empty or offline
+    activePathways.push({
       id: "academy-1",
       title: "Academy 1: AI & Emerging Technologies",
       desc: "Learn how artificial intelligence works, how technology evolved, how machines learn, and how future technologies are shaping tomorrow.",
@@ -142,57 +124,14 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
       emoji: "💡",
       badgeColor: "text-amber-305 bg-amber-950/30"
     });
-  }
-
-  previewAcademies.push(
-    {
+    previewPathways.push({
       id: "academy-2",
       title: "Academy 2: Digital Citizenship & Cybersecurity",
       desc: "Build digital confidence, internet safety awareness, responsible technology habits, and cybersecurity skills.",
       icon: <Shield className="w-6 h-6 text-red-500" />,
       emoji: "🔒",
       badgeColor: "text-red-300 bg-red-950/30"
-    },
-    {
-      id: "academy-3",
-      title: "Academy 3: Design & Creation",
-      desc: "Develop creativity, storytelling, design thinking, digital creation, and product design skills.",
-      icon: <Palette className="w-6 h-6 text-pink-500" />,
-      emoji: "🎨",
-      badgeColor: "text-pink-300 bg-pink-950/30"
-    }
-  );
-
-  if (child.ageGroup === "future builders") {
-    previewAcademies.push(
-      {
-        id: "academy-4",
-        title: "Academy 4: Innovation & Career Readiness",
-        desc: "Learn leadership, entrepreneurship, communication, teamwork, and future career skills.",
-        icon: <Briefcase className="w-6 h-6 text-purple-500" />,
-        emoji: "🚀",
-        badgeColor: "text-purple-300 bg-purple-950/30"
-      },
-      {
-        id: "academy-5",
-        title: "Academy 5: Adaptability & Lifelong Learning",
-        desc: "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.",
-        icon: <Compass className="w-6 h-6 text-teal-500" />,
-        emoji: "🌱",
-        badgeColor: "text-teal-300 bg-teal-950/30"
-      }
-    );
-  } else {
-    previewAcademies.push(
-      {
-        id: "academy-4",
-        title: "Academy 4: Adaptability & Lifelong Learning",
-        desc: "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.",
-        icon: <Compass className="w-6 h-6 text-teal-500" />,
-        emoji: "🌱",
-        badgeColor: "text-teal-300 bg-teal-950/30"
-      }
-    );
+    });
   }
 
   return (
@@ -291,71 +230,73 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
       </div>
 
       {/* ACTIVE TRACK SECTION */}
-      {child.ageGroup === "young innovators" && (
+      {activePathways.length > 0 && (
         <div className="mb-12">
           <Txt size={14} className="text-theme-sensitive font-extrabold block mb-4 tracking-wide uppercase flex items-center gap-2">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
             🚀 ACTIVE & ROLLING OUT
           </Txt>
 
-          <Card
-            id="tour-learning-path"
-            className={`border-4 border-amber-400 rounded-3xl p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] ${
-              isDark ? "bg-gradient-to-br from-amber-950/40 to-orange-950/30 text-white" : "bg-gradient-to-br from-amber-50/90 to-orange-50/80 text-slate-900"
-            }`}
-          >
-            {/* Subtle tropical backdrop ornament inside card */}
-            <div className="absolute right-0 bottom-0 text-[100px] opacity-10 pointer-events-none select-none">
-              🌴
-            </div>
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-              {/* Pathway Info */}
-              <div className="flex items-start sm:items-center gap-5">
-                <div className="bg-amber-400 p-5 rounded-2xl flex items-center justify-center shadow-md shadow-amber-400/20 text-slate-900">
-                  <Sparkles className="w-10 h-10 text-slate-900" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {activePathways.map(activeItem => (
+              <Card
+                key={activeItem.id}
+                id="tour-learning-path"
+                className={`border-4 border-amber-400 rounded-3xl p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] ${
+                  isDark ? "bg-gradient-to-br from-amber-950/40 to-orange-950/30 text-white" : "bg-gradient-to-br from-amber-50/90 to-orange-50/80 text-slate-900"
+                }`}
+              >
+                {/* Subtle tropical backdrop ornament inside card */}
+                <div className="absolute right-0 bottom-0 text-[100px] opacity-10 pointer-events-none select-none">
+                  🌴
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="bg-emerald-600 text-white font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow-sm">
-                      🚀 Active Track
-                    </span>
-                    <span className={`font-bold text-xs px-2.5 py-0.5 rounded-full ${isDark ? "bg-amber-950 text-amber-300 border border-amber-900" : "bg-amber-100 text-amber-800 border border-amber-300"}`}>
-                      Ages 6–12 Track
-                    </span>
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                  {/* Pathway Info */}
+                  <div className="flex items-start sm:items-center gap-5">
+                    <div className="bg-amber-400 p-5 rounded-2xl flex items-center justify-center shadow-md shadow-amber-400/20 text-slate-900">
+                      <Sparkles className="w-10 h-10 text-slate-900" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="bg-emerald-600 text-white font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow-sm">
+                          🚀 Active Track
+                        </span>
+                      </div>
+                      <Heading size={22} className={`font-black mb-1 ${isDark ? "text-amber-305 text-amber-200" : "text-slate-900"}`} style={{ fontWeight: 900 }}>
+                        {activeItem.title}
+                      </Heading>
+                      <Txt size={14} className={`font-medium block max-w-xl ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                        {activeItem.desc}
+                      </Txt>
+                    </div>
                   </div>
-                  <Heading size={24} className={`font-black mb-1 ${isDark ? "text-amber-305 text-amber-200" : "text-slate-900"}`} style={{ fontWeight: 900 }}>
-                    Academy 1: AI & Emerging Technologies
-                  </Heading>
-                  <Txt size={15} className={`font-medium block max-w-xl ${isDark ? "text-slate-300" : "text-slate-600"}`}>
-                    Learn how artificial intelligence works, how technology evolved, how machines learn, and how future technologies are shaping tomorrow.
-                  </Txt>
-                </div>
-              </div>
 
-              {/* Pathway Progress & CTA */}
-              <div className="flex flex-col items-stretch sm:items-end gap-3 min-w-[200px]">
-                <div className="text-right">
-                  <Txt size={12} className={`font-extrabold tracking-wider block uppercase mb-1 ${isDark ? "text-amber-300" : "text-amber-800"}`} style={{ fontSize: 10 }}>
-                    ACADEMY PROGRESS: {aiProgress}%
-                  </Txt>
-                  <XPBar xp={aiProgress} color="#ffb800" />
-                </div>
+                  {/* Pathway Progress & CTA */}
+                  <div className="flex flex-col items-stretch sm:items-end gap-3 min-w-[160px]">
+                    <div className="text-right">
+                      <Txt size={12} className={`font-extrabold tracking-wider block uppercase mb-1 ${isDark ? "text-amber-300" : "text-amber-800"}`} style={{ fontSize: 10 }}>
+                        PROGRESS: {aiProgress}%
+                      </Txt>
+                      <XPBar xp={aiProgress} color="#ffb800" />
+                    </div>
 
-                <button
-                  onClick={() => {
-                    sfx.playTap();
-                    onEnterAIPathway("academy-1");
-                  }}
-                  className="w-full bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-slate-900 font-black py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 border-b-6 border-amber-600 active:translate-y-1 active:border-b-2"
-                  style={{ cursor: "pointer", fontWeight: 900, fontSize: 15 }}
-                >
-                  <span>Enter Academy</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </Card>
+                    <button
+                      onClick={() => {
+                        sfx.playTap();
+                        onEnterAIPathway(activeItem.id);
+                      }}
+                      className="w-full bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-slate-900 font-black py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 border-b-6 border-amber-600 active:translate-y-1 active:border-b-2"
+                      style={{ cursor: "pointer", fontWeight: 900, fontSize: 15 }}
+                    >
+                      <span>Enter</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
@@ -366,7 +307,7 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
         </Txt>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-          {previewAcademies.map((item) => {
+          {previewPathways.map((item) => {
             return (
               <Card
                 key={item.id}

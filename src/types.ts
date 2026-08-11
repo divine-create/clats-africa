@@ -84,8 +84,15 @@ export interface Lesson {
   quiz: QuizQuestion[];
 }
 
+export interface Pathway {
+  id: string;
+  title: string;
+  description: string;
+}
+
 export interface Module {
   id: string;
+  pathwayId?: string;
   name: Localized<string>;
   goal: Localized<string>;
   lessons: Lesson[];
@@ -100,5 +107,6 @@ export interface Course {
   id: AgeGroup;
   title: Localized<string>;
   description: Localized<string>;
+  pathways?: Pathway[];
   modules: Module[];
 }

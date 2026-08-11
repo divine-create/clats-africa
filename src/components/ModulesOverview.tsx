@@ -102,15 +102,19 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
     const acadIndex = activeAcadId.replace("academy-", "a"); // e.g. "a1"
     const prefix = `${ageGroup === "early explorers" ? "t" : ageGroup === "young innovators" ? "j" : "p"}-${acadIndex}`;
 
-    // Filter modules that belong to this academy.
-    // Also support aliases: If selecting academy-1, also include old hardcoded-style modules like "t-m1", "j-m1", "p-m1"
+    // Filter modules that belong to this academy/pathway.
     const matchedModules = dbCourse?.modules.filter(m => {
-      // Direct prefix match
-      if (m.id.startsWith(prefix)) {
-        return true;
+      // If it has a database pathwayId, it MUST match the activeAcadId
+      if (m.pathwayId) {
+        return m.pathwayId === activeAcadId;
       }
+      
+      // Fallback for hardcoded fallback curriculum:
+      // Direct prefix match
+      if (m.id.startsWith(prefix)) return true;
+      
       // Support old historic modules as part of Academy 1
-      if (activeAcadId === "academy-1") {
+      if (activeAcadId === "academy-1" || activeAcadId === "lp-ai") {
         if (ageGroup === "early explorers" && ["t-m1", "t-m2", "t-m3"].includes(m.id)) return true;
         if (ageGroup === "young innovators" && ["j-m1", "j-m2", "j-m3", "j-m4"].includes(m.id)) return true;
         if (ageGroup === "future builders" && ["p-m1", "p-m2", "p-m3", "p-m4"].includes(m.id)) return true;
@@ -125,8 +129,8 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
       else if (idx === 2) icon = "🎨";
       else if (idx >= 3) icon = "🚀";
 
-      // All modules in our curriculum that are defined with active lessons are unlocked and active, but only if they belong to Academy 1 for ages 6-12.
-      const isComingSoonValue = (ageGroup !== "young innovators") || (activeAcadId !== "academy-1") || !m.lessons || m.lessons.length === 0;
+      // Modules with active lessons are unlocked. No age-group or academy hardcoding anymore.
+      const isComingSoonValue = !m.lessons || m.lessons.length === 0;
 
       return {
         id: m.id,
@@ -147,35 +151,39 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
     let titleText = "AI & Emerging Technologies";
     let subTitleText = ageGroup === "young innovators" ? "Flagship Academy (Phase 1 Launch)" : "Phase 1 Preview";
     let academyDesc = "Our premium hands-on cognitive track for curious minds.";
-    let academyStatus = ageGroup === "young innovators" ? "🚀 Rolling Out" : "🌟 Coming Soon";
+    let academyStatus = mappedModules.some(m => !m.comingSoon) ? "🚀 Active" : "🌟 Coming Soon";
 
-    if (activeAcadId === "academy-2") {
-      titleText = "Digital Citizenship & Cybersecurity";
-      subTitleText = "Phase 2 Launch";
-      academyDesc = "Learn screen hygiene, key security, and safe cyber habits.";
-      academyStatus = "🌟 Coming Soon";
-    } else if (activeAcadId === "academy-3") {
-      titleText = "Design & Creation";
-      subTitleText = "Phase 4 Launch";
-      academyDesc = "Unleash creativity through digital drawing, UI/UX mockups, and wireframes.";
-      academyStatus = "🌟 Coming Soon";
-    } else if (activeAcadId === "academy-4") {
-      if (ageGroup === "future builders") {
-        titleText = "Innovation & Career Readiness";
-        subTitleText = "Phase 6 Launch";
-        academyDesc = "Prepare for professional portfolios, team leadership, and entrepreneurship.";
-        academyStatus = "🌟 Coming Soon";
-      } else {
+    // Try to find matching pathway in dynamic DB data
+    const dynamicPathway = dbCourse?.pathways?.find(p => p.id === activeAcadId);
+    if (dynamicPathway) {
+      titleText = dynamicPathway.title;
+      subTitleText = "Learning Pathway";
+      academyDesc = dynamicPathway.description;
+    } else {
+      // Hardcoded fallback data for backwards compatibility
+      if (activeAcadId === "academy-2") {
+        titleText = "Digital Citizenship & Cybersecurity";
+        subTitleText = "Phase 2 Launch";
+        academyDesc = "Learn screen hygiene, key security, and safe cyber habits.";
+      } else if (activeAcadId === "academy-3") {
+        titleText = "Design & Creation";
+        subTitleText = "Phase 4 Launch";
+        academyDesc = "Unleash creativity through digital drawing, UI/UX mockups, and wireframes.";
+      } else if (activeAcadId === "academy-4") {
+        if (ageGroup === "future builders") {
+          titleText = "Innovation & Career Readiness";
+          subTitleText = "Phase 6 Launch";
+          academyDesc = "Prepare for professional portfolios, team leadership, and entrepreneurship.";
+        } else {
+          titleText = "Adaptability & Lifelong Learning";
+          subTitleText = "Continuous Growth Academy";
+          academyDesc = "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.";
+        }
+      } else if (activeAcadId === "academy-5") {
         titleText = "Adaptability & Lifelong Learning";
         subTitleText = "Continuous Growth Academy";
         academyDesc = "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.";
-        academyStatus = "🌟 Coming Soon";
       }
-    } else if (activeAcadId === "academy-5") {
-      titleText = "Adaptability & Lifelong Learning";
-      subTitleText = "Continuous Growth Academy";
-      academyDesc = "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.";
-      academyStatus = "🌟 Coming Soon";
     }
 
     return {

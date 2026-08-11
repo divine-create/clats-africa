@@ -1085,6 +1085,7 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
 
           return {
             id: rm.id,
+            pathwayId: rm.pathway_id,
             name: { en: titleClean, ig: titleClean, yo: titleClean },
             goal: { 
               en: descClean, 
@@ -1117,6 +1118,11 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
           id: ageGroupKey,
           title: currentHeader.title,
           description: currentHeader.desc,
+          pathways: groupPathways.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description
+          })),
           modules: mappedModules
         };
       }

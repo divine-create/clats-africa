@@ -492,6 +492,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [newModuleTitle, setNewModuleTitle] = useState("");
 
   const [newLessonTitle, setNewLessonTitle] = useState("");
+  const [newLessonDescription, setNewLessonDescription] = useState("");
   const [newLessonXP, setNewLessonXP] = useState(120);
   const [newLessonType, setNewLessonType] = useState("Video Lesson");
 
@@ -914,7 +915,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
           id: lessonId,
           module_id: selectedModuleId,
           title: newLessonTitle, 
-          description: `Custom ${newLessonType} curated for system intelligence.`,
+          description: newLessonDescription || `Custom ${newLessonType} curated for system intelligence.`,
           video_url: newLessonVideoUrl || "",
           lesson_order: (curriculumData[selectedAgeGroup]?.lessons?.length || 0) + 1,
           estimated_duration: est,
@@ -925,6 +926,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
       if (data.ok) {
         showToast(editingLessonId ? "Lesson updated!" : `Lesson '${newLessonTitle}' published core!`);
         setNewLessonTitle("");
+        setNewLessonDescription("");
         setNewLessonVideoUrl("");
         setNewLessonDuration("5");
         setEditingLessonId(null);
@@ -941,6 +943,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const handleEditLessonStart = (les: any) => {
     setEditingLessonId(les.id);
     setNewLessonTitle(les.title?.en || les.title);
+    setNewLessonDescription(les.description?.en || les.description || "");
     
     // Explicitly focus the parent module so saving works without manual clicks
     if (les.moduleId || les.module_id) {
@@ -3034,6 +3037,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                             />
                           </div>
                           <div className="space-y-1">
+                            <label className="text-[10px] text-slate-500 block font-mono font-bold uppercase tracking-wider">Lesson Description</label>
+                            <textarea
+                              placeholder="e.g. In this lesson, we will..."
+                              value={newLessonDescription}
+                              onChange={(e) => setNewLessonDescription(e.target.value)}
+                              rows={1}
+                              className={`w-full border rounded-xl p-2 outline-none focus:ring-1 focus:ring-[#14B8A6] focus:border-[#14B8A6] ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-[#E5E7EB] text-slate-800"}`}
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="text-[10px] text-slate-500 block font-mono font-bold uppercase tracking-wider">Lesson Type</label>
                             <select
                               value={newLessonType}
@@ -3083,6 +3096,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                           onClick={() => {
                             setEditingLessonId(null);
                             setNewLessonTitle("");
+                            setNewLessonDescription("");
                             setNewLessonVideoUrl("");
                             setNewLessonDuration("5");
                           }}
@@ -5334,6 +5348,7 @@ ON CONFLICT (email) DO NOTHING;
               onClick={() => {
                 setEditingLessonId(null);
                 setNewLessonTitle("");
+                setNewLessonDescription("");
                 setNewLessonVideoUrl("");
                 setNewLessonDuration("5");
               }}
@@ -5364,6 +5379,7 @@ ON CONFLICT (email) DO NOTHING;
                     onClick={() => {
                       setEditingLessonId(null);
                       setNewLessonTitle("");
+                      setNewLessonDescription("");
                       setNewLessonVideoUrl("");
                       setNewLessonDuration("5");
                     }}
@@ -5386,6 +5402,21 @@ ON CONFLICT (email) DO NOTHING;
                       placeholder="e.g. Intro to Neural Patterns"
                       value={newLessonTitle}
                       onChange={(e) => setNewLessonTitle(e.target.value)}
+                      className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-[#14B8A6] focus:border-[#14B8A6] transition-all font-semibold ${
+                        isDark ? "bg-[#0B0F14] border-[#1F2937] text-white" : "bg-white border-[#E5E7EB] text-[#111827]"
+                      }`}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                      Lesson Description
+                    </label>
+                    <textarea
+                      placeholder="e.g. In this lesson, we will cover..."
+                      value={newLessonDescription}
+                      onChange={(e) => setNewLessonDescription(e.target.value)}
+                      rows={2}
                       className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-[#14B8A6] focus:border-[#14B8A6] transition-all font-semibold ${
                         isDark ? "bg-[#0B0F14] border-[#1F2937] text-white" : "bg-white border-[#E5E7EB] text-[#111827]"
                       }`}
@@ -5446,6 +5477,7 @@ ON CONFLICT (email) DO NOTHING;
                     onClick={() => {
                       setEditingLessonId(null);
                       setNewLessonTitle("");
+                      setNewLessonDescription("");
                       setNewLessonVideoUrl("");
                       setNewLessonDuration("5");
                     }}
