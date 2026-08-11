@@ -35,10 +35,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, code: "ACCOUNT_DELETED", msg: "Parent not found." }, { status: 404 });
     }
 
-    const { data: childrenData } = await sb
+    const { data: childrenData, error: childrenError } = await sb
       .from("clats_children")
       .select("*")
       .eq("parent_email", email.toLowerCase().trim());
+      
+    if (childrenError) {
+      throw new Error(`Failed to fetch children data: ${childrenError.message}`);
+    }
 
     // Map snake_case DB columns back to camelCase for the frontend
     const children = (childrenData || []).map((kid: any) => ({

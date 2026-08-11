@@ -33,10 +33,14 @@ export async function POST(req: NextRequest) {
 
     if (parentMatch) {
       // Fetch children for this parent
-      const { data: childrenData } = await sb
+      const { data: childrenData, error: childrenError } = await sb
         .from("clats_children")
         .select("*")
         .eq("parent_email", normalizedQuery);
+        
+      if (childrenError) {
+        throw new Error(`Failed to fetch children data: ${childrenError.message}`);
+      }
         
       const children = (childrenData || []).map((kid: any) => ({
         id: kid.id,

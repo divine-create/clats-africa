@@ -201,7 +201,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [child.id, parent, blocked]);
+  }, [child?.id, parent?.email, blocked]);
 
   // Warning trigger checks
   useEffect(() => {

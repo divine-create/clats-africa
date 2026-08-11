@@ -26,3 +26,29 @@ export async function GET() {
     return NextResponse.json({ ok: false, msg: err.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key || url.includes("your-project-id")) {
+    return NextResponse.json({ ok: false, msg: "Supabase not configured." });
+  }
+
+  const sb = createClient(url, key, { auth: { persistSession: false } });
+
+  try {
+    const payload = await req.json();
+    
+    // Insert the session tracking data
+    const { error } = await sb.from("learning_sessions").insert([payload]);
+    
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, msg: err.message }, { status: 500 });
+  }
+}

@@ -68,10 +68,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, msg: "Account verified, but profile not found." }, { status: 400 });
     }
 
-    const { data: childrenData } = await sb
+    const { data: childrenData, error: childrenError } = await sb
       .from("clats_children")
       .select("*")
       .eq("parent_email", email.toLowerCase().trim());
+      
+    if (childrenError) {
+      throw new Error(`Failed to fetch children data: ${childrenError.message}`);
+    }
 
     // Map snake_case DB columns back to camelCase for the frontend
     parent.children = (childrenData || []).map((kid: any) => ({

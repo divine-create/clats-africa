@@ -64,10 +64,14 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       // Fetch children just like the regular login route
-      const { data: childrenData } = await sb
+      const { data: childrenData, error: childrenError } = await sb
         .from("clats_children")
         .select("*")
         .eq("parent_email", email.toLowerCase().trim());
+
+      if (childrenError) {
+        throw new Error(`Failed to fetch children data: ${childrenError.message}`);
+      }
 
       const children = (childrenData || []).map((kid: any) => ({
           id: kid.id,
@@ -102,9 +106,7 @@ export async function POST(req: NextRequest) {
     const { error: insertErr } = await sb.from("clats_parents").insert([dbPayload]);
     
     if (insertErr && insertErr.code !== '23505') {
-        console.warn("Failed to insert into clats_parents:", insertErr);
-        // We don't throw here to allow the login to proceed gracefully, 
-        // matching the legacy registration behavior on schema mismatches.
+        throw new Error(`Failed to insert into clats_parents: ${insertErr.message}`);
     }
     
     // Pass extra meta fields back to the client even if not saved in DB

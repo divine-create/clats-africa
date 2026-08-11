@@ -36,10 +36,9 @@ export async function POST(req: NextRequest) {
     if (parentPassword) updatePayload.password = parentPassword;
 
     if (Object.keys(updatePayload).length > 0) {
-      try {
-        await sb.from("clats_parents").update(updatePayload).eq("email", parentEmail.toLowerCase().trim());
-      } catch (e) {
-        console.warn("Failed to update parent row:", e);
+      const { error: parentUpdateErr } = await sb.from("clats_parents").update(updatePayload).eq("email", parentEmail.toLowerCase().trim());
+      if (parentUpdateErr) {
+        throw new Error(`Failed to update parent row: ${parentUpdateErr.message}`);
       }
     }
 
@@ -72,7 +71,7 @@ export async function POST(req: NextRequest) {
           }
         }
         if (childErr) {
-            console.warn("Failed to sync child to clats_children:", childErr);
+            throw new Error(`Failed to sync child to clats_children: ${childErr.message}`);
         }
       }
     }
