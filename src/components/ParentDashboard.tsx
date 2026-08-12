@@ -530,7 +530,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       <div className="bg-[#2EC4B6] text-white px-6 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm font-sans">
         <div className="flex items-center gap-3">
           <p className="text-sm font-bold tracking-tight m-0">
-            {t.badgeText} <span className="font-normal opacity-90 block sm:inline sm:ml-2">| Direct portal tracking optimized for low-bandwidth environments.</span>
+            {t.badgeText}
           </p>
         </div>
         <a
