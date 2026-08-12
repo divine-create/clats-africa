@@ -177,7 +177,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
       }
 
       const newChild: any = {
-        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Date.now().toString().padStart(12, '0'),
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Date.now().toString().slice(-12),
         name: name.trim(),
         username: username.trim().toLowerCase().replace(/\s+/g, '_'),
         ageGroup,
