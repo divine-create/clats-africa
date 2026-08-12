@@ -40,7 +40,7 @@ interface SettingsScreenProps {
 // ----------------------------------------------------
 interface ChildSetupScreenProps {
   parentEmail: string;
-  onDone: (childName?: string) => void;
+  onDone: (childName?: string, newChild?: any) => void;
   lang: Language;
   onBack?: () => void;
   theme?: "light" | "dark";
@@ -196,11 +196,12 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         // 1. Update local storage parent data first to ensure instant UI response
         try {
           const parents = S.getParents();
-          if (parents[safeEmail]) {
-            if (!parents[safeEmail].children) parents[safeEmail].children = [];
-            parents[safeEmail].children.push(newChild);
-            S.setParents(parents);
+          if (!parents[safeEmail]) {
+            parents[safeEmail] = { email: safeEmail, name: "Parent", children: [] };
           }
+          if (!parents[safeEmail].children) parents[safeEmail].children = [];
+          parents[safeEmail].children.push(newChild);
+          S.setParents(parents);
         } catch (e) {
           console.error("Failed to update local parents cache:", e);
         }
@@ -220,7 +221,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         }
       }
 
-      onDone(name.trim());
+      onDone(name.trim(), newChild);
     }
   };
 
@@ -722,7 +723,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setTimeout(() => setSavedOk(false), 2000);
   };
 
-  const handleEnrollDone = (newChildName?: string) => {
+  const handleEnrollDone = (newChildName?: string, newChildObj?: any) => {
     if (newChildName) {
       setEnrollSuccessString(newChildName);
     } else {
@@ -733,9 +734,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     try {
       const safeEmail = (parent.email || "").toLowerCase().trim();
       const freshParents = S.getParents();
+      
+      let updatedParent = parent;
       if (freshParents[safeEmail]) {
-        onParentRefresh(freshParents[safeEmail]);
+        updatedParent = freshParents[safeEmail];
+      } else if (newChildObj) {
+        updatedParent = {
+          ...parent,
+          children: [...(parent.children || []), newChildObj]
+        };
       }
+      onParentRefresh(updatedParent);
     } catch (e) {
       console.error("Failed to refresh parent state after enrollment", e);
     }
