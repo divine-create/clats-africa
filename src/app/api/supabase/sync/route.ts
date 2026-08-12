@@ -62,16 +62,42 @@ export async function POST(req: NextRequest) {
           child_tutorial_completed: kid.child_tutorial_completed
         };
 
-        let { error: childErr } = await sb.from("clats_children").upsert([kidPayload], { onConflict: "id" });
-        if (childErr) {
-          // If username column does not exist in backend database schema cache, retry without it
-          if (childErr.message && childErr.message.includes("username")) {
-            console.warn("Retrying child sync without username column...");
-            const { username, ...fallbackPayload } = kidPayload;
-            const { error: retryErr } = await sb.from("clats_children").upsert([fallbackPayload], { onConflict: "id" });
-            childErr = retryErr;
+        let payloadToSync = kidPayload;
+        let retryCount = 0;
+        let childErr: any = null;
+
+        while (retryCount < 3) {
+          const { error } = await sb.from("clats_children").upsert([payloadToSync], { onConflict: "id" });
+          if (!error) {
+            childErr = null;
+            break; // Success
           }
+          childErr = error;
+          
+          // PostgREST missing column error usually looks like:
+          // "Could not find the 'column_name' column of 'table_name' in the schema cache"
+          if (childErr.message && childErr.message.includes("Could not find the")) {
+             const match = childErr.message.match(/'([^']+)' column/);
+             if (match && match[1]) {
+                const missingCol = match[1];
+                console.warn(`Column '${missingCol}' missing in clats_children. Retrying without it...`);
+                delete payloadToSync[missingCol];
+                retryCount++;
+                continue;
+             }
+          }
+          
+          // Legacy generic check for username just in case
+          if (childErr.message && childErr.message.includes("username") && payloadToSync.username !== undefined) {
+             console.warn("Retrying child sync without username column...");
+             delete payloadToSync.username;
+             retryCount++;
+             continue;
+          }
+          
+          break; // Unknown error, give up
         }
+
         if (childErr) {
             throw new Error(`Failed to sync child to clats_children: ${childErr.message}`);
         }
