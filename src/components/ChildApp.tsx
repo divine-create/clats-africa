@@ -420,8 +420,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           onClick={handleToggleNarration}
           style={{
             position: "absolute",
-            top: 22,
-            right: "17%",
+            top: 24,
+            right: 88,
             background: isDark ? "#1e293b" : "#ffffff",
             border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
             borderRadius: "50px",
@@ -447,8 +447,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         title="Toggle Theme style"
         style={{
           position: "absolute",
-          top: 12,
-          right: "8%",
+          top: 16,
+          right: 24,
           fontSize: 52,
           cursor: onToggleTheme ? "pointer" : "default",
           zIndex: 999,
