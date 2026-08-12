@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Child, Lesson, Language, QuizQuestion } from "../types";
 import { C, F, AGE_META } from "../utils/config";
 import { Heading, Txt, Chip } from "./Primitives";
@@ -49,6 +49,19 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   
   // ALL MVP lessons of designated pathways are active and playable!
   const isPlayable = true;
+  const videoRef = useRef<HTMLIFrameElement>(null);
+
+  const handleFullScreen = () => {
+    if (videoRef.current) {
+      if (videoRef.current.requestFullscreen) {
+        videoRef.current.requestFullscreen();
+      } else if ((videoRef.current as any).webkitRequestFullscreen) {
+        (videoRef.current as any).webkitRequestFullscreen();
+      } else if ((videoRef.current as any).msRequestFullscreen) {
+        (videoRef.current as any).msRequestFullscreen();
+      }
+    }
+  };
 
   // Active steps in the lesson progression
   const [learningStep, setLearningStep] = useState<"video" | "quiz" | "reward">("video");
@@ -615,6 +628,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                 ) : (
                   <iframe
+                    ref={videoRef}
                     src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&iv_load_policy=3`}
                     width="100%"
                     height="100%"
@@ -633,7 +647,19 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     <Txt size={16} weight={900} color="#0f172a">{currentVideoData.title}</Txt>
                     <Txt size={13} color="#64748b" style={{ display: "block" }}>⏱️ {currentVideoData.duration} Video Lecture</Txt>
                   </div>
-                  <Chip color={C.teal} bg="rgba(46,196,182,0.1)">HD CC</Chip>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <button
+                      onClick={handleFullScreen}
+                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                      title="Full Screen"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                      </svg>
+                      FULL SCREEN
+                    </button>
+                    <Chip color={C.teal} bg="rgba(46,196,182,0.1)">HD CC</Chip>
+                  </div>
                 </div>
               </>
             ) : (

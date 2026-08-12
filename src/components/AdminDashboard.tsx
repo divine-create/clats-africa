@@ -97,6 +97,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [activeTab, setActiveTab] = useState<TabType>(initialTab as TabType || "overview");
   const [toast, setToast] = useState<string | null>(null);
 
+  const [adminUser, setAdminUser] = useState<{ email: string; name: string; role: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("clats_admin_user");
+      return stored ? JSON.parse(stored) : null;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (isAuthenticated && !adminUser) {
+      const savedEmail = localStorage.getItem("clats_admin_email") || "admin@clats.com";
+      const fallbackUser = { email: savedEmail, name: "System Administrator", role: currentRole };
+      setAdminUser(fallbackUser);
+      localStorage.setItem("clats_admin_user", JSON.stringify(fallbackUser));
+    }
+  }, [isAuthenticated, adminUser, currentRole]);
+
   useEffect(() => {
     if (initialTab && initialTab !== activeTab) {
       setActiveTab(initialTab as TabType);
@@ -1124,7 +1141,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
       if (data.ok) {
         setIsAuthenticated(true);
         setCurrentRole(data.admin?.role || "Super Admin");
+        const userObj = data.admin || { email: adminEmail, name: "System Administrator", role: data.admin?.role || "Super Admin" };
+        setAdminUser(userObj);
         localStorage.setItem("clats_admin_authenticated", "true");
+        localStorage.setItem("clats_admin_user", JSON.stringify(userObj));
         if (rememberMe) {
           localStorage.setItem("clats_admin_remember", "true");
           localStorage.setItem("clats_admin_email", adminEmail);
@@ -1519,11 +1539,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
           isDark ? "border-[#1F2937]" : "border-[#E5E7EB]"
         }`}>
           <div className="h-9 w-9 rounded-full bg-[#14B8A6]/10 border border-[#14B8A6]/30 flex items-center justify-center font-black text-[#14B8A6] text-sm flex-shrink-0">
-            OA
+            {adminUser?.name ? adminUser.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "SA"}
           </div>
           <div className="flex-1 min-w-0">
             <h4 className={`text-xs font-black truncate m-0 ${isDark ? "text-white" : "text-[#111827]"}`}>
-              Onyiobazi Aquah
+              {adminUser?.name || "System Administrator"}
             </h4>
             <span className="text-[9px] text-[#14B8A6] font-mono block leading-tight font-bold">
               Super Admin / CTO
@@ -1707,7 +1727,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                   O
                 </div>
                 <div className="hidden lg:block">
-                  <h4 className="text-[11px] font-black m-0 leading-tight">Onyiobazi Aquah</h4>
+                  <h4 className="text-[11px] font-black m-0 leading-tight">{adminUser?.name || "System Administrator"}</h4>
                   <span className="text-[9px] font-mono text-[#14B8A6] font-bold block">{currentRole}</span>
                 </div>
                 <ChevronDown size={14} className="text-slate-400" />
@@ -1722,16 +1742,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                   }`}>
                     {/* Header info */}
                     <div className="border-b border-slate-700/10 pb-2 mb-2 px-2">
-                      <p className="text-xs font-black">Onyiobazi Aquah</p>
+                      <p className="text-xs font-black">{adminUser?.name || "System Administrator"}</p>
                       <p className="text-[10px] text-slate-400 font-mono mt-0.5">{currentRole}</p>
                     </div>
 
                     {/* Standard List parameters */}
                     <div className="space-y-0.5">
                       {[
-                        { label: "Profile", icon: Users, action: () => showToast("Admin Profile: onyiobazi.aquah@clats.io") },
+                        { label: "Profile", icon: Users, action: () => showToast(`Admin Profile: ${adminUser?.email || "admin@clats.com"}`) },
                         { label: "Settings", icon: Settings, action: () => { setActiveTab("settings"); setShowProfileDropdown(false); } },
-                        { label: "Notifications", icon: Bell, action: () => showToast("Metric anomaly alerts: None") },
+                        { label: "Notifications", icon: Bell, action: () => showToast("No active system notifications or anomaly alerts.") },
                         { label: "Security", icon: Shield, action: () => { setActiveTab("settings"); showToast("Strict RBAC encryption settings active."); setShowProfileDropdown(false); } }
                       ].map((item, id) => (
                         <button
@@ -5547,6 +5567,8 @@ ON CONFLICT (email) DO NOTHING;
                 onClick={() => {
                   setIsAuthenticated(false);
                   localStorage.removeItem("clats_admin_authenticated");
+                  localStorage.removeItem("clats_admin_user");
+                  setAdminUser(null);
                   setShowLogoutConfirm(false);
                   showToast("Session disconnected.");
                   onBackToPortal();
