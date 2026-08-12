@@ -98,6 +98,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const children = parent.children || [];
   const [selChild, setSelChild] = useState<Child | null>(children[0] || null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [activePathwayTab, setActivePathwayTab] = useState<string>("ai");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [manualSyncing, setManualSyncing] = useState(false);
@@ -127,7 +129,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         }
       })
       .catch(err => console.error("Error fetching community events:", err));
-  }, []);
+
+    // Fetch Notifications
+    if (parent?.id) {
+      fetch(`/api/supabase/notifications?parent_id=${parent.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.ok && data.data) {
+            setNotifications(data.data);
+            setUnreadCount(data.data.filter((n: any) => !n.is_read).length);
+          }
+        })
+        .catch(err => console.error("Error fetching notifications:", err));
+    }
+  }, [parent?.id]);
 
   useEffect(() => {
     if (!child?.id) {
@@ -499,64 +514,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   };
 
   // Dynamic notifications structure based on child's data
-  const notificationsList = [];
-  
-  if (child) {
-    if (completedLessonsList.length > 0) {
-      const lastCompleted = completedLessonsList[completedLessonsList.length - 1];
-      notificationsList.push({
-        id: 1,
-        title: "Lesson Completed! 🎉",
-        desc: `${child.name} successfully finished "${lastCompleted.title}".`,
-        time: "Recently",
-        icon: "🏅",
-        badgeColor: "bg-teal-50 text-teal-600"
-      });
-    }
-    
-    if (quizResultsList.length > 0) {
-      const lastQuiz = quizResultsList[quizResultsList.length - 1];
-      notificationsList.push({
-        id: 2,
-        title: "Quiz Result 🎯",
-        desc: `${child.name} scored ${lastQuiz.score}% on their latest quiz!`,
-        time: "Recently",
-        icon: lastQuiz.score >= 80 ? "⭐" : "💡",
-        badgeColor: "bg-amber-50 text-amber-600"
-      });
-    }
-    
-    if (streakDays >= 3) {
-      notificationsList.push({
-        id: 3,
-        title: "Study Streak! 🔥",
-        desc: `${child.name} is on a ${streakDays}-day learning streak!`,
-        time: "Active",
-        icon: "🔥",
-        badgeColor: "bg-purple-50 text-purple-600"
-      });
-    }
-    
-    if (notificationsList.length === 0) {
-      notificationsList.push({
-        id: 4,
-        title: "Welcome to CLATS",
-        desc: `${child.name} is ready to start their future-tech journey. Launch the portal to begin!`,
-        time: "Now",
-        icon: "🚀",
-        badgeColor: "bg-blue-50 text-blue-600"
-      });
-    }
-  } else {
-    notificationsList.push({
-      id: 0,
-      title: "No Child Profiles",
-      desc: "Enroll a child to start tracking their progress and receiving updates.",
-      time: "Now",
-      icon: "👋",
-      badgeColor: "bg-slate-50 text-slate-600"
-    });
-  }
+  // Now falling back to DB notifications or a default empty state
+  const notificationsList = notifications.length > 0 ? notifications : [{
+    id: 0,
+    title: "No Notifications",
+    message: "You're all caught up! Child activity will appear here.",
+    time: "Now",
+    icon: "👍"
+  }];
 
   return (
     <div className={`min-h-screen transition-colors duration-300 font-sans ${isDark ? "bg-[#0F172A] text-white" : "bg-[#FFFFFF] text-[#111111]"}`}>
@@ -601,14 +566,15 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             <div className="relative">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`p-2.5 rounded-xl border transition-all ${
-                  isDark ? "border-slate-800 bg-slate-900 hover:bg-slate-850 text-slate-300" : "border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700"
+                className={`relative p-3 rounded-2xl border transition-all ${
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-100 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
+                aria-label="View notifications"
               >
-                <div className="relative">
-                  <Bell size={22} />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                </div>
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-3 w-2 h-2 rounded-full bg-[#FF4C4C] border-2 border-white shadow-sm" />
+                )}
               </button>
 
               {showNotifications && (
@@ -617,16 +583,55 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 }`}>
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-base font-black uppercase tracking-wider text-slate-500">Notifications</h4>
-                    <button onClick={() => setShowNotifications(false)} className="text-base font-bold text-[#2EC4B6] hover:underline">Close</button>
+                    <div className="flex gap-3">
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={() => {
+                            fetch('/api/supabase/notifications', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ parent_id: parent?.id, mark_all: true })
+                            }).then(() => {
+                              setUnreadCount(0);
+                              setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+                            });
+                          }}
+                          className="text-xs font-bold text-slate-400 hover:text-slate-600"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button onClick={() => setShowNotifications(false)} className="text-base font-bold text-[#2EC4B6] hover:underline">Close</button>
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    {notificationsList.map((notif) => (
-                      <div key={notif.id} className={`p-3 rounded-xl border flex gap-2.5 ${isDark ? "bg-slate-950 border-slate-850" : "bg-slate-50 border-slate-100"}`}>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                    {notificationsList.map((notif: any) => (
+                      <div 
+                        key={notif.id} 
+                        className={`p-3 rounded-xl border flex gap-2.5 ${notif.is_read ? (isDark ? "bg-slate-900 border-slate-800 opacity-70" : "bg-slate-50 border-slate-200 opacity-70") : (isDark ? "bg-slate-950 border-[#2EC4B6]/30" : "bg-teal-50/30 border-teal-100")}`}
+                        onClick={() => {
+                          if (!notif.is_read && notif.id !== 0) {
+                            fetch('/api/supabase/notifications', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ notification_id: notif.id })
+                            }).then(() => {
+                              setUnreadCount(Math.max(0, unreadCount - 1));
+                              setNotifications(notifications.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+                            });
+                          }
+                        }}
+                      >
                         <span className="text-lg">{notif.icon}</span>
                         <div>
-                          <p className="text-base font-black m-0 leading-tight">{notif.title}</p>
-                          <p className="text-sm text-slate-500 mt-1 leading-snug">{notif.desc}</p>
-                          <span className="text-xs text-slate-400 font-mono block mt-1">{notif.time}</span>
+                          <p className="text-base font-black m-0 leading-tight flex items-center gap-2">
+                            {notif.title}
+                            {!notif.is_read && notif.id !== 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C4C]"></span>}
+                          </p>
+                          <p className="text-sm text-slate-500 mt-1 leading-snug">{notif.message || notif.desc}</p>
+                          <span className="text-xs text-slate-400 font-mono block mt-1">
+                            {notif.created_at ? new Date(notif.created_at).toLocaleDateString() : notif.time}
+                          </span>
                         </div>
                       </div>
                     ))}

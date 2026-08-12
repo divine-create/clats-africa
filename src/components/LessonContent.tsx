@@ -973,43 +973,45 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         {learningStep === "reward" && (() => {
           const countCorrect = correctAnswersList.filter(Boolean).length;
           const pctScore = Math.round((countCorrect / activeQuiz.length) * 100);
-          const earnsBadge = pctScore >= 50;
+          
+          // Rule: +10 XP for normal lessons, +20 XP for module challenges
+          const isModuleChallenge = lesson?.title?.en?.toLowerCase().includes("challenge");
+          const xpGained = isModuleChallenge ? 20 : 10;
+          
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 18, textAlign: "center" }}>
               <div
                 className="playful-card"
                 style={{
-                  background: earnsBadge ? "#f0fdfa" : "#fff1f2",
-                  borderColor: earnsBadge ? "#2EC4B6" : "#f43f5e",
-                  borderBottom: `8px solid ${earnsBadge ? "#208a80" : "#be123c"}`,
+                  background: "#f0fdfa",
+                  borderColor: "#2EC4B6",
+                  borderBottom: `8px solid #208a80`,
                   borderRadius: 32,
                   padding: "40px 24px"
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  <KobeAvatar size={100} character={companion} ageGroup={child.ageGroup} expression={earnsBadge ? "celebrating" : "thinking"} />
+                  <KobeAvatar size={100} character={companion} ageGroup={child.ageGroup} expression={"celebrating"} />
                 </div>
 
                 <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
-                  <Chip color={earnsBadge ? "#c084fc" : "#f43f5e"} bg={earnsBadge ? "rgba(192, 132, 252, 0.15)" : "rgba(244, 63, 94, 0.15)"}>
-                    {earnsBadge ? "🏆 LEVEL REWARDS UNLOCKED" : "🔄 NEEDS REVIEW"}
+                  <Chip color={"#c084fc"} bg={"rgba(192, 132, 252, 0.15)"}>
+                    {isModuleChallenge ? "🏆 MODULE COMPLETE!" : "🌟 LESSON COMPLETE!"}
                   </Chip>
                 </div>
 
                 <Heading size={32} color="#0f172a" style={{ marginBottom: 12 }}>
-                  {pctScore >= 80 ? "Superb Study Master! 🎓" : pctScore >= 50 ? "Lesson Passed! 🌟" : "Keep Re-studying! 🔄"}
+                  You earned +{xpGained} XP
                 </Heading>
 
                 <Txt size={16.5} color="#334155" style={{ display: "block", marginBottom: 24, lineHeight: 1.5, fontWeight: 700 }}>
-                  {earnsBadge 
-                    ? "You successfully resolved the lesson quizzes, earned awesome XP coins, and unlocked your study milestones!"
-                    : "You scored below 50%. Please take the lesson again and re-take the quiz so you can move on to the next lesson!"}
+                  Great job! You checked your knowledge and earned XP. You can now advance to the next step in your learning journey!
                 </Txt>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
                   <div style={{ background: "#ffffff", border: "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
                     <Txt size={11} color="#64748b" style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>XP Earned</Txt>
-                    <Txt size={22} weight={950} color="#10b981">+{pctScore >= 80 ? 50 : 35} XP</Txt>
+                    <Txt size={22} weight={950} color="#10b981">+{xpGained} XP</Txt>
                   </div>
 
                   <div style={{ background: "#ffffff", border: "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
@@ -1018,7 +1020,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                 </div>
 
-                {earnsBadge && (
+                {true && (
                   <div
                     style={{
                       background: "#ffffff",
@@ -1058,7 +1060,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       setQuizSelectedOption(null);
                       setQuizFeedback("");
                       setQuizIsAnswered(false);
-                      if (true) {}
                     }}
                     style={{
                       width: "100%",
@@ -1072,38 +1073,36 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       cursor: "pointer"
                     }}
                   >
-                    PLAY NEXT LESSON QUEST →
+                    CONTINUE TO NEXT LESSON →
                   </button>
                 )}
-                {!earnsBadge && (
-                  <button
-                    onClick={() => {
-                      sfx.playTap();
-                      setLearningStep("video");
-                      setCurrentSlideIndex(0);
-                      setSelectedTools([]);
-                      setToolFeedback("");
-                      setCurrentQuizIndex(0);
-                      setQuizSelectedOption(null);
-                      setQuizFeedback("");
-                      setQuizIsAnswered(false);
-                      setCorrectAnswersList([]);
-                    }}
-                    style={{
-                      width: "100%",
-                      background: `linear-gradient(135deg, #f43f5e, #be123c)`,
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: 20,
-                      padding: "16px 24px",
-                      fontSize: 18,
-                      fontWeight: 950,
-                      cursor: "pointer"
-                    }}
-                  >
-                    RETRY LESSON 🔄
-                  </button>
-                )}
+                
+                <button
+                  onClick={() => {
+                    sfx.playTap();
+                    setLearningStep("quiz");
+                    setCurrentQuizIndex(0);
+                    setQuizSelectedOption(null);
+                    setQuizFeedback("");
+                    setQuizIsAnswered(false);
+                    setCorrectAnswersList([]);
+                  }}
+                  style={{
+                    width: "100%",
+                    background: `transparent`,
+                    color: "#0f172a",
+                    border: "2px solid #cbd5e1",
+                    borderRadius: 20,
+                    padding: "16px 24px",
+                    fontSize: 16,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    marginTop: 8,
+                    marginBottom: 8
+                  }}
+                >
+                  RETRY QUIZ 🔄
+                </button>
 
                 <button
                   onClick={onClose}
