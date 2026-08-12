@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { C, F } from '@/utils/config';
+import { C, F, S } from '@/utils/config';
 import { SettingsScreen } from '@/components/Settings';
 
 function LoadingScreen() {
@@ -41,7 +41,11 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!parent) {
-      router.push('/auth/login');
+      const sess = S.getSess();
+      if (!sess?.email) {
+        router.push('/auth/login');
+      }
+      return;
     }
   }, [parent, router]);
 

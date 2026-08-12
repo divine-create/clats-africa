@@ -3,7 +3,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { C, F, syncToSupabase } from '@/utils/config';
+import { C, F, syncToSupabase, S } from '@/utils/config';
 import { TutorialTour } from '@/components/TourOverlay';
 
 const ParentDashboard = lazy(() =>
@@ -56,7 +56,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!parent) {
-      router.push('/auth/login');
+      const sess = S.getSess();
+      if (!sess?.email) {
+        router.push('/auth/login');
+      }
       return;
     }
     if (parent.isB2B) {
