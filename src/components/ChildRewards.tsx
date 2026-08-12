@@ -94,11 +94,13 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   // Companion celebration notification
   const [speechBubble] = useState<{ mascot: "kobe" | "chibi"; message: string }>(() => {
-    const messages = [
-      { mascot: "kobe" as const, message: "You're becoming a future-tech explorer! Keep up the brilliant logic work!" },
-      { mascot: "chibi" as const, message: "Keep learning to unlock more rewards, awesome certificates, and beautiful badges!" }
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
+    const isKobe = child.companion !== "chibi";
+    return {
+      mascot: isKobe ? "kobe" : "chibi",
+      message: isKobe 
+        ? "You're becoming a future-ready explorer! Keep up the brilliant logic work!" 
+        : "Keep learning to unlock more rewards, awesome certificates, and beautiful badges!"
+    };
   });
 
   // 3. Dynamic Progress Arithmetic
@@ -1278,29 +1280,6 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                   </span>
                 </div>
               </div>
-            </div>
-
-            {/* FAMILY SYNC INFO */}
-            <div 
-              style={{
-                background: "linear-gradient(135deg, rgba(46,196,182,0.06), rgba(184,160,255,0.06))",
-                border: "1.5px solid rgba(46,196,182,0.2)",
-                borderRadius: 24,
-                padding: "18px 16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 18 }}>👪</span>
-                <Txt size={13} weight={900} color="#2EC4B6" style={{ textTransform: "uppercase", letterSpacing: 1.2 }}>
-                  Parent Portal Sync
-                </Txt>
-              </div>
-              <Txt size={12} color={isDark ? "#b4c6e7" : "#475569"} style={{ lineHeight: 1.4 }}>
-                All collected credentials, XP progress, and active streaks instantly sync with your family portal! Parents can view and verify certificates here in real-time.
-              </Txt>
             </div>
 
           </div>

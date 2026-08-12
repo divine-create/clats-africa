@@ -536,11 +536,11 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-end" }}>
             <div style={{ position: "relative", background: isDark ? "#1e293b" : "#ffffff", border: "1.5px solid #e2e8f0", padding: "6px 12px", borderRadius: 12 }}>
               <Txt size={11.5} color={isDark ? "#cbd5e1" : "#334155"} weight={700}>
-                Chibi says: <strong>"Let's earn more XP together!"</strong> ✨
+                {companionName} says: <strong>"Let's earn more XP together!"</strong> ✨
               </Txt>
             </div>
             <div style={{ flexShrink: 0, width: 34, height: 34, borderRadius: "50%", background: "#ffffff22", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <MascotImage character="chibi" height={32} />
+              <MascotImage character={child.companion === "chibi" ? "chibi" : "kobe"} height={32} />
             </div>
           </div>
         </div>

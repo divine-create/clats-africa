@@ -362,15 +362,15 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const getMascotChat = () => {
     if (child.ageGroup === "early explorers") {
       return {
-        mascot: "kobe" as const,
-        title: "KOBE CHIRP",
+        mascot: (child.companion || "kobe") as "kobe" | "chibi",
+        title: child.companion === "kobe" ? "KOBE CHIRP" : "CHIBI CHIRP",
         quote: "You have sticker album collections! Do more tasks to get fun stickers! 🦈"
       };
     }
     if (child.ageGroup === "future builders") {
       return {
-        mascot: "chibi" as const,
-        title: "CHIBI PILOT",
+        mascot: (child.companion || "kobe") as "kobe" | "chibi",
+        title: child.companion === "kobe" ? "KOBE CHIRP" : "CHIBI PILOT",
         quote: "Looking professional! Your certificate portfolio is growing. Practice cybersecurity logic to dominate future roles!"
       };
     }
