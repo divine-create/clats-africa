@@ -614,7 +614,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                 ) : (
                   <iframe
-                    src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1`}
+                    src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&iv_load_policy=3`}
                     width="100%"
                     height="100%"
                     style={{ position: "absolute", top: 0, left: 0, border: "none" }}
