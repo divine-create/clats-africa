@@ -56,7 +56,6 @@ export default function ChildAppPage() {
     const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
     if (!localStorage.getItem(tourKey) && activeChild.child_tutorial_completed !== true) {
       setShowChildTour(true);
-      localStorage.setItem(tourKey, 'true');
     }
   }, [activeChild, router]);
 

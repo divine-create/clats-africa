@@ -3,7 +3,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { C, F } from '@/utils/config';
+import { C, F, syncToSupabase } from '@/utils/config';
 import { TutorialTour } from '@/components/TourOverlay';
 
 const ParentDashboard = lazy(() =>
@@ -69,7 +69,6 @@ export default function DashboardPage() {
     const welcomed = localStorage.getItem('clats_welcomed');
     if (!welcomed && parent.tutorial_completed !== true) {
       setShowWelcome(true);
-      localStorage.setItem('clats_welcomed', 'true');
     }
   }, [parent, router]);
 
@@ -97,10 +96,12 @@ export default function DashboardPage() {
   const handleWelcomeSkip = () => {
     setShowWelcome(false);
     localStorage.setItem('tutorialSkipped', 'true');
+    localStorage.setItem('clats_welcomed', 'true');
     
     if (parent) {
       const updatedParent = { ...parent, tutorial_completed: true };
       setParent(updatedParent);
+      syncToSupabase(updatedParent, true);
     }
   };
 
@@ -130,10 +131,25 @@ export default function DashboardPage() {
         {showTour && (
           <TutorialTour
             role="parent"
-            onComplete={() => setShowTour(false)}
+            onComplete={() => {
+              setShowTour(false);
+              localStorage.setItem('hasCompletedParentTutorial', 'true');
+              localStorage.setItem('clats_welcomed', 'true');
+              if (parent) {
+                const updatedParent = { ...parent, tutorial_completed: true };
+                setParent(updatedParent);
+                syncToSupabase(updatedParent, true);
+              }
+            }}
             onSkip={() => {
               setShowTour(false);
               localStorage.setItem('tutorialSkipped', 'true');
+              localStorage.setItem('clats_welcomed', 'true');
+              if (parent) {
+                const updatedParent = { ...parent, tutorial_completed: true };
+                setParent(updatedParent);
+                syncToSupabase(updatedParent, true);
+              }
             }}
           />
         )}

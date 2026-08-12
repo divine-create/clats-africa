@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     const updatePayload: any = {};
     if (parentName) updatePayload.name = parentName;
     if (parentPassword) updatePayload.password = parentPassword;
+    if (tutorial_completed !== undefined) updatePayload.tutorial_completed = tutorial_completed;
 
     if (Object.keys(updatePayload).length > 0) {
       const { error: parentUpdateErr } = await sb.from("clats_parents").update(updatePayload).eq("email", parentEmail.toLowerCase().trim());
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
           stars: kid.stars || {},
           quiz_results: kid.quizResults || kid.quiz_results || {},
           companion: kid.companion || "kobe",
+          child_tutorial_completed: kid.child_tutorial_completed
         };
 
         let { error: childErr } = await sb.from("clats_children").upsert([kidPayload], { onConflict: "id" });
