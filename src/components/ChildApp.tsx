@@ -430,7 +430,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             alignItems: "center",
             gap: "6px",
             cursor: "pointer",
-            zIndex: 10,
+            zIndex: 999,
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
             transition: "all 0.2s"
           }}
@@ -451,7 +451,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           right: "8%",
           fontSize: 52,
           cursor: onToggleTheme ? "pointer" : "default",
-          zIndex: 10,
+          zIndex: 999,
           userSelect: "none",
           transition: "transform 0.2s"
         }}

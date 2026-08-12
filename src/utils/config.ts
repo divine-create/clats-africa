@@ -91,7 +91,7 @@ export const T: Record<Language, Record<string, string>> = {
     submitFeedback: "Submit Feedback",
     testingBanner: "🎉 Thank you for helping test CLATS!",
     testingShare: "Share Feedback",
-    testingDesc: "Your feedback is helping us build Africa's future-tech learning platform for children.",
+    testingDesc: "Your feedback is helping us build the future-ready learning platform for children.",
     weeklyAverage: "Weekly Average",
     remaining: "Remaining",
     usedToday: "Used Today",
@@ -539,7 +539,7 @@ export const AGE_META = {
     soft: C.tealGhost,
     kobeStyle: [
       "friendly, energetic, extremely clear,",
-      "uses relatable Nigerian or African references (e.g. Lagos traffic, puff-puff, chin-chin),",
+      "uses relatable local references,",
       "explains machine learning or cyber safety step-by-step with zero jargon,",
       "highly positive, interactive, under 4 sentences."
     ].join(" ")
@@ -909,7 +909,7 @@ export async function detectAndStoreLocation(parentEmail: string) {
   let country = "Nigeria";
   let region = "Cross River";
   let city = "Calabar";
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Lagos";
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   try {
     const ipRes = await fetch("https://ipapi.co/json/");

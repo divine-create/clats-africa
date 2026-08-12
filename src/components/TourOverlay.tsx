@@ -91,7 +91,7 @@ const PARENT_STEPS: TourStep[] = [
   {
     targetSelector: "#tour-feedback-button",
     title: "Direct Feedback Forum",
-    message: "As an early CLATS family, your feedback helps us improve the platform for children across Africa.",
+    message: "As an early CLATS family, your feedback helps us improve the platform for children.",
     character: "kobe",
     role: "parent",
   },

@@ -268,7 +268,7 @@ export default function PricingPage() {
             <div className="w-6 h-6 rounded bg-[#2EC4B6] flex items-center justify-center font-bold text-[10px]">C</div>
             <span className="font-black tracking-widest">CLATS</span>
           </div>
-          <p>© {new Date().getFullYear()} CLATS Africa. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} CLATS. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>

@@ -3,9 +3,9 @@ import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 
 export const metadata: Metadata = {
-  title: "CLATS – Coding & Learning for African Tech Students",
+  title: "CLATS – Coding & Learning for Tech Students",
   description:
-    "CLATS is an interactive coding and learning platform for African children, with parent dashboards, child progress tracking, and gamified learning modules.",
+    "CLATS is an interactive coding and learning platform for children, with parent dashboards, child progress tracking, and gamified learning modules.",
   appleWebApp: {
     capable: true,
     title: "CLATS",

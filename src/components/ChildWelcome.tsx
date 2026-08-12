@@ -236,8 +236,8 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
         <Chip color="#0284c7" bg="rgba(2, 132, 199, 0.1)" style={{ fontWeight: 800, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
           CLATS CURRICULUM ARCHITECTURE
         </Chip>
-        <Heading size={32} className="text-theme-sensitive font-black tracking-tight" style={{ fontWeight: 900 }}>
-          Future-Tech Learning Academies
+        <Heading size={32} className="text-theme-sensitive font-black tracking-tight not-italic" style={{ fontWeight: 900 }}>
+          Future-Ready Skills Academies
         </Heading>
       </div>
 

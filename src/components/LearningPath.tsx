@@ -138,7 +138,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
         }
       }
 
-      // Play audio from Supabase bucket or West African voice synthesis
+      // Play audio from Supabase bucket or voice synthesis
       companionVoice.speak(textToSpeak, child.companion || "kobe", child.ageGroup, false);
     } catch (e) {
       console.warn("Speech synthesis error or blocked:", e);

@@ -315,7 +315,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const handleShareDiploma = (name: string) => {
     if (soundEnabled) sfx.playTap();
     try {
-      navigator.clipboard.writeText(`🎉 Proud parents announcement! My child just completed their CLATS Future-Tech curriculum module and earned the "${name}"! Check out Africa's leading kid-tech app. 🚀🎓`);
+      navigator.clipboard.writeText(`🎉 Proud parents announcement! My child just completed their CLATS Future-Ready curriculum module and earned the "${name}"! Check out the leading kid-tech app. 🚀🎓`);
       setShareFeedback("📋 Achievement message copied! Ready to share via WhatsApp, Twitter or SMS.");
     } catch {
       setShareFeedback("📋 Message copied!");

@@ -78,7 +78,7 @@ export function useLearningTimeTracker(sessionData: SessionData | null) {
   const isPausedRef = useRef(false);
 
   // Device Info and Timezone
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Lagos";
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   // Reset idle timer
   const resetIdleTimer = () => {

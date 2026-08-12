@@ -184,7 +184,7 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
         yo: "Mọ́dù 2: AI ní Ayé Gidi"
       },
       goal: {
-        en: "Explore AI inside phones, school games, transportation, and African innovations.",
+        en: "Explore AI inside phones, school games, transportation, and innovations.",
         ig: "Mụta ka AI si arụ ọrụ na ekwentị, egwuregwu, na ụgbọala gburugburu Afrika.",
         yo: "Wo bí a ṣe ń lo AI nínú foonu, ìṣeré, ilé-ìwé àti gidi Ilẹ̀ Afrika."
       },
@@ -196,7 +196,7 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
         "AI in Healthcare",
         "AI in Transportation",
         "AI in Shopping",
-        "AI in Africa"
+        "AI Innovations"
       ]
     },
     {

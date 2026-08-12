@@ -39,6 +39,7 @@ export default function ChildAppPage() {
     setActiveChild,
     dbConnected,
     isSyncing,
+    setTheme,
   } = useApp();
   const isDark = theme === 'dark';
 
@@ -133,6 +134,7 @@ export default function ChildAppPage() {
           parent={parent}
           lang={lang}
           theme={theme}
+          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onUpdateChild={handleChildUpdate}
           onExit={handleExit}
         />

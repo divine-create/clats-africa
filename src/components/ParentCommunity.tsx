@@ -142,7 +142,7 @@ export const ParentCommunity: React.FC<ParentCommunityProps> = ({ onBack, lang, 
     },
     {
       id: "connect",
-      text: "Connect with other tech-conscious CLATS families across Africa."
+      text: "Connect with other tech-conscious CLATS families."
     }
   ];
 

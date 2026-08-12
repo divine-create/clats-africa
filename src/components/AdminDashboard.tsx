@@ -332,7 +332,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
       customActions: ["Create school accounts", "Manage teachers", "Unify classrooms", "Bulk import students", "Track school performance", "Generate school reports", "Monitor classroom analytics", "Manage school licenses"]
     },
     "Government Partner Viewer": {
-      description: "Analyze West African SDG and regional completion dossier files.",
+      description: "Analyze SDG and regional completion dossier files.",
       visibleTabs: ["overview", "government", "reports"],
       customActions: ["View regional metrics", "View state-level analytics", "View completion statistics", "View SDG metrics", "Download reports", "Generate impact reports", "Export PDFs", "View CSR performance"]
     },
@@ -1620,7 +1620,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
             <span>CLATS OS</span>
             <span className="text-[#14B8A6]">ACTIVE SECURE</span>
           </div>
-          <span className="block mt-1 text-[8px] uppercase tracking-wider text-slate-400">West African Orchestration</span>
+          <span className="block mt-1 text-[8px] uppercase tracking-wider text-slate-400">Regional Orchestration</span>
         </div>
       </aside>
 
@@ -1860,7 +1860,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                       <div>
                         <span className="text-[9px] text-slate-400 font-bold uppercase font-mono block">Operator Charter & Scope</span>
                         <p className={`text-xs ${textSecondary} leading-relaxed m-0 mt-1`}>
-                          Authority level delegated to reset learner profile credentials, override parent passwords dynamically, and handle West African regional support tickets.
+                          Authority level delegated to reset learner profile credentials, override parent passwords dynamically, and handle regional support tickets.
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-1">
@@ -1990,7 +1990,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                       CLATS Administration Center
                     </h2>
                     <p className="text-[11px] font-mono font-semibold text-[#14B8A6] uppercase tracking-widest mt-0.5">
-                      Africa-First AI Education OS
+                      Global-First AI Education OS
                     </p>
                     
                     {/* Live metadata badges */}
@@ -3426,7 +3426,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     Merit Credential Frame Blueprint Explorer
                   </h4>
                   <p className={`text-xs ${textSecondary} leading-relaxed`}>
-                    CLATS automatically awards West Africa cryptographic merit hashes upon finishing paths. Admin can review templates below.
+                    CLATS automatically awards cryptographic merit hashes upon finishing paths. Admin can review templates below.
                   </p>
 
                   <div className={`p-5 rounded-2xl border border-dashed border-[#14B8A6]/50 space-y-3 font-sans relative ${
@@ -3443,7 +3443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     </p>
                     <div className={`flex justify-between border-t pt-2 text-[8px] font-mono ${isDark ? "border-slate-700/50 text-slate-400" : "border-[#E5E7EB] text-[#6B7280]"}`}>
                       <span>KEY: SECURE_ID_SHA256</span>
-                      <span>DIRECTORS: CLATS AFRICA CO</span>
+                      <span>DIRECTORS: CLATS CO</span>
                     </div>
                   </div>
                 </div>
@@ -3524,7 +3524,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     </span>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Gender Voice Profile:</span>
-                      <span className="font-bold">{selectedCompanion === "kobe" ? "West African Male" : "West African Female"}</span>
+                      <span className="font-bold">{selectedCompanion === "kobe" ? "Male" : "Female"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Accompany Role:</span>
@@ -3587,7 +3587,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         className={`w-full border rounded p-1.5 outline-none ${isDark ? "bg-slate-950 text-white border-slate-800" : "bg-slate-100 text-slate-800 border-slate-200"}`}
                       >
                         <option value="Google Cloud Neural Voices (High Parity)">Google Cloud Neural (High Parity)</option>
-                        <option value="AWS West Africa Child Voiceover Map">AWS West Africa Child Mapper</option>
+                        <option value="AWS Regional Child Voiceover Map">AWS Regional Child Mapper</option>
                         <option value="Local HTML5 Fallback Synthesis">Local HTML5 Fallback</option>
                       </select>
                     </div>
@@ -3948,7 +3948,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     📦 Operational Media and Voice Asset Library Workspace
                   </h3>
                   <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
-                    Central repository storing West African voice clips, videos, PDFs and sheets.
+                    Central repository storing voice clips, videos, PDFs and sheets.
                   </p>
                 </div>
 
@@ -4346,7 +4346,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                   <div>
                     <h4 className={`text-xs font-black m-0 ${textPrimary}`}>UNESCO SDG Index</h4>
                     <p className="text-sm font-bold font-mono text-amber-500 mt-1">Goal 4 Quality Education Map</p>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">West Africa offline literacy</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Offline literacy</span>
                   </div>
                 </div>
 

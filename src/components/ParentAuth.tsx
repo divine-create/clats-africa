@@ -153,7 +153,7 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
         : "/api/supabase/auth/register";
 
       const { browser, device } = getDeviceInfo();
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Lagos";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
       const authRes = await fetch(endpoint, {
         method: "POST",
