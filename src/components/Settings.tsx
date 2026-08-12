@@ -121,7 +121,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         setErr("Please enter the child's name.");
         return;
       }
-      const cleanUsername = username.trim().toLowerCase();
+      const cleanUsername = username.trim().toLowerCase().replace(/\s+/g, '_');
       if (!cleanUsername) {
         setErr("Please enter a username.");
         return;
@@ -179,7 +179,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
       const newChild: any = {
         id: Date.now().toString(),
         name: name.trim(),
-        username: username.trim().toLowerCase(),
+        username: username.trim().toLowerCase().replace(/\s+/g, '_'),
         ageGroup,
         avatar,
         pin,
@@ -737,7 +737,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       
       let updatedParent = parent;
       if (freshParents[safeEmail]) {
-        updatedParent = freshParents[safeEmail];
+        updatedParent = {
+          ...parent,
+          children: freshParents[safeEmail].children || []
+        };
       } else if (newChildObj) {
         updatedParent = {
           ...parent,
