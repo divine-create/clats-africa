@@ -25,6 +25,8 @@ export default function GlobalError({
         </h2>
         <p className="text-slate-500 mb-6 text-sm">
           A critical error occurred while trying to render this page.
+          <br /><br />
+          <strong>Error Details:</strong> {error.message}
         </p>
         <button
           onClick={() => reset()}

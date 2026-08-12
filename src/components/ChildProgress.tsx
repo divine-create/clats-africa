@@ -59,7 +59,10 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 }) => {
   // Theme state
   const [isDark, setIsDark] = useState(() => {
-    return theme === "dark" || document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark";
+    if (typeof window !== "undefined") {
+      return theme === "dark" || document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark";
+    }
+    return theme === "dark";
   });
 
   const [sessions, setSessions] = useState<any[]>([]);

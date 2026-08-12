@@ -18,6 +18,7 @@ import {
 import { CURRICULUM } from "../data/curriculum";
 import { KobeAvatar } from "./KobeAvatar";
 import { calculateStudyAnalytics } from "../utils/timeTracker";
+import { supabase } from "../utils/supabaseClient";
 import { CLATSLogo } from "./CLATSLogo";
 import {
   Sun,
@@ -130,7 +131,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       })
       .catch(err => console.error("Error fetching community events:", err));
 
-    // Fetch Notifications
+    // Fetch Notifications & Initialize Real-Time Sync
     if (parent?.id) {
       fetch(`/api/supabase/notifications?parent_id=${parent.id}`)
         .then(res => res.json())
@@ -141,6 +142,36 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           }
         })
         .catch(err => console.error("Error fetching notifications:", err));
+
+      // Listen for real-time notification updates from Supabase
+      const channel = supabase
+        .channel('realtime-notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `parent_id=eq.${parent.id}` },
+          (payload) => {
+            const newNotif = payload.new;
+            setNotifications((prev) => [newNotif, ...prev]);
+            setUnreadCount((prev) => prev + 1);
+            
+            // Trigger in-app toast for real-time engagement
+            setToastMsg(`New Notification: ${newNotif.title}`);
+            setTimeout(() => setToastMsg(null), 4000);
+            
+            // Subtle sound alert if possible
+            try {
+              const audio = new Audio('/sfx/achievement.mp3');
+              audio.volume = 0.4;
+              audio.play().catch(() => {});
+            } catch (e) {}
+          }
+        )
+        .subscribe();
+
+      // Cleanup listener on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [parent?.id]);
 
@@ -573,7 +604,9 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2.5 right-3 w-2 h-2 rounded-full bg-[#FF4C4C] border-2 border-white shadow-sm" />
+                  <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-[#FF4C4C] text-[10.5px] font-bold text-white shadow-sm border-2 border-white dark:border-slate-800 z-10">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
                 )}
               </button>
 
