@@ -557,22 +557,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   return (
     <div className={`min-h-screen transition-colors duration-300 font-sans ${isDark ? "bg-[#0F172A] text-white" : "bg-[#FFFFFF] text-[#111111]"}`}>
       
-      {/* GLOBAL PILOT ANNOUNCEMENT BANNER */}
-      <div className="bg-[#2EC4B6] text-white px-6 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm font-sans">
-        <div className="flex items-center gap-3">
-          <p className="text-sm font-bold tracking-tight m-0">
-            {t.badgeText}
-          </p>
-        </div>
-        <a
-          href={feedbackFormUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-white text-[#111111] hover:bg-slate-100 px-4 py-1 rounded-lg text-xs font-bold transition-all shadow-sm"
-        >
-          {t.feedbackBtn}
-        </a>
-      </div>
 
       {/* STICKY MAIN HEADER NAV PANEL */}
       <header id="tour-parent-header" className={`sticky top-0 z-40 transition-colors duration-200 border-b px-6 py-4 ${
@@ -694,9 +678,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         }`}>
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-[#2EC4B6]/10 text-[#2EC4B6]">
-                {t.badgeText}
-              </span>
+
               <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight m-0">
                 Welcome Back, {parent.name || "Family"}
               </h2>
@@ -866,99 +848,57 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                 {/* VISUAL ROADMAP LISTING */}
                 <div id="tour-pathway-progress" className="space-y-4 relative before:absolute before:top-4 before:bottom-4 before:left-7 before:w-1 before:bg-slate-400/20">
-                  
-                  {/* Item 1: Active Highlighted */}
-                  <div className={`relative p-4.5 rounded-xl border flex items-center gap-4 transition-all ${
-                    isDark ? "bg-[#2EC4B6]/10 border-[#2EC4B6]/30 text-white" : "bg-teal-50/70 border-[#2EC4B6]/40 text-slate-950"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-[#2EC4B6] text-white flex items-center justify-center font-black text-2xl z-10 shadow-md shadow-teal-500/20">
-                      🤖
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-black tracking-tight uppercase leading-none m-0">Artificial Intelligence</h4>
-                      <p className="text-base text-teal-600 mt-1.5 font-bold m-0 font-mono">Phase 1 - Active Focus</p>
-                    </div>
-                    <span className="px-2.5 py-1 bg-[#2EC4B6]/20 text-[#2EC4B6] rounded text-xs font-black uppercase font-mono">Current Pathway</span>
-                  </div>
+                  {course?.modules.map((mod, idx) => {
+                    const isCompleted = mod.lessons.every(l => completedLessonIds.includes(l.id));
+                    const prevCompleted = idx === 0 || course.modules[idx - 1].lessons.every(l => completedLessonIds.includes(l.id));
+                    const isActive = !isCompleted && prevCompleted;
+                    const moduleName = mod.name[lang as keyof typeof mod.name] || mod.name.en;
 
-                  {/* Item 2: Digital Literacy */}
-                  <div className={`relative p-4 rounded-xl border flex items-center gap-4 ${
-                    isDark ? "bg-slate-950/40 border-slate-850 text-slate-400" : "bg-slate-50 border-slate-200/60 text-slate-600"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-black text-2xl z-10">
-                      🌐
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold leading-none m-0">Digital Literacy</h4>
-                      <p className="text-sm text-[#FFD166] mt-1.5 font-bold m-0 font-mono">Coming Soon</p>
-                    </div>
-                  </div>
-
-                  {/* Item 3: Cybersecurity */}
-                  <div className={`relative p-4 rounded-xl border flex items-center gap-4 ${
-                    isDark ? "bg-slate-950/40 border-slate-850 text-slate-400" : "bg-slate-50 border-slate-200/60 text-slate-600"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-black text-2xl z-10">
-                      🔒
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold leading-none m-0">Cybersecurity</h4>
-                      <p className="text-sm text-[#FFD166] mt-1.5 font-bold m-0 font-mono">Coming Soon</p>
-                    </div>
-                  </div>
-
-                  {/* Item 4: Blockchain & Web3 */}
-                  <div className={`p-4 rounded-xl border flex items-center gap-4 ${
-                    isDark ? "bg-slate-950/20 border-slate-850/60 opacity-60 text-slate-500" : "bg-slate-50 border-slate-100 opacity-70 text-slate-500"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-black text-2xl">
-                      ⛓
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-medium leading-none m-0">Blockchain & Web3</h4>
-                      <p className="text-sm text-slate-400 mt-1.5 font-bold m-0 font-mono">Future Rollout</p>
-                    </div>
-                  </div>
-
-                  {/* Item 5: Design & Creativity */}
-                  <div className={`p-4 rounded-xl border flex items-center gap-4 ${
-                    isDark ? "bg-slate-950/20 border-slate-850/60 opacity-60 text-slate-500" : "bg-slate-50 border-slate-100 opacity-70 text-slate-500"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-black text-2xl">
-                      🎨
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-medium leading-none m-0">Design & Creativity</h4>
-                      <p className="text-sm text-slate-400 mt-1.5 font-bold m-0 font-mono">Future Rollout</p>
-                    </div>
-                  </div>
-
-                  {/* Item 6: DevOps */}
-                  <div className={`p-4 rounded-xl border flex items-center gap-4 ${
-                    isDark ? "bg-slate-950/20 border-slate-850/60 opacity-60 text-slate-500" : "bg-slate-50 border-slate-100 opacity-70 text-slate-500"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-black text-2xl">
-                      ⚙
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-medium leading-none m-0">DevOps</h4>
-                      <p className="text-sm text-slate-400 mt-1.5 font-bold m-0 font-mono">Future Rollout</p>
-                    </div>
-                  </div>
-
-                  {/* Item 7: Career Readiness */}
-                  <div className={`p-4 rounded-xl border flex items-center gap-4 ${
-                    isDark ? "bg-slate-950/20 border-slate-850/60 opacity-60 text-slate-500" : "bg-slate-50 border-slate-100 opacity-70 text-slate-500"
-                  }`}>
-                    <div className="h-14 w-14 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-black text-2xl">
-                      🚀
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-medium leading-none m-0">Career Readiness</h4>
-                      <p className="text-sm text-slate-400 mt-1.5 font-bold m-0 font-mono">Future Rollout</p>
-                    </div>
-                  </div>
-
+                    if (isActive) {
+                      return (
+                        <div key={mod.id} className={`relative p-4.5 rounded-xl border flex items-center gap-4 transition-all ${
+                          isDark ? "bg-[#2EC4B6]/10 border-[#2EC4B6]/30 text-white" : "bg-teal-50/70 border-[#2EC4B6]/40 text-slate-950"
+                        }`}>
+                          <div className="h-14 w-14 rounded-full bg-[#2EC4B6] text-white flex items-center justify-center font-black text-2xl z-10 shadow-md shadow-teal-500/20">
+                            {mod.badge.icon}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-black tracking-tight leading-tight m-0">{moduleName}</h4>
+                            <p className="text-base text-teal-600 mt-1.5 font-bold m-0 font-mono">Active Focus</p>
+                          </div>
+                          <span className="px-2.5 py-1 bg-[#2EC4B6]/20 text-[#2EC4B6] rounded text-xs font-black uppercase font-mono hidden sm:inline-block">Current Module</span>
+                        </div>
+                      );
+                    } else if (isCompleted) {
+                      return (
+                        <div key={mod.id} className={`relative p-4 rounded-xl border flex items-center gap-4 ${
+                          isDark ? "bg-[#B8A0FF]/10 border-[#B8A0FF]/30 text-white" : "bg-purple-50/70 border-[#B8A0FF]/40 text-slate-900"
+                        }`}>
+                          <div className="h-14 w-14 rounded-full bg-[#B8A0FF] text-white flex items-center justify-center font-black text-xl z-10 shadow-md">
+                            ✅
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-bold leading-tight m-0 opacity-80 line-through decoration-2 decoration-[#B8A0FF]">{moduleName}</h4>
+                            <p className="text-sm text-[#B8A0FF] mt-1.5 font-bold m-0 font-mono">Completed</p>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={mod.id} className={`relative p-4 rounded-xl border flex items-center gap-4 ${
+                          isDark ? "bg-slate-950/40 border-slate-850 text-slate-400" : "bg-slate-50 border-slate-200/60 text-slate-600"
+                        }`}>
+                          <div className="h-14 w-14 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-black text-2xl z-10 opacity-50">
+                            {mod.badge.icon}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-bold leading-tight m-0 opacity-60">{moduleName}</h4>
+                            <p className="text-sm text-[#FFD166] mt-1.5 font-bold m-0 font-mono">Coming Soon</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                  })}
                 </div>
               </div>
 
@@ -1295,39 +1235,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         )}
 
 
-        {/* DUAL CARD ROW: CURRICULUM UPDATES LEVEL & BADGES */}
+        {/* ACHIEVEMENTS GRID CARDS */}
         {!isState1 && (
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
-            
-            {/* 1. CURRICULUM STATUS CARD */}
-            <div className={`p-6 rounded-2xl border shadow-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-              <h3 className="text-base font-extrabold uppercase tracking-wider mt-0 mb-4 font-mono text-[#FFD166]">{t.updatesTitle}</h3>
-              
-              <div className="space-y-3">
-                {[
-                  { name: "Artificial Intelligence", status: "🟢 Rolling Out" },
-                  { name: "Digital Literacy", status: "🟡 In Production" },
-                  { name: "Cybersecurity", status: "🟡 In Production" },
-                  { name: "Blockchain & Web3", status: "⚪ Planned" },
-                  { name: "Design & Creativity", status: "⚪ Planned" },
-                  { name: "DevOps", status: "⚪ Planned" },
-                  { name: "Career Readiness", status: "⚪ Planned" }
-                ].map((item, idx) => (
-                  <div key={idx} className={`p-2.5 rounded-xl border flex justify-between items-center text-xs ${
-                    isDark ? "bg-slate-950/40 border-slate-850" : "bg-slate-50 border-slate-100"
-                  }`}>
-                    <span className="font-bold">{item.name}</span>
-                    <span className="font-mono font-black text-[10px]">{item.status}</span>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-[11px] text-slate-400 mt-4 m-0 italic">
-                New lessons are added regularly as CLATS expands its curriculum.
-              </p>
-            </div>
-
-            {/* 2. MODERN ACHIEVEMENTS GRID CARDS */}
+          <section className="grid grid-cols-1 gap-8 animate-fade-in">
+            {/* MODERN ACHIEVEMENTS GRID CARDS */}
             <div className={`p-6 rounded-2xl border shadow-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
               <h3 className="text-base font-extrabold uppercase tracking-wider mt-0 mb-4 font-mono text-[#B8A0FF]">{t.achievementsTitle}</h3>
               
@@ -1508,55 +1419,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             </div>
           </div>
 
-          {/* COLUMN 2: MULTI-CHILD ANALYTICS MATRIX */}
-          {!isState1 && children.length > 1 && (
-            <div className={`p-6 rounded-2xl border shadow-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-              <h3 className="text-base font-extrabold uppercase mt-0 mb-4 tracking-wider font-mono text-[#2EC4B6]">{t.multiFamilyTitle}</h3>
-              
-              <div className="space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead>
-                      <tr className={`border-b ${isDark ? "border-slate-850 text-slate-400" : "border-slate-200 text-slate-500"}`}>
-                        <th className="pb-2 font-mono uppercase tracking-wide">Child</th>
-                        <th className="pb-2 font-mono uppercase tracking-wide">Pathway</th>
-                        <th className="pb-2 font-mono uppercase tracking-wide">XP</th>
-                        <th className="pb-2 font-mono uppercase tracking-wide">Milestones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-400/10">
-                      {children.map((childItem) => {
-                        const childXp = childItem.xp || 0;
-                        const childCourse = CURRICULUM[childItem.ageGroup];
-                        const totalLessonsCount = childCourse ? childCourse.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : 10;
-                        const childPct = totalLessonsCount > 0 ? Math.round((Object.keys(childItem.completed || {}).length / totalLessonsCount) * 100) : 0;
-                        const courseTitle = childCourse ? (childCourse.title[lang] || childCourse.title.en) : "AI Discovery";
-
-                        return (
-                          <tr key={childItem.id} className="hover:bg-slate-400/5 transition-colors">
-                            <td className="py-3 font-bold flex items-center gap-2">
-                              <span>{childItem.avatar}</span>
-                              <span>{childItem.name}</span>
-                            </td>
-                            <td className="py-3">{courseTitle}</td>
-                            <td className="py-3 font-mono font-bold text-[#2EC4B6]">{childXp} XP</td>
-                            <td className="py-3 font-mono font-extrabold text-[#B8A0FF]">{childPct}%</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                <button
-                  onClick={() => showToast("Relative statistics comparison profile view generated successfully!")}
-                  className="w-full py-2.5 rounded-xl bg-[#2EC4B6]/15 hover:bg-[#2EC4B6]/25 border border-[#2EC4B6]/30 text-[#2EC4B6] text-xs font-black tracking-wider uppercase transition-colors"
-                >
-                  {t.compareBtn}
-                </button>
-              </div>
-            </div>
-          )}
 
         </section>
 

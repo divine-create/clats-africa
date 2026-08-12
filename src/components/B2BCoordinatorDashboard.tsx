@@ -54,13 +54,24 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   const fetchStats = async () => {
     const orgId = localStorage.getItem("cl_b2b_org_id");
     if (!orgId) {
-      setB2bOrg({ id: "mock", name: "Demo School District", region: "Test Region", b2b_license_keys: [{ code: "CLATS-DEMO-2026", max_uses: 100, current_uses: 4 }] });
-      setB2bStudents([
-        { id: "1", student_id: "0001", name: "Alice K.", xp: 450, lessonsDone: 12, status: "Excelling" },
-        { id: "2", student_id: "0002", name: "Brian M.", xp: 320, lessonsDone: 8, status: "Active" },
-        { id: "3", student_id: "0003", name: "Chidi O.", xp: 120, lessonsDone: 3, status: "Needs Support" },
-        { id: "4", student_id: "0004", name: "Fatima S.", xp: 600, lessonsDone: 15, status: "Excelling" },
-      ]);
+      const isDemo = typeof window !== "undefined" && (window.location.search.includes("demo=true") || window.location.hostname === "localhost");
+      if (isDemo) {
+        setB2bOrg({ 
+          id: "mock", 
+          name: "Demo School District (Local Preview)", 
+          region: "Test Region", 
+          b2b_license_keys: [{ code: "DEMO-LICENSE-KEY", max_uses: 100, current_uses: 4 }] 
+        });
+        setB2bStudents([
+          { id: "1", student_id: "0001", name: "Alice K.", xp: 450, lessonsDone: 12, status: "Excelling" },
+          { id: "2", student_id: "0002", name: "Brian M.", xp: 320, lessonsDone: 8, status: "Active" },
+          { id: "3", student_id: "0003", name: "Chidi O.", xp: 120, lessonsDone: 3, status: "Needs Support" },
+          { id: "4", student_id: "0004", name: "Fatima S.", xp: 600, lessonsDone: 15, status: "Excelling" },
+        ]);
+        setLoading(false);
+        return;
+      }
+      setError("No active B2B session found. Please log in as a coordinator.");
       setLoading(false);
       return;
     }
@@ -171,7 +182,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     setAddError("");
 
     const orgId = localStorage.getItem("cl_b2b_org_id");
-    const schoolCode = b2bOrg?.b2b_license_keys?.[0]?.code || "CLATS-DEMO-2026";
+    const schoolCode = b2bOrg?.b2b_license_keys?.[0]?.code || "No Active Code";
 
     // Auto-generate next sequential 4-digit student ID
     const existingIds = b2bStudents.map(s => parseInt(s.student_id || "0", 10));
