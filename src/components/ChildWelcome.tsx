@@ -120,7 +120,7 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
     // Fallback if DB is empty or offline
     activePathways.push({
       id: "academy-1",
-      title: "Academy 1: AI & Emerging Technologies",
+      title: "AI & Emerging Technologies",
       desc: "Learn how artificial intelligence works, how technology evolved, how machines learn, and how future technologies are shaping tomorrow.",
       icon: <Sparkles className="w-6 h-6 text-amber-500" />,
       emoji: "💡",
@@ -128,7 +128,7 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
     });
     previewPathways.push({
       id: "academy-2",
-      title: "Academy 2: Digital Citizenship & Cybersecurity",
+      title: "Digital Citizenship & Cybersecurity",
       desc: "Build digital confidence, internet safety awareness, responsible technology habits, and cybersecurity skills.",
       icon: <Shield className="w-6 h-6 text-red-500" />,
       emoji: "🔒",

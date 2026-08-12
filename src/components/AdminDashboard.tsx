@@ -1799,9 +1799,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               </span>
               <div className="flex bg-slate-200 dark:bg-slate-950 p-1 rounded-xl">
                 {[
-                  { id: "early", label: "🐣 Early Explorers (Ages 2-5)", color: "text-emerald-500" },
-                  { id: "young", label: "🤖 Young Innovators (Ages 6-12)", color: "text-[#2EC4B6]" },
-                  { id: "future", label: "🚀 Future Builders (Ages 13-18)", color: "text-[#B8A0FF]" }
+                  { id: "early", label: "🐣 Early Explorers", color: "text-emerald-500" },
+                  { id: "young", label: "🤖 Young Innovators", color: "text-[#2EC4B6]" },
+                  { id: "future", label: "🚀 Future Builders", color: "text-[#B8A0FF]" }
                 ].map((g) => {
                   const active = selectedAgeGroup === g.id;
                   return (
@@ -2485,9 +2485,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
                 <div className="space-y-4">
                   {[
-                    { label: "🐣 Early Explorers (Ages 2–5)", count: learners.filter(l => l.ageGroup === 'early').length, color: "bg-emerald-500" },
-                    { label: "🤖 Young Innovators (Ages 6–12)", count: learners.filter(l => l.ageGroup === 'young').length, color: "bg-[#2EC4B6]" },
-                    { label: "🚀 Future Builders (Ages 13–18)", count: learners.filter(l => l.ageGroup === 'future').length, color: "bg-[#B8A0FF]" }
+                    { label: "🐣 Early Explorers", count: learners.filter(l => l.ageGroup === 'early').length, color: "bg-emerald-500" },
+                    { label: "🤖 Young Innovators", count: learners.filter(l => l.ageGroup === 'young').length, color: "bg-[#2EC4B6]" },
+                    { label: "🚀 Future Builders", count: learners.filter(l => l.ageGroup === 'future').length, color: "bg-[#B8A0FF]" }
                   ].map((group, ui) => {
                     const pct = learners.length ? Math.round((group.count / learners.length) * 100) : 0;
                     return (
@@ -2759,7 +2759,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               <div className="p-4 bg-[#2EC4B6]/10 border border-[#2EC4B6]/25 rounded-2xl text-xs flex items-center gap-3">
                 <Shield size={16} className="text-[#2EC4B6] shrink-0" />
                 <p className="m-0 leading-relaxed text-[#2EC4B6] font-bold">
-                  Curriculum Modification Desk (authoritative database mode). Actions triggered here update Supabase learning tracks for <strong>{selectedAgeGroup === "early" ? "Early Explorers (2-5)" : selectedAgeGroup === "young" ? "Young Innovators (6-12)" : "Future Builders (13-18)"}</strong> instantly.
+                  Curriculum Modification Desk (authoritative database mode). Actions triggered here update Supabase learning tracks for <strong>{selectedAgeGroup === "early" ? "Early Explorers" : selectedAgeGroup === "young" ? "Young Innovators" : "Future Builders"}</strong> instantly.
                 </p>
               </div>
 

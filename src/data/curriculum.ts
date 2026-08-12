@@ -1101,15 +1101,15 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
         // Course standard metadata headers
         const courseHeaders: Record<AgeGroup, { title: any; desc: any }> = {
           "early explorers": {
-            title: { en: "Early Explorers Track (Ages 2–5)", ig: "Ugo mfe nke Ndị Nchọpụta (Afọ 2–5)", yo: "Ọ̀nà Àbẹ̀rẹ̀ fún Olùṣàwárí (Ọjọ́ orí 2–5)" },
+            title: { en: "Early Explorers Track", ig: "Ugo mfe nke Ndị Nchọpụta", yo: "Ọ̀nà Àbẹ̀rẹ̀ fún Olùṣàwárí" },
             desc: { en: "Curiosity-driven learning, digital familiarity, and pattern play.", ig: "Mmụta mfe, ịma ama teknụzụ, na igwu egwu nke usoro.", yo: "Ẹ̀kọ́ orí ìfẹ́-ìmọ̀, mímọ ẹ̀rọ, àti ìṣeré tàbìlì dídára." }
           },
           "young innovators": {
-            title: { en: "Young Innovators Track (Ages 6–12)", ig: "Ugo Ndị Ntorobịa Na-emepụta Ihe (Afọ 6–12)", yo: "Ọ̀nà Àkànṣe fún Alákọ̀wé Títun (Ọjọ́ orí 6–12)" },
+            title: { en: "Young Innovators Track", ig: "Ugo Ndị Ntorobịa Na-emepụta Ihe", yo: "Ọ̀nà Àkànṣe fún Alákọ̀wé Títun" },
             desc: { en: "Foundational AI literacy, safe internet habits, and Basic Tech Literacy.", ig: "Ihe ọmụma zuru oke banyere AI, omume nchekwa na koodu mmalite.", yo: "Mímọ fúndàmẹ́ńtálì AI, ìbálò rọrùn àti ìmọ̀ kọ́dù tí ó rọrùn." }
           },
           "future builders": {
-            title: { en: "Future Builders Track (Ages 13–18)", ig: "Ugo Ndị Na-ewu Ọdịnihu (Afọ 13–18)", yo: "Ọ̀nà Àkànṣe fún Ọ̀dọ́mọbìnrin Olùkọ́-ẹ̀rọ (Ọjọ́ orí 13–18)" },
+            title: { en: "Future Builders Track", ig: "Ugo Ndị Na-ewu Ọdịnihu", yo: "Ọ̀nà Àkànṣe fún Ọ̀dọ́mọbìnrin Olùkọ́-ẹ̀rọ" },
             desc: { en: "Career-oriented learning: AI, Web3, full coding algos, UI/UX, and capstones.", ig: "Mmụta gbasara ọrụ: AI, Web3, koodu zuru oke, UI/UX, na capstone.", yo: "Ẹ̀kọ́ iṣẹ́-ọwọ́ títun: AI gíga, Web3, kọ́dù alámì, àti iṣẹ́ agbábọ́ọ̀lù." }
           }
         };
@@ -1138,9 +1138,9 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
   const courseHeaders: Record<AgeGroup, { title: any; desc: any }> = {
     "early explorers": {
       title: {
-        en: "Early Explorers Track (Ages 2–5)",
-        ig: "Ugo mfe nke Ndị Nchọpụta (Afọ 2–5)",
-        yo: "Ọ̀nà Àbẹ̀rẹ̀ fún Olùṣàwárí (Ọjọ́ orí 2–5)"
+        en: "Early Explorers Track",
+        ig: "Ugo mfe nke Ndị Nchọpụta",
+        yo: "Ọ̀nà Àbẹ̀rẹ̀ fún Olùṣàwárí"
       },
       desc: {
         en: "Curiosity-driven learning, digital familiarity, and pattern play.",
@@ -1150,9 +1150,9 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
     },
     "young innovators": {
       title: {
-        en: "Young Innovators Track (Ages 6–12)",
-        ig: "Ugo Ndị Ntorobịa Na-emepụta Ihe (Afọ 6–12)",
-        yo: "Ọ̀nà Àkànṣe fún Alákọ̀wé Títun (Ọjọ́ orí 6–12)"
+        en: "Young Innovators Track",
+        ig: "Ugo Ndị Ntorobịa Na-emepụta Ihe",
+        yo: "Ọ̀nà Àkànṣe fún Alákọ̀wé Títun"
       },
       desc: {
         en: "Foundational AI literacy, safe internet habits, and Basic Tech Literacy.",
@@ -1162,9 +1162,9 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
     },
     "future builders": {
       title: {
-        en: "Future Builders Track (Ages 13–18)",
-        ig: "Ugo Ndị Na-ewu Ọdịnihu (Afọ 13–18)",
-        yo: "Ọ̀nà Àkànṣe fún Ọ̀dọ́mọbìnrin Olùkọ́-ẹ̀rọ (Ọjọ́ orí 13–18)"
+        en: "Future Builders Track",
+        ig: "Ugo Ndị Na-ewu Ọdịnihu",
+        yo: "Ọ̀nà Àkànṣe fún Ọ̀dọ́mọbìnrin Olùkọ́-ẹ̀rọ"
       },
       desc: {
         en: "Career-oriented learning: AI, Web3, full coding algos, UI/UX, and capstones.",

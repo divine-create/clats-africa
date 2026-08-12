@@ -755,7 +755,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       <div className="space-y-0.5">
                         <h4 className="text-base font-bold tracking-tight m-0">{c.name}</h4>
                         <span className="text-[10px] font-semibold text-slate-500 font-bold block uppercase">
-                          {AGE_LABEL[c.ageGroup]} (Ages {AGE_AGES[c.ageGroup]})
+                          {AGE_LABEL[c.ageGroup]}
                         </span>
                       </div>
                     </div>

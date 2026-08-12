@@ -364,17 +364,17 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
                 </span>
                 {ageGroup === "early explorers" && (
                   <span className={`border font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full ${isDark ? "bg-amber-950/40 text-amber-300 border-amber-900" : "bg-amber-100 text-amber-800 border-amber-200"}`}>
-                    Ages 2-5
+                    Early Explorers
                   </span>
                 )}
                 {ageGroup === "young innovators" && (
                   <span className={`border font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full ${isDark ? "bg-cyan-950/40 text-[#2EC4B6] border-[#2EC4B6]/30" : "bg-[#2EC4B6]/20 text-[#0f5454] border-[#2EC4B6]/30"}`}>
-                    Ages 6-12
+                    Young Innovators
                   </span>
                 )}
                 {ageGroup === "future builders" && (
                   <span className={`border font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full ${isDark ? "bg-purple-950/40 text-[#B8A0FF] border-[#B8A0FF]/30" : "bg-[#B8A0FF]/25 text-[#4e2b8c] border-[#B8A0FF]/30"}`}>
-                    Ages 13-18
+                    Future Builders
                   </span>
                 )}
               </div>

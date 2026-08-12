@@ -68,9 +68,9 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
   const [err, setErr] = useState("");
 
   const ageGroups = [
-    { key: "early explorers" as const, label: "Early Explorers", sub: "Ages 2–5", color: C.amber, icon: "🌱" },
-    { key: "young innovators" as const, label: "Young Innovators", sub: "Ages 6–12", color: C.teal, icon: "⚡" },
-    { key: "future builders" as const, label: "Future Builders", sub: "Ages 13–18", color: C.lavender, icon: "🚀" }
+    { key: "early explorers" as const, label: "Early Explorers", sub: "Stage 1", color: C.amber, icon: "🌱" },
+    { key: "young innovators" as const, label: "Young Innovators", sub: "Stage 2", color: C.teal, icon: "⚡" },
+    { key: "future builders" as const, label: "Future Builders", sub: "Stage 3", color: C.lavender, icon: "🚀" }
   ];
 
   // Tailor interests based on the selected AgeGroup!

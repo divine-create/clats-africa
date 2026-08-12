@@ -482,17 +482,17 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                     <span className="scale-95">
                       {child.ageGroup === "early explorers" && (
                         <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-black border border-amber-200">
-                          🌈 Early Explorer (Ages 2-5)
+                          🌈 Early Explorer
                         </span>
                       )}
                       {child.ageGroup === "young innovators" && (
                         <span className="bg-cyan-100 text-cyan-800 text-xs px-2.5 py-1 rounded-full font-black border border-cyan-200">
-                          🚀 Young Innovator (Ages 6-12)
+                          🚀 Young Innovator
                         </span>
                       )}
                       {child.ageGroup === "future builders" && (
                         <span className="bg-purple-100 text-purple-850 text-xs px-2.5 py-1 rounded-full font-black border border-purple-200">
-                          🎯 Future Builder (Ages 13-18)
+                          🎯 Future Builder
                         </span>
                       )}
                     </span>
@@ -553,9 +553,9 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { tag: "early explorers", label: "Early Explorer", age: "Ages 2–5", emoji: "🌈", style: "border-amber-300 bg-amber-500/5 text-amber-500" },
-                  { tag: "young innovators", label: "Young Innovator", age: "Ages 6–12", emoji: "🚀", style: "border-[#2EC4B6] bg-[#2EC4B6]/5 text-[#2EC4B6]" },
-                  { tag: "future builders", label: "Future Builder", age: "Ages 13–18", emoji: "🎯", style: "border-[#B8A0FF] bg-[#B8A0FF]/5 text-[#B8A0FF]" }
+                  { tag: "early explorers", label: "Early Explorer", emoji: "🌈", style: "border-amber-300 bg-amber-500/5 text-amber-500" },
+                  { tag: "young innovators", label: "Young Innovator", emoji: "🚀", style: "border-[#2EC4B6] bg-[#2EC4B6]/5 text-[#2EC4B6]" },
+                  { tag: "future builders", label: "Future Builder", emoji: "🎯", style: "border-[#B8A0FF] bg-[#B8A0FF]/5 text-[#B8A0FF]" }
                 ].map((item) => {
                   const isActive = child.ageGroup === item.tag;
                   return (
@@ -569,7 +569,6 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                     >
                       <div className="text-3xl mb-1">{item.emoji}</div>
                       <div className="text-xs font-extrabold uppercase">{item.label}</div>
-                      <div className="text-[10px] opacity-75">{item.age}</div>
                       {isActive && (
                         <span className="inline-block mt-2 bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
                           ACTIVE CURRENT
