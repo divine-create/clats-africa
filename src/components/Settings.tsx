@@ -728,6 +728,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     } else {
       setEnrollSuccessString("your child");
     }
+    
+    // Refresh the parent global state so the dashboard updates instantly
+    try {
+      const safeEmail = (parent.email || "").toLowerCase().trim();
+      const freshParents = S.getParents();
+      if (freshParents[safeEmail]) {
+        onParentRefresh(freshParents[safeEmail]);
+      }
+    } catch (e) {
+      console.error("Failed to refresh parent state after enrollment", e);
+    }
+
     setEnrolling(false);
     setTimeout(() => setEnrollSuccessString(null), 3500);
   };
