@@ -44,8 +44,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
     return () => window.removeEventListener("click", checkTheme);
   }, []);
 
+  const companionName = child.companion === "chibi" ? "Chibi" : "Kobe";
+
   useEffect(() => {
-    const companionName = child.companion === "chibi" ? "Chibi" : "Kobe";
     const gameWelcome = `Welcome to the games arena, friend! I am ${companionName}. Let's play some pattern training games to rack up smart points!`;
     const timer = setTimeout(() => {
       companionVoice.speak(gameWelcome, child.companion || "kobe", child.ageGroup);
@@ -54,7 +55,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
       clearTimeout(timer);
       companionVoice.stop();
     };
-  }, [child.companion, child.ageGroup]);
+  }, [child.companion, child.ageGroup, companionName]);
 
   const [activeAcademy, setActiveAcademy] = useState<"ai" | "cyber" | "design" | "career">("ai");
   const [activeGameModal, setActiveGameModal] = useState<string | null>(null);
