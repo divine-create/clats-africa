@@ -67,7 +67,7 @@ export const MascotImage: React.FC<MascotImageProps> = ({ character, className =
   );
 };
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onSelectRole, lang, initialStep = 1, theme }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ onSelectRole, lang, initialStep = 4, theme }) => {
   const [step, setStep] = useState(initialStep);
   const [selectedQuizIndex, setSelectedQuizIndex] = useState<number | null>(null);
   const isDark = theme === "dark";
