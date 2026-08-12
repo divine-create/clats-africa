@@ -552,8 +552,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
             STAGE A: LESSON STORY SCREEN / MULTIPLE CONTENT TYPES
            ------------------------------------------------------------- */}
         {learningStep === "video" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
             
+            {/* LEFT SIDE: Media Player (Video or Story) */}
+            <div className="flex flex-col gap-4 w-full lg:w-[68%] flex-shrink-0" style={{ maxWidth: 1200 }}>
             {/* If video player is available */}
             {currentVideoData ? (
               <>
@@ -566,6 +568,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
                   aspectRatio: "16/9",
                   width: "100%",
+                  maxHeight: "75vh",
                   position: "relative"
                 }}
               >
@@ -759,7 +762,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 )}
               </div>
             )}
+            </div>
 
+            {/* RIGHT SIDE: Sidebar Context & Actions */}
+            <div className="flex flex-col gap-4 w-full lg:w-[32%] sticky" style={{ top: "24px" }}>
             {/* KOBE AND CHIBI COMPANION ROW EXPLANATION */}
             <div
               style={{
@@ -811,6 +817,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 : "TAKE LESSON QUIZ 🧩"
               }
             </button>
+            </div>
           </div>
         )}
 
