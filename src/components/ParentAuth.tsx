@@ -322,7 +322,7 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
                   label="Location"
                   value={location}
                   onChange={setLocation}
-                  placeholder="e.g. Lagos, Nigeria"
+                  placeholder="e.g. Seattle, WA"
                   theme={theme}
                 />
               </>

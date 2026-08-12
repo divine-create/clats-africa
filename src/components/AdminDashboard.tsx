@@ -177,8 +177,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                   id: p.email,
                   name: p.name,
                   email: p.email,
-                  phone: p.phone || `+234 803 41${idx}-920${idx}`,
-                  location: p.location || "Lagos, Nigeria",
+                  phone: p.phone || `+1 555 41${idx}-920${idx}`,
+                  location: p.location || "Austin, TX",
                   kids: (usersData.children || [])
                     .filter((c: any) => c.parent_email.toLowerCase() === p.email.toLowerCase())
                     .map((c: any) => c.name),
@@ -409,8 +409,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               id: par.email,
               name: par.name || par.email.split("@")[0],
               email: par.email,
-              phone: par.phone || "+234 803 111 2222",
-              location: par.location || "Lagos, Nigeria",
+              phone: par.phone || "+1 555 111 2222",
+              location: par.location || "Austin, TX",
               kids: (data.children || []).filter((c: any) => c.parent_email === par.email).map((c: any) => c.name),
               plan: par.plan || "Premium Cloud Member"
             }));
@@ -4250,7 +4250,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         type="text"
                         value={newSchoolRegion}
                         onChange={(e) => setNewSchoolRegion(e.target.value)}
-                        placeholder="e.g., Lagos State, Nigeria"
+                        placeholder="e.g., Texas, USA"
                         className={`w-full border rounded-xl px-2.5 py-1.5 outline-none focus:border-[#2EC4B6] transition ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-800"}`}
                       />
                     </div>

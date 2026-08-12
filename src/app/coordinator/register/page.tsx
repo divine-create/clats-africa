@@ -141,7 +141,7 @@ export default function CoordinatorRegisterPage() {
                   type="text"
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  placeholder="Lagos, Nigeria"
+                  placeholder="Austin, TX"
                   className={`w-full pl-11 pr-3 py-3 rounded-2xl border outline-none text-xs font-semibold transition ${isDark ? 'bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]' : 'bg-slate-50 border-slate-200 focus:border-[#7A6FF0]'}`}
                 />
               </div>

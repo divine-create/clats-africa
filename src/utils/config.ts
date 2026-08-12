@@ -906,9 +906,9 @@ export function getDeviceInfo() {
 }
 
 export async function detectAndStoreLocation(parentEmail: string) {
-  let country = "Nigeria";
-  let region = "Cross River";
-  let city = "Calabar";
+  let country = "United States";
+  let region = "Washington";
+  let city = "Seattle";
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   try {

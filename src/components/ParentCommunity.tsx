@@ -461,7 +461,7 @@ export const ParentCommunity: React.FC<ParentCommunityProps> = ({ onBack, lang, 
 
                     <FieldInput
                       label="LOCATION (CITY / STATE / COUNTRY)"
-                      placeholder="e.g. Ikeja, Lagos, Nigeria"
+                      placeholder="e.g. Bellevue, Seattle, WA"
                       value={locationStr}
                       onChange={(val) => {
                         setLocationStr(val);
