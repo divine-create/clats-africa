@@ -10,7 +10,7 @@ import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
 import confetti from "canvas-confetti";
-import ReactPlayer from "react-player";
+import { Play, Pause, Settings, Gauge, Maximize } from "lucide-react";
 
 interface LessonContentProps {
   child: Child;
@@ -58,26 +58,28 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   // Check which lesson number/type we are running
 
   
-  // ALL MVP lessons of designated pathways are active and playable!
   const isPlayable = true;
-  const videoRef = useRef<HTMLIFrameElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  const ytPlayerRef = useRef<any>(null);
 
   const handleFullScreen = () => {
-    if (videoRef.current) {
-      if (videoRef.current.requestFullscreen) {
-        videoRef.current.requestFullscreen();
-      } else if ((videoRef.current as any).webkitRequestFullscreen) {
-        (videoRef.current as any).webkitRequestFullscreen();
-      } else if ((videoRef.current as any).msRequestFullscreen) {
-        (videoRef.current as any).msRequestFullscreen();
+    if (videoContainerRef.current) {
+      if (videoContainerRef.current.requestFullscreen) {
+        videoContainerRef.current.requestFullscreen();
+      } else if ((videoContainerRef.current as any).webkitRequestFullscreen) {
+        (videoContainerRef.current as any).webkitRequestFullscreen();
+      } else if ((videoContainerRef.current as any).msRequestFullscreen) {
+        (videoContainerRef.current as any).msRequestFullscreen();
       }
     }
   };
 
   // Active steps in the lesson progression
   const [learningStep, setLearningStep] = useState<"video" | "quiz" | "reward">("video");
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false); // Default false, will wait for user interaction to avoid autoplay block
   const [watchedFraction, setWatchedFraction] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showControls, setShowControls] = useState(false);
 
   // Story Slideshow state for Ages 2-5 or lessons with story elements
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -242,6 +244,118 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   };
 
   const currentVideoData = getDynamicVideoData();
+
+  const playSFX = (type: "correct" | "wrong" | "complete" | "click") => {
+    sfx[type].play().catch(e => console.log("Audio play blocked", e));
+  };
+
+  // --- YOUTUBE NATIVE IFRAME API ---
+  useEffect(() => {
+    if (learningStep !== "video" || !currentVideoData) return;
+
+    const loadYoutubeAPI = () => {
+      if (!(window as any).YT) {
+        const tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName("script")[0];
+        if (firstScriptTag.parentNode) {
+          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+      }
+    };
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      if (ytPlayerRef.current) {
+        ytPlayerRef.current.destroy();
+      }
+      ytPlayerRef.current = new (window as any).YT.Player("youtube-player-container", {
+        height: '100%',
+        width: '100%',
+        videoId: currentVideoData.embedId,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          disablekb: 1,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+          cc_load_policy: subtitlesOn ? 1 : 0
+        },
+        events: {
+          'onReady': (event: any) => {
+            event.target.playVideo();
+            setIsVideoPlaying(true);
+          },
+          'onStateChange': (event: any) => {
+            if (event.data === (window as any).YT.PlayerState.PLAYING) {
+              setIsVideoPlaying(true);
+            } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
+              setIsVideoPlaying(false);
+            } else if (event.data === (window as any).YT.PlayerState.ENDED) {
+              setWatchedFraction(1);
+            }
+          }
+        }
+      });
+    };
+
+    if (!(window as any).YT) {
+      loadYoutubeAPI();
+    } else if ((window as any).YT && (window as any).YT.Player) {
+      (window as any).onYouTubeIframeAPIReady();
+    }
+
+    return () => {
+      if (ytPlayerRef.current) {
+        ytPlayerRef.current.destroy();
+      }
+    };
+  }, [learningStep, currentVideoData?.embedId, subtitlesOn]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isVideoPlaying && ytPlayerRef.current) {
+      interval = setInterval(() => {
+        try {
+          if (ytPlayerRef.current && ytPlayerRef.current.getDuration) {
+            const duration = ytPlayerRef.current.getDuration();
+            const currentTime = ytPlayerRef.current.getCurrentTime();
+            if (duration > 0) {
+              const fraction = currentTime / duration;
+              if (fraction >= 0.8) {
+                setWatchedFraction(1);
+              } else {
+                setWatchedFraction(fraction);
+              }
+            }
+          }
+        } catch (e) {}
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isVideoPlaying]);
+
+  const togglePlay = () => {
+    if (ytPlayerRef.current) {
+      if (isVideoPlaying) {
+        ytPlayerRef.current.pauseVideo();
+        setIsVideoPlaying(false);
+      } else {
+        ytPlayerRef.current.playVideo();
+        setIsVideoPlaying(true);
+      }
+    }
+  };
+
+  const changeSpeed = (rate: number) => {
+    if (ytPlayerRef.current && ytPlayerRef.current.setPlaybackRate) {
+      ytPlayerRef.current.setPlaybackRate(rate);
+      setPlaybackRate(rate);
+    }
+  };
+  // ---------------------------------
+
+  const isCurrentModuleLocked = !isPlayable;
 
   // Resolve curriculum story text by language, with fallback
   const getLessonStoryText = (): string => {
@@ -668,34 +782,76 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <ReactPlayer
-                    url={`https://www.youtube.com/watch?v=${currentVideoData.embedId}`}
-                    width="100%"
-                    height="100%"
-                    playing={true}
-                    controls={true}
-                    pip={true}
-                    onProgress={(progress) => {
-                      // Unlock quiz when 80% of video is watched
-                      if (progress.played >= 0.8) {
-                        setWatchedFraction(1);
-                      } else {
-                        setWatchedFraction(progress.played);
-                      }
-                    }}
-                    onEnded={() => setWatchedFraction(1)}
-                    config={{
-                      youtube: {
-                        playerVars: { 
-                          modestbranding: 1, 
-                          rel: 0, 
-                          cc_load_policy: subtitlesOn ? 1 : 0,
-                          iv_load_policy: 3
-                        }
-                      }
-                    }}
-                    style={{ position: "absolute", top: 0, left: 0 }}
-                  />
+                  <div 
+                    ref={videoContainerRef}
+                    className="relative w-full h-full group bg-black"
+                    onMouseEnter={() => setShowControls(true)}
+                    onMouseLeave={() => setShowControls(false)}
+                  >
+                    {/* YT Iframe Container */}
+                    <div id="youtube-player-container" style={{ width: "100%", height: "100%", pointerEvents: "none" }}></div>
+                    
+                    {/* Transparent Click Overlay to trigger our own controls */}
+                    <div 
+                      className="absolute inset-0 z-10 cursor-pointer"
+                      onClick={togglePlay}
+                    ></div>
+                    
+                    {/* Custom Controls Overlay */}
+                    <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 flex flex-col justify-end gap-2 ${showControls || !isVideoPlaying ? "opacity-100" : "opacity-0"}`}>
+                      
+                      {/* Progress Bar (Visual Only for MVP) */}
+                      <div className="w-full h-1.5 bg-white/30 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#2EC4B6]" 
+                          style={{ width: `${watchedFraction * 100}%` }}
+                        ></div>
+                      </div>
+
+                      {/* Control Buttons */}
+                      <div className="flex items-center justify-between text-white mt-1">
+                        <div className="flex items-center gap-4">
+                          <button 
+                            onClick={togglePlay}
+                            className="hover:text-[#2EC4B6] transition-colors"
+                          >
+                            {isVideoPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+                          </button>
+
+                          <div className="flex items-center gap-2 relative group/speed">
+                            <button className="flex items-center gap-1 text-sm font-bold hover:text-[#2EC4B6] transition-colors">
+                              <Gauge size={18} />
+                              {playbackRate}x
+                            </button>
+                            {/* Speed Menu (Appears on Hover) */}
+                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover/speed:flex flex-col bg-slate-900/90 rounded-lg overflow-hidden border border-slate-700">
+                              {[0.5, 0.75, 1, 1.25, 1.5].map(rate => (
+                                <button 
+                                  key={rate}
+                                  onClick={() => changeSpeed(rate)}
+                                  className={`px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors ${playbackRate === rate ? "text-[#2EC4B6]" : "text-white"}`}
+                                >
+                                  {rate}x {rate < 1 && "🐌"} {rate > 1 && "🐇"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          {subtitlesOn && (
+                            <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded">CC</span>
+                          )}
+                          <button 
+                            onClick={handleFullScreen}
+                            className="hover:text-[#2EC4B6] transition-colors"
+                          >
+                            <Maximize size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
                 <div style={{ background: "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -864,7 +1020,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   💬 {compLabel} Explanation:
                 </Txt>
                 <Txt size={14.5 * getFontSizeMultiplier()} color={getTextColor()} style={{ fontStyle: "italic", lineHeight: 1.45, fontWeight: 700 }}>
-                  "{child.name}, technology helps us solve problems! Let's explore how we use tools and data to build smart things."
+                  "{lesson.companion_explanation || `${child.name}, technology helps us solve problems! Let's explore how we use tools and data.`}"
                 </Txt>
               </div>
             </div>
