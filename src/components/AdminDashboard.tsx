@@ -5417,6 +5417,20 @@ ON CONFLICT (email) DO NOTHING;
                         <option>App Credits</option>
                       </select>
                     </div>
+                    <div className="flex items-center justify-between mt-4">
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 dark:text-slate-300">Default Affiliate Commission</span>
+                        <span className="text-[10px] text-slate-500">For self-registered open affiliates</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          defaultValue={10} 
+                          className={`w-16 text-right text-xs p-1.5 rounded-md border outline-none focus:border-[#14B8A6] font-semibold ${isDark ? "bg-[#0B0F14] border-[#1F2937] text-white" : "bg-slate-50 border-[#E5E7EB] text-slate-700"}`}
+                        />
+                        <span className="text-xs font-bold text-slate-500">%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
