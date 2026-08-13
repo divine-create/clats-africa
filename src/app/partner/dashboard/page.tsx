@@ -42,6 +42,10 @@ export default function PartnerDashboardPage() {
     >
       <PartnerDashboardComp 
         partner={partner} 
+        onUpdate={(updatedPartner: any) => {
+          setPartner(updatedPartner);
+          localStorage.setItem("clats_partner_session", JSON.stringify(updatedPartner));
+        }}
         onLogout={() => {
           localStorage.removeItem("clats_partner_session");
           router.push("/partner/login");

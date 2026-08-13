@@ -5,13 +5,19 @@ import { CLATSLogo } from "./CLATSLogo";
 interface PartnerDashboardProps {
   partner: any;
   onLogout: () => void;
+  onUpdate?: (updatedPartner: any) => void;
   theme?: "light" | "dark";
 }
 
-export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onLogout, theme = "dark" }) => {
+export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onLogout, onUpdate, theme = "dark" }) => {
   const isDark = theme === "dark";
   const [activeTab, setActiveTab] = useState("overview");
   const [copied, setCopied] = useState(false);
+
+  const [editName, setEditName] = useState(partner.name || "");
+  const [editEmail, setEditEmail] = useState(partner.email || "");
+  const [editBank, setEditBank] = useState(partner.bank_details?.bank_name || "");
+  const [editAccount, setEditAccount] = useState(partner.bank_details?.account_number || "");
 
   const referralLink = `https://app.clats.africa/register?partner=${partner.partner_code}`;
 
@@ -19,6 +25,21 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveSettings = () => {
+    if (onUpdate) {
+      onUpdate({
+        ...partner,
+        name: editName,
+        email: editEmail,
+        bank_details: {
+          bank_name: editBank,
+          account_number: editAccount
+        }
+      });
+      alert("Settings saved successfully!");
+    }
   };
 
   const textPrimary = isDark ? "text-white" : "text-slate-900";
@@ -241,7 +262,8 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
                   <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Full Name / Organization</label>
                   <input 
                     type="text" 
-                    defaultValue={partner.name}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
                     className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
                   />
                 </div>
@@ -249,7 +271,8 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
                   <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Email Address</label>
                   <input 
                     type="email" 
-                    defaultValue={partner.email || ""}
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
                     className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
                   />
                 </div>
@@ -261,7 +284,8 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
                   <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Bank Name</label>
                   <input 
                     type="text" 
-                    defaultValue={partner.bank_details?.bank_name || ""}
+                    value={editBank}
+                    onChange={(e) => setEditBank(e.target.value)}
                     placeholder="e.g. GTBank"
                     className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
                   />
@@ -270,12 +294,16 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
                   <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Account Number</label>
                   <input 
                     type="text" 
-                    defaultValue={partner.bank_details?.account_number || ""}
+                    value={editAccount}
+                    onChange={(e) => setEditAccount(e.target.value)}
                     placeholder="0000000000"
                     className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
                   />
                 </div>
-                <button className="bg-[#2EC4B6] hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-teal-500/20">
+                <button 
+                  onClick={handleSaveSettings}
+                  className="bg-[#2EC4B6] hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-teal-500/20"
+                >
                   Save Changes
                 </button>
               </div>
