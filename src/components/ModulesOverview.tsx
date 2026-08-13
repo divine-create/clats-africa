@@ -33,9 +33,9 @@ interface ModulesOverviewProps {
   lang: Language;
   onBack: () => void;
   slotLimit?: number;
-  slotUsed?: number;
   theme?: "light" | "dark";
   selectedAcademyId?: string;
+  onShowPaywall?: () => void;
 }
 
 interface SyllabusModule {
@@ -56,7 +56,8 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
   lang,
   onBack,
   theme = "dark",
-  selectedAcademyId = "academy-1"
+  selectedAcademyId = "academy-1",
+  onShowPaywall
 }) => {
   const isDark = theme === "dark";
   const ageGroup: AgeGroup = child.ageGroup || "early explorers";
@@ -872,18 +873,34 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
 
             {/* Action button */}
             {isLocked ? (
-              <div style={{
-                background: 'rgba(239,68,68,0.1)',
-                border: '2px solid #ef4444',
-                color: '#ef4444',
-                fontWeight: 800,
-                borderRadius: 16,
-                padding: '12px 16px',
-                textAlign: 'center',
-                fontSize: 13
-              }}>
-                🔒 Premium — Ask your parents to unlock!
-              </div>
+              <button
+                onClick={() => {
+                  if (onShowPaywall) {
+                    sfx.playTap();
+                    onShowPaywall();
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #fbbf24, #d97706)',
+                  color: 'white',
+                  fontWeight: 900,
+                  fontSize: 16,
+                  borderRadius: 18,
+                  padding: '15px 20px',
+                  border: 'none',
+                  borderBottom: '4px solid #b45309',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 20px rgba(217, 119, 6, 0.35)',
+                  letterSpacing: '0.01em'
+                }}
+              >
+                <span>⭐ Unlock Premium Track</span>
+              </button>
             ) : (
               <button
                 onClick={() => handleLaunchJourney(selectedModule)}

@@ -592,6 +592,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           slotUsed={slotUsed}
           theme={theme}
           selectedAcademyId={selectedAcademyId}
+          onShowPaywall={() => setShowHandoff(true)}
         />
       )}
 
