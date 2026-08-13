@@ -273,7 +273,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         width: '100%',
         videoId: currentVideoData.embedId,
         playerVars: {
-          autoplay: 1,
+          autoplay: 0,
           controls: 1,
           disablekb: 0,
           modestbranding: 1,
@@ -795,7 +795,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     <div id={`youtube-player-${currentVideoData.embedId}`} style={{ width: "100%", height: "100%" }}></div>
                     
                     {/* Custom Controls Overlay */}
-                    <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 flex flex-col justify-end gap-2 ${showControls || !isVideoPlaying ? "opacity-100" : "opacity-0"}`}>
+                    <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 flex flex-col justify-end gap-2 pointer-events-none ${showControls || !isVideoPlaying ? "opacity-100" : "opacity-0"}`}>
                       
                       {/* Progress Bar (Visual Only for MVP) */}
                       <div className="w-full h-1.5 bg-white/30 rounded-full overflow-hidden">
@@ -806,7 +806,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       </div>
 
                       {/* Control Buttons */}
-                      <div className="flex items-center justify-between text-white mt-1">
+                      <div className="flex items-center justify-between text-white mt-1 pointer-events-auto">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2 relative group/speed">
                             <button className="flex items-center gap-1 text-sm font-bold hover:text-[#2EC4B6] transition-colors">
