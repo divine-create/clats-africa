@@ -40,8 +40,7 @@ export async function PUT(req: Request) {
 
     const { data, error } = await sb
       .from("clats_payment_gateways")
-      .update(updates)
-      .eq("gateway_name", gateway_name)
+      .upsert({ gateway_name, ...updates }, { onConflict: 'gateway_name' })
       .select()
       .single();
 

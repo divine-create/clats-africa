@@ -646,9 +646,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [newAdminRole, setNewAdminRole] = useState<AdminRole>("Support Staff");
 
   // Payment Gateways Settings
-  const [paystackKey, setPaystackKey] = useState("");
-  const [paystackSecret, setPaystackSecret] = useState("");
-  const [paystackActive, setPaystackActive] = useState(false);
+  const [bachsKey, setBachsKey] = useState("");
+  const [bachsSecret, setBachsSecret] = useState("");
+  const [bachsActive, setBachsActive] = useState(false);
 
   const [flutterwaveKey, setFlutterwaveKey] = useState("");
   const [flutterwaveSecret, setFlutterwaveSecret] = useState("");
@@ -665,10 +665,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
       const data = await res.json();
       if (data.ok && data.gateways) {
         data.gateways.forEach((gw: any) => {
-          if (gw.gateway_name === "paystack") {
-            setPaystackKey(gw.public_key || "");
-            setPaystackSecret(gw.secret_key || "");
-            setPaystackActive(gw.is_active || false);
+          if (gw.gateway_name === "bachs") {
+            setBachsKey(gw.public_key || "");
+            setBachsSecret(gw.secret_key || "");
+            setBachsActive(gw.is_active || false);
           } else if (gw.gateway_name === "flutterwave") {
             setFlutterwaveKey(gw.public_key || "");
             setFlutterwaveSecret(gw.secret_key || "");
@@ -4691,25 +4691,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     <div>
                       <div className="flex justify-between items-center mb-1 mt-4">
                         <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-0">
-                          Paystack Integration
+                          Bachs.io Integration
                         </span>
                         <div className="flex items-center gap-2">
                           <label className="text-[10px] text-slate-500 font-bold uppercase">Active?</label>
-                          <input type="checkbox" checked={paystackActive} onChange={e => setPaystackActive(e.target.checked)} className="cursor-pointer" />
+                          <input type="checkbox" checked={bachsActive} onChange={e => setBachsActive(e.target.checked)} className="cursor-pointer" />
                         </div>
                       </div>
                       <input
                         type="text"
-                        placeholder="Paystack Public Key"
-                        value={paystackKey}
-                        onChange={(e) => setPaystackKey(e.target.value)}
+                        placeholder="Bachs Public Key"
+                        value={bachsKey}
+                        onChange={(e) => setBachsKey(e.target.value)}
                         className={`w-full border rounded p-2 mb-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
                       />
                       <input
                         type="password"
-                        placeholder="Paystack Secret Key"
-                        value={paystackSecret}
-                        onChange={(e) => setPaystackSecret(e.target.value)}
+                        placeholder="Bachs Secret Key"
+                        value={bachsSecret}
+                        onChange={(e) => setBachsSecret(e.target.value)}
                         className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
                       />
                     </div>
@@ -4748,7 +4748,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                           await fetch("/api/supabase/payment_gateways", {
                             method: "PUT",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ gateway_name: "paystack", public_key: paystackKey, secret_key: paystackSecret, is_active: paystackActive })
+                            body: JSON.stringify({ gateway_name: "bachs", public_key: bachsKey, secret_key: bachsSecret, is_active: bachsActive })
                           });
                           await fetch("/api/supabase/payment_gateways", {
                             method: "PUT",

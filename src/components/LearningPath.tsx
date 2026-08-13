@@ -41,17 +41,13 @@ interface LearningPathProps {
 }
 
 
-// Universal lesson visual decorators fallback generator
-const getLessonDecoration = (idx: number) => {
-  const list = [
-    { title: "Intro", landmark: "🏖️ Sandy Shore Intro", icon: "💡", duration: "⏱ 3 min", xp: 30 },
-    { title: "Midway", landmark: "🌴 Coconut Palm Grove", icon: "🧸", duration: "⏱ 4 min", xp: 40 },
-    { title: "Bridge", landmark: "🌉 Rope Bridge Inlet", icon: "🏡", duration: "⏱ 4 min", xp: 40 },
-    { title: "Waterway", landmark: "⛵ Rowing Boat Stream", icon: "🏫", duration: "⏱ 4 min", xp: 45 },
-    { title: "Quiz", landmark: "🐚 Coral Reef Cave", icon: "🎖️", duration: "⏱ 5 min", xp: 50 },
-    { title: "Peak", landmark: "🌋 Crater Climb Peak", icon: "🚀", duration: "⏱ 5 min", xp: 50 }
-  ];
-  return list[idx % list.length];
+const getLessonIcon = (type?: string) => {
+  switch (type) {
+    case 'story': return '📖';
+    case 'puzzle': return '🧩';
+    case 'project': return '🛠️';
+    default: return '💡';
+  }
 };
 
 export const LearningPath: React.FC<LearningPathProps> = ({
@@ -183,12 +179,12 @@ export const LearningPath: React.FC<LearningPathProps> = ({
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <button
             onClick={onBackToModules}
-            className={`flex items-center gap-2 border-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition cursor-pointer ${
+            className={`flex items-center gap-3 border-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-wider transition cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98] ${
               isDark ? "bg-slate-800 hover:bg-slate-705 text-[#2EC4B6] border-[#2EC4B6]/30" : "bg-white hover:bg-slate-50 text-[#2EC4B6] border-[#2EC4B6]/20"
             }`}
           >
-            <ArrowLeft className="w-4 h-4 text-[#2EC4B6]" />
-            <span>Academy Center</span>
+            <span style={{ fontSize: 28 }}>🔙</span>
+            <span>Back</span>
           </button>
 
           <div className="text-center sm:text-right">
@@ -255,14 +251,13 @@ export const LearningPath: React.FC<LearningPathProps> = ({
               <div className="absolute bottom-16 left-4 text-4xl opacity-30 select-none">⛵</div>
 
               <div className="bg-amber-100/40 border border-amber-300/40 font-bold text-[11px] rounded-full px-3 py-1 text-amber-900 uppercase font-mono tracking-widest mb-6">
-                🧸 CARTOON PLAYFUL SANDBOX
+                🧸 INTERACTIVE ADVENTURE
               </div>
 
               <div className="w-full flex flex-col items-center gap-1.5">
                 {lessons.map((lesson, idx) => {
                   const { isCompleted, isUnlocked, isCurrent } = getNodeDetails(lesson, idx);
                   const isSelected = selectedLesson?.id === lesson.id;
-                  const config = getLessonDecoration(idx);
                   
                   return (
                     <React.Fragment key={lesson.id}>
@@ -291,7 +286,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                               {isCompleted ? (
                                 <span className="animate-spin-slow">💚⭐</span>
                               ) : isUnlocked ? (
-                                <span>{config?.icon || "🏝️"}</span>
+                                <span>{getLessonIcon(lesson.type)}</span>
                               ) : (
                                 <span>😴🔒</span>
                               )}
@@ -306,13 +301,13 @@ export const LearningPath: React.FC<LearningPathProps> = ({
 
                           <div>
                             <span className="bg-amber-100 text-amber-900 text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full">
-                              {config?.landmark || `Sands ${idx+1}`}
+                              Checkpoint {idx + 1}
                             </span>
                             <Heading size={16} className={`font-black tracking-tight mt-1 ${isUnlocked ? isDark ? "text-amber-200" : "text-slate-900" : "text-slate-450"}`} style={{ fontWeight: 800 }}>
                               {lesson.title.en}
                             </Heading>
-                            <Txt size={11} className={`block font-bold mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                              Kids Easy Play &bull; {lesson.duration}
+                            <Txt size={11} className={`block font-bold mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"} capitalize`}>
+                              {lesson.type || "Interactive"} &bull; {lesson.duration || "5 mins"}
                             </Txt>
                           </div>
                         </div>
@@ -467,7 +462,6 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                 {lessons.map((lesson, idx) => {
                   const { isCompleted, isUnlocked, isCurrent } = getNodeDetails(lesson, idx);
                   const isSelected = selectedLesson?.id === lesson.id;
-                  const config = getLessonDecoration(idx);
 
                   return (
                     <React.Fragment key={lesson.id}>
@@ -498,7 +492,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                               {isCompleted ? (
                                 <span>✅</span>
                               ) : isUnlocked ? (
-                                <span>{config?.icon || "🥥"}</span>
+                                <span>{getLessonIcon(lesson.type)}</span>
                               ) : (
                                 <span>🔒</span>
                               )}
@@ -508,7 +502,7 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                             {isCompleted && (
                               <div className="absolute -top-1 -right-1 bg-yellow-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full border border-white flex items-center gap-0.5 shadow-sm">
                                 <span>⭐</span>
-                                <span>3</span>
+                                <span>{child.stars?.[lesson.id] || 0}</span>
                               </div>
                             )}
                           </div>
@@ -518,19 +512,19 @@ export const LearningPath: React.FC<LearningPathProps> = ({
                               <span className={`text-[9px] uppercase font-mono font-black tracking-normal px-2 py-0.5 rounded ${
                                 isDark ? "bg-emerald-950 text-emerald-305 border border-emerald-900" : "bg-emerald-50 text-emerald-800"
                               }`}>
-                                {config?.landmark || `Checkpoint ${idx+1}`}
+                                Checkpoint {idx+1}
                               </span>
                               
                               <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 rounded border ${
                                 isDark ? "bg-[#161b26] text-slate-400 border-[#232d3f]" : "bg-slate-50 text-slate-500 border-slate-150"
                               }`}>
-                                ⭐ +50 XP
+                                ⭐ Up to 50 XP
                               </span>
                               
                               <span className={`font-mono text-[9px] font-black px-1.5 py-0.5 rounded border ${
                                 isDark ? "bg-[#1a2538] text-sky-400 border-sky-900/40" : "bg-sky-50 text-sky-805 border-sky-150"
                               }`}>
-                                {config?.duration || "⏱ 4 min"}
+                                ⏱ {lesson.duration || "5 min"}
                               </span>
                             </div>
 
@@ -701,11 +695,10 @@ export const LearningPath: React.FC<LearningPathProps> = ({
               </div>
 
               {/* Professional timeline layout */}
-              <div className="relative pl-8 border-l-3 border-[#2EC4B6]/20 flex flex-col gap-6 ml-3">
+              <div className="relative pl-6 lg:pl-10 space-y-6">
                 {lessons.map((lesson, idx) => {
                   const { isCompleted, isUnlocked, isCurrent } = getNodeDetails(lesson, idx);
                   const isSelected = selectedLesson?.id === lesson.id;
-                  const config = getLessonDecoration(idx);
 
                   return (
                     <div
@@ -734,16 +727,16 @@ export const LearningPath: React.FC<LearningPathProps> = ({
 
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="text-2xl">{config?.icon || "⚙️"}</div>
+                          <div className="text-2xl">{getLessonIcon(lesson.type)}</div>
                           <div>
                             <span className="text-[10px] font-black tracking-wider uppercase font-mono text-slate-400 block mb-0.5">
-                              {config?.landmark || `Lecture ${idx+1}`}
+                              Lecture {idx+1}
                             </span>
                             <Heading size={16} className={`font-black ${isUnlocked ? isDark ? "text-amber-205" : "text-slate-905" : "text-slate-450"}`} style={{ fontWeight: 800 }}>
                               {lesson.title.en}
                             </Heading>
-                            <Txt size={12} className={`font-semibold block mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                              {config?.duration || "⏱ 6 min"} &bull; Reward: +{config?.xp || 50} XP
+                            <Txt size={12} className={`font-semibold block mt-0.5 capitalize ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                              {lesson.duration || "⏱ 6 min"} &bull; {lesson.type || "Interactive"} &bull; Up to 50 XP
                             </Txt>
                           </div>
                         </div>

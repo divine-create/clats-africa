@@ -74,7 +74,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const [showHandoff, setShowHandoff] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [selectedAcademyId, setSelectedAcademyId] = useState<string>("academy-1");
-  const [celebrationQueue, setCelebrationQueue] = useState<string[]>([]);
+  const [celebrationQueue, setCelebrationQueue] = useState<any[]>([]);
 
   // Load narration preference
   const isEarly = child.ageGroup === "early explorers";
@@ -271,15 +271,19 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   ) => {
     const isPass = !quizResult || quizResult.status === "Passed";
 
+    const alreadyCompleted = child.completed && child.completed[lessonId];
+
     const freshCompleted = isPass
       ? { ...child.completed, [lessonId]: true }
       : { ...child.completed };
 
-    const freshStars = isPass
+    const currentStars = (child.stars && child.stars[lessonId]) || 0;
+    const freshStars = (isPass && starsEarned > currentStars)
       ? { ...child.stars, [lessonId]: starsEarned }
       : { ...child.stars };
 
-    const freshXP = (child.xp || 0) + (isPass ? xpEarned : 0);
+    const actualXpEarned = (isPass && !alreadyCompleted) ? xpEarned : 0;
+    const freshXP = (child.xp || 0) + actualXpEarned;
 
     const priorQuizResults = child.quizResults || {};
     const freshQuizResults = quizResult
@@ -359,10 +363,10 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             child_id: child.id,
             lesson_id: lessonId,
             quiz_score: quizResult ? quizResult.score : null,
-            xp_earned: isPass ? xpEarned : 0,
+            xp_earned: actualXpEarned,
             completed: isPass,
             total_questions: quizResult ? quizResult.totalQuestions : null,
-            stars_earned: isPass ? starsEarned : 0,
+            stars_earned: (isPass && starsEarned > currentStars) ? starsEarned : currentStars,
             badges_unlocked_ids: badgesToUnlock
           })
         });

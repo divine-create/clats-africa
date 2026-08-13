@@ -82,6 +82,7 @@ export interface Lesson {
   };
   project?: Localized<string>;
   video_url?: string;
+  companion_explanation?: string;
   quiz: QuizQuestion[];
 }
 

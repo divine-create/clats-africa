@@ -14,16 +14,11 @@ interface PaywallModalProps {
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId, childName, onClose, onSuccess, isDark = false }) => {
   const [plans, setPlans] = useState<any[]>([]);
-  const [paystackKey, setPaystackKey] = useState<string | null>(null);
+  const [bachsKey, setBachsKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    // Load Paystack script
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v1/inline.js";
-    script.async = true;
-    document.body.appendChild(script);
 
     // Fetch config
     Promise.all([
@@ -32,51 +27,48 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
     ]).then(([priceData, gwData]) => {
       if (priceData.ok) setPlans(priceData.plans);
       if (gwData.ok) {
-        const ps = gwData.gateways.find((g: any) => g.gateway_name === "paystack");
+        const ps = gwData.gateways.find((g: any) => g.gateway_name === "bachs");
         if (ps && ps.is_active) {
-          setPaystackKey(ps.public_key);
+          setBachsKey(ps.public_key);
         }
       }
       setLoading(false);
     });
-
-    return () => {
-      document.body.removeChild(script);
-    };
   }, []);
 
-  const handleCheckout = (plan: any) => {
-    if (!paystackKey) {
+  const handleCheckout = async (plan: any) => {
+    if (!bachsKey) {
       alert("Payment gateway is currently not configured or inactive.");
       return;
     }
 
     setProcessing(true);
     
-    // @ts-ignore
-    const handler = window.PaystackPop.setup({
-      key: paystackKey,
-      email: parentEmail,
-      amount: plan.price * 100, // Paystack amount is in kobo/cents
-      currency: plan.currency,
-      ref: "clats_" + Math.floor(Math.random() * 1000000000 + 1),
-      callback: function (response: any) {
-        // Success!
-        fetch("/api/supabase/child/upgrade", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: parentEmail, child_id: childId, reference: response.reference, plan_id: plan.id })
-        }).then(() => {
-          setProcessing(false);
-          onSuccess();
-        });
-      },
-      onClose: function () {
+    try {
+      const res = await fetch("/api/bachs/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: parentEmail,
+          amount: plan.price,
+          currency: plan.currency,
+          planName: plan.name,
+          childId
+        })
+      });
+      
+      const data = await res.json();
+      if (data.ok && data.checkoutUrl) {
+        // Redirect to Bachs.io secure checkout
+        window.location.href = data.checkoutUrl;
+      } else {
+        alert("Failed to initiate checkout: " + (data.error || "Unknown error"));
         setProcessing(false);
-      },
-    });
-    
-    handler.openIframe();
+      }
+    } catch (e) {
+      alert("Payment initiation error. Please try again.");
+      setProcessing(false);
+    }
   };
 
   const monthlyPlan = plans.find(p => p.interval === "monthly");
@@ -112,7 +104,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
           
           <div className="mb-6 text-center">
             <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}>Select a Plan</h3>
-            <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>Cancel anytime. Secure checkout via Paystack.</p>
+            <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>Cancel anytime. Secure checkout via Bachs.io (Accepts NGN & USD).</p>
           </div>
 
           {loading ? (

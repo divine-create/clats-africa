@@ -640,20 +640,21 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           style={{
             background: colorMode === "night" ? "#334155" : "#ffffff",
             border: `2px solid ${getBorderColor()}`,
-            borderRadius: 14,
+            borderRadius: 16,
             padding: "8px 16px",
             color: getTextColor(),
-            fontSize: 14,
-            fontWeight: 850,
+            fontSize: 16,
+            fontWeight: 900,
             cursor: "pointer",
             fontFamily: F.mono,
             display: "flex",
             alignItems: "center",
-            gap: 6
+            gap: 10,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
           }}
           className="hover:scale-[1.02] active:scale-[0.98]"
         >
-          <span>←</span> MAP
+          <span style={{ fontSize: 26 }}>🗺️</span> MAP
         </button>
 
         <div style={{ textAlign: "center", flex: 1, padding: "0 10px" }}>

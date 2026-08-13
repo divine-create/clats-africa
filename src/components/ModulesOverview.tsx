@@ -125,11 +125,6 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
 
     // Map curriculum modules to local UI SyllabusModule structure
     const mappedModules: SyllabusModule[] = matchedModules.map((m, idx) => {
-      let icon = "💡";
-      if (idx === 1) icon = "🔒";
-      else if (idx === 2) icon = "🎨";
-      else if (idx >= 3) icon = "🚀";
-
       // Modules with active lessons are unlocked. No age-group or academy hardcoding anymore.
       const isComingSoonValue = !m.lessons || m.lessons.length === 0;
 
@@ -137,7 +132,7 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
         id: m.id,
         title: m.name.en,
         desc: m.goal.en,
-        icon: icon,
+        icon: m.badge?.icon || "💡",
         comingSoon: isComingSoonValue,
         lessons: m.lessons,
         statusLabel: isComingSoonValue ? "🌟 COMING SOON" : "⚡ ACTIVE",
@@ -161,30 +156,11 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
       subTitleText = "Learning Pathway";
       academyDesc = dynamicPathway.description;
     } else {
-      // Hardcoded fallback data for backwards compatibility
-      if (activeAcadId === "academy-2") {
-        titleText = "Digital Citizenship & Cybersecurity";
-        subTitleText = "Phase 2 Launch";
-        academyDesc = "Learn screen hygiene, key security, and safe cyber habits.";
-      } else if (activeAcadId === "academy-3") {
-        titleText = "Design & Creation";
-        subTitleText = "Phase 4 Launch";
-        academyDesc = "Unleash creativity through digital drawing, UI/UX mockups, and wireframes.";
-      } else if (activeAcadId === "academy-4") {
-        if (ageGroup === "future builders") {
-          titleText = "Innovation & Career Readiness";
-          subTitleText = "Phase 6 Launch";
-          academyDesc = "Prepare for professional portfolios, team leadership, and entrepreneurship.";
-        } else {
-          titleText = "Adaptability & Lifelong Learning";
-          subTitleText = "Continuous Growth Academy";
-          academyDesc = "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.";
-        }
-      } else if (activeAcadId === "academy-5") {
-        titleText = "Adaptability & Lifelong Learning";
-        subTitleText = "Continuous Growth Academy";
-        academyDesc = "Develop the mindset and human skills needed to thrive regardless of how technology changes. This academy prepares learners for technologies that do not yet exist.";
-      }
+      // Dynamic fallback based on ID
+      const num = activeAcadId.split("-")[1] || "X";
+      titleText = `Pathway ${num} (Coming Soon)`;
+      subTitleText = "Curriculum in Development";
+      academyDesc = "New curriculum modules are actively being built for this pathway.";
     }
 
     return {
@@ -276,14 +252,14 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
           <button
             onClick={onBack}
-            className={`flex items-center gap-2 border-2 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-sm cursor-pointer ${
+            className={`flex items-center gap-3 border-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-wider transition-all duration-200 shadow-sm cursor-pointer ${
               isDark
                 ? "bg-slate-900 border-[#2EC4B6]/30 hover:bg-slate-850 text-[#2EC4B6]"
                 : "bg-white border-[#2EC4B6]/20 hover:bg-slate-50 text-[#2EC4B6]"
             }`}
           >
-            <ChevronLeft className="w-4 h-4 text-[#2EC4B6]" />
-            <span>All Pathways</span>
+            <span style={{ fontSize: 28 }}>🏠</span>
+            <span>Home</span>
           </button>
 
           <div className="flex items-center gap-2">
