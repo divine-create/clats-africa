@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, Check, LogOut, Download, Copy, Share2, CreditCard, Users, TrendingUp, DollarSign } from "lucide-react";
+import { Link, Check, LogOut, Download, Copy, Share2, CreditCard, Users, TrendingUp, DollarSign, Settings } from "lucide-react";
 
 interface PartnerDashboardProps {
   partner: any;
@@ -86,6 +86,19 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
               Network
             </div>
           </button>
+          <button 
+            onClick={() => setActiveTab("settings")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === "settings" 
+                ? (isDark ? "bg-slate-700/50 text-white" : "bg-slate-200/50 text-slate-800") 
+                : (isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-50")
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Settings size={18} />
+              Settings
+            </div>
+          </button>
         </aside>
 
         {/* Content */}
@@ -142,7 +155,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Conversions</span>
                     <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500"><Users size={18} /></div>
                   </div>
-                  <div className={`text-3xl font-black ${textPrimary}`}>12</div>
+                  <div className={`text-3xl font-black ${textPrimary}`}>{partner.total_conversions || 0}</div>
                 </div>
               </div>
             </div>
@@ -178,22 +191,79 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
               <div className={`p-6 rounded-2xl border ${bgCard}`}>
                 <p className={`text-sm ${textSecondary} mb-4`}>Recent signups using your code:</p>
                 <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className={`flex justify-between items-center p-4 rounded-xl border ${isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50/50"}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#2EC4B6]/20 flex items-center justify-center text-[#2EC4B6] font-bold text-xs">PA</div>
-                        <div>
-                          <div className={`text-sm font-bold ${textPrimary}`}>Parent {i}</div>
-                          <div className="text-[10px] text-slate-500 font-mono">2 days ago</div>
+                  {!partner.referrals || partner.referrals.length === 0 ? (
+                    <div className={`text-center py-8 text-sm font-bold ${textSecondary}`}>
+                      No signups yet. Share your link to get started!
+                    </div>
+                  ) : (
+                    partner.referrals.map((ref: any, i: number) => (
+                      <div key={i} className={`flex justify-between items-center p-4 rounded-xl border ${isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50/50"}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#2EC4B6]/20 flex items-center justify-center text-[#2EC4B6] font-bold text-xs">
+                            {ref.name ? ref.name.charAt(0).toUpperCase() : "P"}
+                          </div>
+                          <div>
+                            <div className={`text-sm font-bold ${textPrimary}`}>{ref.name || "Anonymous Parent"}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">{ref.date || "Recently"}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-black text-emerald-500">+₦{ref.commission_earned || 0}</div>
+                          <div className="text-[10px] text-slate-500 uppercase font-black">{ref.status || "Cleared"}</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-black text-emerald-500">+₦2,000</div>
-                        <div className="text-[10px] text-slate-500 uppercase font-black">Cleared</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "settings" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <h2 className={`text-xl font-black m-0 ${textPrimary}`}>Account Settings</h2>
+              <div className={`p-6 rounded-2xl border ${bgCard} space-y-6`}>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Full Name / Organization</label>
+                  <input 
+                    type="text" 
+                    defaultValue={partner.name}
+                    className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Email Address</label>
+                  <input 
+                    type="email" 
+                    defaultValue={partner.email || ""}
+                    className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
+                  />
+                </div>
+                
+                <hr className={`border-t ${isDark ? "border-slate-800" : "border-slate-200"}`} />
+                
+                <h3 className={`text-sm font-bold ${textPrimary}`}>Bank Details</h3>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Bank Name</label>
+                  <input 
+                    type="text" 
+                    defaultValue={partner.bank_details?.bank_name || ""}
+                    placeholder="e.g. GTBank"
+                    className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${textSecondary}`}>Account Number</label>
+                  <input 
+                    type="text" 
+                    defaultValue={partner.bank_details?.account_number || ""}
+                    placeholder="0000000000"
+                    className={`w-full max-w-md px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
+                  />
+                </div>
+                <button className="bg-[#2EC4B6] hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-teal-500/20">
+                  Save Changes
+                </button>
               </div>
             </div>
           )}
