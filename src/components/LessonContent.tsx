@@ -10,7 +10,7 @@ import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
 import confetti from "canvas-confetti";
-// Using native iframe instead of react-player for better compatibility
+import ReactPlayer from "react-player";
 
 interface LessonContentProps {
   child: Child;
@@ -668,18 +668,33 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <iframe
-                    ref={videoRef}
-                    src={`https://www.youtube.com/embed/${currentVideoData.embedId}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&iv_load_policy=3`}
+                  <ReactPlayer
+                    url={`https://www.youtube.com/watch?v=${currentVideoData.embedId}`}
                     width="100%"
                     height="100%"
-                    style={{ position: "absolute", top: 0, left: 0, border: "none" }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    onLoad={() => {
-                      // Automatically unlock the quiz after the video loads so they aren't blocked
-                      setTimeout(() => setWatchedFraction(1), 3000);
+                    playing={true}
+                    controls={true}
+                    pip={true}
+                    onProgress={(progress) => {
+                      // Unlock quiz when 80% of video is watched
+                      if (progress.played >= 0.8) {
+                        setWatchedFraction(1);
+                      } else {
+                        setWatchedFraction(progress.played);
+                      }
                     }}
+                    onEnded={() => setWatchedFraction(1)}
+                    config={{
+                      youtube: {
+                        playerVars: { 
+                          modestbranding: 1, 
+                          rel: 0, 
+                          cc_load_policy: subtitlesOn ? 1 : 0,
+                          iv_load_policy: 3
+                        }
+                      }
+                    }}
+                    style={{ position: "absolute", top: 0, left: 0 }}
                   />
                 )}
               </div>
