@@ -17,13 +17,14 @@ export default function PartnerLogin() {
     setTimeout(() => {
       // In a real app, this would set the partner context
       localStorage.setItem("clats_partner_session", JSON.stringify({
-        id: "partner-1",
-        type: "school",
-        name: "Greenwood Academy",
-        partner_code: "GREEN-26",
-        commission_rate: 0.2,
-        total_earnings: 145000,
-        available_balance: 45000
+        id: "partner-test",
+        type: "affiliate",
+        name: "Test Partner",
+        partner_code: "TEST-LINK",
+        commission_rate: 0.1,
+        total_earnings: 0,
+        available_balance: 0,
+        referrals: []
       }));
       router.push("/partner/dashboard");
     }, 1000);
@@ -46,7 +47,6 @@ export default function PartnerLogin() {
             <input 
               type="email" 
               required
-              defaultValue="admin@greenwood.edu"
               className={`w-full px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
             />
           </div>
@@ -55,7 +55,6 @@ export default function PartnerLogin() {
             <input 
               type="password"
               required 
-              defaultValue="password123"
               className={`w-full px-4 py-3 rounded-xl border outline-none focus:border-[#2EC4B6] transition-colors ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}
             />
           </div>

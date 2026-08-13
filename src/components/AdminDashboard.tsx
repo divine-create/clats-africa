@@ -5441,24 +5441,9 @@ ON CONFLICT (email) DO NOTHING;
                     <h3 className="text-sm font-black m-0">Pending Payouts Ledger</h3>
                   </div>
                   <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
-                    {[
-                      { partner: "Lagos Academy", amount: "$450.00", date: "Oct 12" },
-                      { partner: "TechForward Agents", amount: "$120.00", date: "Oct 10" },
-                      { partner: "EduConsult Inc", amount: "$890.00", date: "Oct 08" }
-                    ].map((tx, i) => (
-                      <div key={i} className={`flex justify-between items-center p-3 rounded-xl border transition-all ${isDark ? "border-[#1F2937] bg-[#0B0F14]/50" : "border-[#E5E7EB] bg-slate-50/50 hover:bg-slate-50"}`}>
-                        <div>
-                          <span className="block text-xs font-bold">{tx.partner}</span>
-                          <span className="text-[9px] text-slate-500 font-mono">{tx.date}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-black text-emerald-500">{tx.amount}</span>
-                          <button onClick={() => showToast(`Approved payout to ${tx.partner}`)} className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white p-1.5 rounded-lg transition-colors">
-                            <Check size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                    <div className="text-center py-6 text-xs text-slate-500 font-bold">
+                      No pending payouts at this time.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -5492,29 +5477,11 @@ ON CONFLICT (email) DO NOTHING;
                       </tr>
                     </thead>
                     <tbody className="text-xs">
-                      {[
-                        { name: "Lagos Academy", code: "LAGOS-2026", type: "School", comm: "15%", signups: 42 },
-                        { name: "TechForward Agents", code: "TECH-FWD", type: "Agent", comm: "20%", signups: 18 },
-                        { name: "EduConsult Inc", code: "EDU-PRO", type: "Agency", comm: "25%", signups: 105 }
-                      ].map((p, i) => (
-                        <tr key={i} className={`border-b transition-colors ${isDark ? "border-[#1F2937]/50 hover:bg-[#0B0F14]/40" : "border-[#E5E7EB]/50 hover:bg-slate-50/50"}`}>
-                          <td className="py-3 font-bold">{p.name}</td>
-                          <td className="py-3">
-                            <span className="bg-[#14B8A6]/10 text-[#14B8A6] font-mono px-2 py-0.5 rounded text-[10px] font-bold border border-[#14B8A6]/20">{p.code}</span>
-                          </td>
-                          <td className="py-3 text-slate-500 font-semibold">{p.type}</td>
-                          <td className="py-3 font-mono font-bold text-slate-600 dark:text-slate-300">{p.comm}</td>
-                          <td className="py-3 font-mono font-black">{p.signups}</td>
-                          <td className="py-3 flex justify-end gap-2">
-                            <button onClick={() => showToast(`Regenerated code for ${p.name}`)} className="text-slate-400 hover:text-[#14B8A6] transition-colors p-1" title="Generate New Code">
-                              <RotateCcw size={14} />
-                            </button>
-                            <button onClick={() => showToast(`Edit rates for ${p.name}`)} className="text-slate-400 hover:text-[#B8A0FF] transition-colors p-1" title="Edit Commission">
-                              <Edit2 size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-500 font-bold">
+                          No partners registered yet.
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
