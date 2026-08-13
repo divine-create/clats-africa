@@ -32,6 +32,8 @@ interface LessonContentProps {
   isLastLessonInModule?: boolean;
   onNextModule?: () => void;
   nextModuleTitle?: string;
+  isNextModuleLocked?: boolean;
+  onShowPaywall?: () => void;
 }
 
 export const LessonContent: React.FC<LessonContentProps> = ({
@@ -43,7 +45,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   onNextLesson,
   isLastLessonInModule,
   onNextModule,
-  nextModuleTitle
+  nextModuleTitle,
+  isNextModuleLocked,
+  onShowPaywall
 }) => {
   const isAges6To12 = child.ageGroup === "young innovators";
   const isEarlyExplorers = child.ageGroup === "early explorers";
@@ -1141,28 +1145,54 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {isLastLessonInModule ? (
-                  <button
-                    onClick={() => {
-                      sfx.playLevelUp();
-                      if (onNextModule) onNextModule();
-                    }}
-                    style={{
-                      width: "100%",
-                      background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: 20,
-                      padding: "20px 24px",
-                      fontSize: 18,
-                      fontWeight: 950,
-                      cursor: "pointer",
-                      boxShadow: "0 6px 0 #0f766e",
-                      marginBottom: 8
-                    }}
-                  >
-                    START NEXT MODULE 🚀
-                    {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle}</div>}
-                  </button>
+                  isNextModuleLocked ? (
+                    <button
+                      onClick={() => {
+                        sfx.playLevelUp();
+                        if (onShowPaywall) onShowPaywall();
+                      }}
+                      style={{
+                        width: "100%",
+                        background: `linear-gradient(135deg, #fbbf24, #d97706)`,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 20,
+                        padding: "20px 24px",
+                        fontSize: 18,
+                        fontWeight: 950,
+                        cursor: "pointer",
+                        boxShadow: "0 6px 0 #b45309",
+                        marginBottom: 8
+                      }}
+                    >
+                      <span style={{ fontSize: 24, marginRight: 8, verticalAlign: "middle" }}>⭐</span>
+                      UNLOCK NEXT MODULE
+                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle} (Premium Zone)</div>}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        sfx.playLevelUp();
+                        if (onNextModule) onNextModule();
+                      }}
+                      style={{
+                        width: "100%",
+                        background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 20,
+                        padding: "20px 24px",
+                        fontSize: 18,
+                        fontWeight: 950,
+                        cursor: "pointer",
+                        boxShadow: "0 6px 0 #0f766e",
+                        marginBottom: 8
+                      }}
+                    >
+                      START NEXT MODULE 🚀
+                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle}</div>}
+                    </button>
+                  )
                 ) : (
                   onNextLesson && (
                     <button

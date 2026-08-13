@@ -25,6 +25,7 @@ import { ChildGames } from "./ChildGames";
 import { ChildRewards } from "./ChildRewards";
 import { ModuleDetails } from "./ModuleDetails";
 import { CURRICULUM } from "../data/curriculum";
+import { PaywallModal } from "./PaywallModal";
 
 interface ChildAppProps {
   child: Child;
@@ -67,9 +68,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const isDark = theme === "dark";
 
   // States
-  const [activeTab, setActiveTab] = useState<TabType>("home");
+  const [activeTab, setActiveTab] = useState<TabType>(activeTourTab || "home");
   const [selModule, setSelModule] = useState<Module | null>(null);
   const [selLesson, setSelLesson] = useState<Lesson | null>(null);
+  const [showHandoff, setShowHandoff] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [selectedAcademyId, setSelectedAcademyId] = useState<string>("academy-1");
 
   // Load narration preference
@@ -623,12 +626,15 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         const isLastLesson = selModule && selLesson && selModule.lessons.findIndex((l) => l.id === selLesson.id) === selModule.lessons.length - 1;
         const course = CURRICULUM[child.ageGroup || "early explorers"];
         let nextModule = null;
+        let nextModIdx = -1;
         if (selModule && course && course.modules) {
           const modIdx = course.modules.findIndex(m => m.id === selModule.id);
           if (modIdx !== -1 && modIdx + 1 < course.modules.length) {
             nextModule = course.modules[modIdx + 1];
+            nextModIdx = modIdx + 1;
           }
         }
+        const isNextModuleLocked = !child.is_premium && nextModIdx >= 1;
 
         return (
           <LessonContent
@@ -649,6 +655,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               }
             } : undefined}
             isLastLessonInModule={isLastLesson}
+            isNextModuleLocked={isNextModuleLocked}
+            onShowPaywall={() => setShowHandoff(true)}
             nextModuleTitle={nextModule?.title?.en}
             onNextModule={nextModule ? () => {
               setSelModule(nextModule);
@@ -758,6 +766,67 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             </Txt>
           </button>
         </div>
+      )}
+
+      {/* PARENTAL HANDOFF OVERLAY */}
+      {showHandoff && !showPaywall && (
+        <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md text-center">
+          <div className="max-w-sm w-full bg-white rounded-3xl p-8 border-[6px] border-[#2EC4B6] shadow-2xl relative">
+            <button 
+              onClick={() => setShowHandoff(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 font-bold"
+            >
+              ✕
+            </button>
+            <div className="flex justify-center mb-6">
+              <KobeAvatar size={100} character={child.companion || "kobe"} ageGroup={child.ageGroup} expression="celebrating" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-800 mb-4 tracking-tight">Whoa! You're moving fast! 🚀</h2>
+            <p className="text-sm font-bold text-slate-500 mb-8">
+              You've reached the <strong className="text-amber-500">Premium Zone</strong>! Go get your parent so they can unlock the rest of your learning adventure!
+            </p>
+            <button
+              onClick={() => {
+                setShowHandoff(false);
+                setShowPaywall(true);
+              }}
+              className="w-full bg-[#2EC4B6] text-white font-black text-lg py-4 rounded-2xl border-b-4 border-teal-700 active:border-b-0 active:translate-y-1 transition-all"
+            >
+              I am a Parent (Unlock)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* DIRECT PAYWALL */}
+      {showPaywall && (
+        <PaywallModal
+          parentEmail={parent?.email || ""}
+          childId={child.id}
+          childName={child.name}
+          isDark={isDark}
+          onClose={() => setShowPaywall(false)}
+          onSuccess={() => {
+            // Unlocked successfully! Update local state
+            onUpdateChild({ ...child, is_premium: true });
+            setShowPaywall(false);
+            // Wait for UI to update, then just resume the next module
+            setTimeout(() => {
+              const course = CURRICULUM[child.ageGroup || "early explorers"];
+              let nxtMod = null;
+              if (selModule && course && course.modules) {
+                const modIdx = course.modules.findIndex(m => m.id === selModule.id);
+                if (modIdx !== -1 && modIdx + 1 < course.modules.length) {
+                  nxtMod = course.modules[modIdx + 1];
+                }
+              }
+              if (nxtMod) {
+                setSelModule(nxtMod);
+                setActiveTab("lessons");
+              }
+            }, 500);
+          }}
+        />
       )}
     </div>
   );
