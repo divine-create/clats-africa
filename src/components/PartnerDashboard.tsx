@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, Check, LogOut, Download, Copy, Share2, CreditCard, Users, TrendingUp, DollarSign, Settings, Image, MessageCircle } from "lucide-react";
+import { CLATSLogo } from "./CLATSLogo";
 
 interface PartnerDashboardProps {
   partner: any;
@@ -30,8 +31,8 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
       {/* Header */}
       <header className={`sticky top-0 z-50 flex items-center justify-between px-6 py-4 border-b ${isDark ? "bg-[#0B0F14]/90 border-slate-800" : "bg-white/90 border-slate-200"} backdrop-blur-md`}>
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-[#2EC4B6] rounded-lg flex items-center justify-center text-white font-black text-sm">P</div>
-          <span className={`font-black text-lg ${textPrimary}`}>Partner Portal</span>
+          <CLATSLogo height={32} />
+          <span className={`font-black text-lg ml-2 ${textPrimary}`}>Partner Portal</span>
         </div>
         <div className="flex items-center gap-4">
           <div className={`px-4 py-1.5 rounded-full text-xs font-bold ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>
