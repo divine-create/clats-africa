@@ -740,50 +740,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   position: "relative"
                 }}
               >
-                {!isVideoPlaying ? (
-                  <div 
-                    onClick={() => setIsVideoPlaying(true)}
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
-                      position: "absolute",
-                      backgroundImage: `url(https://img.youtube.com/vi/${currentVideoData.embedId}/hqdefault.jpg)`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
-                    }}
-                  >
-                    {/* Dark overlay for better button contrast */}
-                    <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.3)" }}></div>
-                    
-                    {/* Beautiful Play Button (Dynamic Theme) */}
-                    <div style={{ 
-                      width: 70, height: 70, 
-                      backgroundColor: child.ageGroup === "early explorers" ? "#f59e0b" : "#8b5cf6", 
-                      borderRadius: "50%", 
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "center",
-                      position: "relative",
-                      boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
-                      transition: "transform 0.2s"
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
-                    onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
-                    >
-                      <div style={{
-                        width: 0, height: 0,
-                        borderTop: "12px solid transparent",
-                        borderBottom: "12px solid transparent",
-                        borderLeft: "20px solid white",
-                        marginLeft: 6
-                      }}></div>
-                    </div>
-                  </div>
-                ) : (
                   <div 
                     key={currentVideoData.embedId}
                     ref={videoContainerRef}
@@ -842,7 +798,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       </div>
                     </div>
                   </div>
-                )}
               </div>
                 <div style={{ background: "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
