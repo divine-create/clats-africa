@@ -74,6 +74,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const [showHandoff, setShowHandoff] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [selectedAcademyId, setSelectedAcademyId] = useState<string>("academy-1");
+  const [celebrationQueue, setCelebrationQueue] = useState<string[]>([]);
 
   // Load narration preference
   const isEarly = child.ageGroup === "early explorers";
@@ -295,13 +296,59 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       : priorQuizResults;
 
     const currentCompletedCount = Object.keys(freshCompleted).length;
-    const badgesToUnlock: string[] = [];
-    if (currentCompletedCount >= 1) badgesToUnlock.push("bdg-ai-newbie");
-    if (freshXP >= 250) badgesToUnlock.push("bdg-cyber-shield");
-    if (freshXP >= 500) badgesToUnlock.push("bdg-prompt-pro");
 
+    // Calculate streak locally first so we can award streak badges
     let finalStreak = child.streak_count || 0;
     let finalLastActive = child.last_active_at || "";
+
+    if (isPass) {
+      const todayStr = new Date().toISOString().split("T")[0];
+      if (!child.last_active_at) {
+        finalStreak = 1;
+        finalLastActive = todayStr;
+      } else {
+        const lastActiveStr = child.last_active_at.split("T")[0];
+        if (lastActiveStr === todayStr) {
+          finalLastActive = todayStr;
+        } else {
+          const d1 = new Date(lastActiveStr);
+          const d2 = new Date(todayStr);
+          d1.setUTCHours(0, 0, 0, 0);
+          d2.setUTCHours(0, 0, 0, 0);
+          const daysDiff = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysDiff === 1) {
+            finalStreak = (child.streak_count || 0) + 1;
+            finalLastActive = todayStr;
+          } else if (daysDiff > 1) {
+            finalStreak = 1;
+            finalLastActive = todayStr;
+          } else {
+            finalLastActive = todayStr;
+          }
+        }
+      }
+    }
+
+    const currentBadges = child.badges || [];
+    const badgesToUnlock: string[] = [];
+    
+    const tryUnlock = (badgeId: string) => {
+      if (!currentBadges.includes(badgeId) && !badgesToUnlock.includes(badgeId)) {
+        badgesToUnlock.push(badgeId);
+      }
+    };
+
+    if (currentCompletedCount >= 1) tryUnlock("bdg-ai-newbie");
+    if (freshXP >= 250) tryUnlock("bdg-cyber-shield");
+    if (freshXP >= 500) tryUnlock("bdg-prompt-pro");
+    if (freshXP >= 1000) tryUnlock("badge_bronze_scholar");
+    
+    if (quizResult && quizResult.score === 100 && !priorQuizResults[lessonId]) {
+      tryUnlock("badge_flawless_victory");
+    }
+    if (finalStreak >= 3) {
+      tryUnlock("badge_3_day_spark");
+    }
 
     if (parent && parent.email) {
       try {
@@ -356,35 +403,15 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       } catch (e) {
         console.warn("[SYNC] Fallback to client-side caching due to transient database error:", e);
       }
-    } else {
-      if (isPass) {
-        const todayStr = new Date().toISOString().split("T")[0];
-        if (!child.last_active_at) {
-          finalStreak = 1;
-          finalLastActive = todayStr;
-        } else {
-          const lastActiveStr = child.last_active_at.split("T")[0];
-          if (lastActiveStr === todayStr) {
-            finalLastActive = todayStr;
-          } else {
-            const d1 = new Date(lastActiveStr);
-            const d2 = new Date(todayStr);
-            d1.setUTCHours(0, 0, 0, 0);
-            d2.setUTCHours(0, 0, 0, 0);
-            const daysDiff = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-            if (daysDiff === 1) {
-              finalStreak = (child.streak_count || 0) + 1;
-              finalLastActive = todayStr;
-            } else if (daysDiff > 1) {
-              finalStreak = 1;
-              finalLastActive = todayStr;
-            } else {
-              finalLastActive = todayStr;
-            }
-          }
-        }
-      }
     }
+
+    // Trigger celebration
+    if (badgesToUnlock.length > 0) {
+      setCelebrationQueue(prev => [...prev, ...badgesToUnlock]);
+    }
+
+    // Combine existing badges with newly unlocked ones
+    const newBadgesList = [...(child.badges || []), ...badgesToUnlock];
 
     // Persist changes
     const updated = {
@@ -395,7 +422,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       quizResults: freshQuizResults,
       streak_count: finalStreak,
       best_streak: Math.max(finalStreak, child.best_streak || 0),
-      last_active_at: finalLastActive
+      last_active_at: finalLastActive,
+      badges: newBadgesList
     };
 
     onUpdateChild(updated);
@@ -403,9 +431,22 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
   const handleAddGamesXP = (amount: number) => {
     const freshXP = (child.xp || 0) + amount;
+    
+    const newlyUnlocked: string[] = [];
+    if (freshXP >= 250 && !currentBadges.includes("bdg-cyber-shield")) newlyUnlocked.push("bdg-cyber-shield");
+    if (freshXP >= 500 && !currentBadges.includes("bdg-prompt-pro")) newlyUnlocked.push("bdg-prompt-pro");
+    if (freshXP >= 1000 && !currentBadges.includes("badge_bronze_scholar")) newlyUnlocked.push("badge_bronze_scholar");
+
+    if (newlyUnlocked.length > 0) {
+      setCelebrationQueue(prev => [...prev, ...newlyUnlocked]);
+    }
+
+    const newBadgesList = [...currentBadges, ...newlyUnlocked];
+
     const updated = {
       ...child,
-      xp: freshXP
+      xp: freshXP,
+      badges: newBadgesList
     };
     onUpdateChild(updated);
   };
@@ -413,6 +454,15 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
 
 
+
+  const BADGE_MAP: Record<string, { title: string, icon: string }> = {
+    "bdg-ai-newbie": { title: "AI Newbie", icon: "🌱" },
+    "bdg-cyber-shield": { title: "Cyber Shield", icon: "🛡️" },
+    "bdg-prompt-pro": { title: "Prompt Pro", icon: "💬" },
+    "badge_bronze_scholar": { title: "Bronze Scholar", icon: "🏆" },
+    "badge_flawless_victory": { title: "Flawless Victory", icon: "🎯" },
+    "badge_3_day_spark": { title: "3-Day Spark", icon: "🔥" },
+  };
 
   return (
     <div className="tropical-bg" style={{ minHeight: "100vh", paddingBottom: 88, position: "relative", overflowX: "hidden" }}>
@@ -828,6 +878,40 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             }, 500);
           }}
         />
+      )}
+
+      {/* BADGE CELEBRATION OVERLAY */}
+      {celebrationQueue.length > 0 && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md text-center">
+          <div className="max-w-sm w-full bg-white rounded-3xl p-8 shadow-2xl relative flex flex-col items-center border-[6px] border-[#2EC4B6]">
+            {/* Simple CSS Confetti */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+               <div className="absolute top-4 left-1/4 w-3 h-3 bg-yellow-400 rounded-full animate-bounce"></div>
+               <div className="absolute top-10 right-1/4 w-4 h-4 bg-red-400 rounded-full animate-pulse"></div>
+               <div className="absolute top-2 left-1/2 w-3 h-3 bg-purple-400 rounded-full animate-bounce delay-100"></div>
+            </div>
+
+            <span className="text-[72px] mb-4 animate-bounce">
+              {BADGE_MAP[celebrationQueue[0]]?.icon || "🏅"}
+            </span>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Badge Unlocked!</h2>
+            <p className="text-2xl font-black mt-2 text-[#2EC4B6]">
+              {BADGE_MAP[celebrationQueue[0]]?.title || "Mystery Badge"}
+            </p>
+            <p className="text-sm text-slate-500 mt-2 font-bold mb-8">
+              Great job! You earned a new reward.
+            </p>
+            
+            <button
+              onClick={() => {
+                setCelebrationQueue(prev => prev.slice(1));
+              }}
+              className="w-full bg-[#2EC4B6] text-white font-black text-xl py-4 rounded-2xl border-b-[6px] border-teal-700 active:border-b-0 active:translate-y-[6px] transition-all"
+            >
+              Awesome!
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

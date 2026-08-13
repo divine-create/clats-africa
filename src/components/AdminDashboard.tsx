@@ -396,6 +396,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   // Real Datastores mapped from live parents database S
   const [learners, setLearners] = useState<any[]>([]);
   const [parentRecords, setParentRecords] = useState<any[]>([]);
+  
+  // Real Datastores mapped from partners/referrals
+  const [adminPartners, setAdminPartners] = useState<any[]>([]);
+  const [adminPayouts, setAdminPayouts] = useState<any[]>([]);
 
   // Fetch real parents and children from Supabase
   useEffect(() => {
@@ -445,7 +449,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
         console.warn("Could not fetch users from Supabase Admin:", err);
       }
     };
+    
+    const fetchPartnersData = async () => {
+      try {
+        const res = await fetch("/api/supabase/partner/admin/list");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok) {
+            setAdminPartners(data.partners || []);
+            setAdminPayouts(data.payouts || []);
+          }
+        }
+      } catch(err) {
+        console.warn("Could not fetch partners from Supabase Admin:", err);
+      }
+    };
+
     fetchUsers();
+    fetchPartnersData();
   }, []);
 
   const [contentReleases, setContentReleases] = useState<any[]>(() => {
@@ -5441,9 +5462,21 @@ ON CONFLICT (email) DO NOTHING;
                     <h3 className="text-sm font-black m-0">Pending Payouts Ledger</h3>
                   </div>
                   <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
-                    <div className="text-center py-6 text-xs text-slate-500 font-bold">
-                      No pending payouts at this time.
-                    </div>
+                    {adminPayouts.length === 0 ? (
+                      <div className="text-center py-6 text-xs text-slate-500 font-bold">
+                        No pending payouts at this time.
+                      </div>
+                    ) : (
+                      adminPayouts.map(payout => (
+                        <div key={payout.id} className={`p-3 rounded-xl border flex items-center justify-between ${isDark ? "border-[#1F2937] bg-slate-800/50" : "border-[#E5E7EB] bg-slate-50"}`}>
+                          <div>
+                            <div className="text-xs font-bold">{payout.partner_id}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">₦{payout.commission_earned}</div>
+                          </div>
+                          <button className="bg-[#B8A0FF] hover:bg-[#a68cf2] text-white px-3 py-1 rounded text-[10px] font-bold">Pay</button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -5477,11 +5510,28 @@ ON CONFLICT (email) DO NOTHING;
                       </tr>
                     </thead>
                     <tbody className="text-xs">
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-500 font-bold">
-                          No partners registered yet.
-                        </td>
-                      </tr>
+                      {adminPartners.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-slate-500 font-bold">
+                            No partners registered yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        adminPartners.map(partner => (
+                          <tr key={partner.id} className={`border-b transition-colors ${isDark ? "border-[#1F2937] hover:bg-slate-800/30" : "border-[#E5E7EB] hover:bg-slate-50/50"}`}>
+                            <td className="py-3 font-bold">{partner.name}</td>
+                            <td className="py-3 font-mono text-[10px] text-slate-500">{partner.partner_code}</td>
+                            <td className="py-3 text-[10px] uppercase font-bold text-slate-500">{partner.type}</td>
+                            <td className="py-3 font-bold text-emerald-500">{(partner.commission_rate * 100).toFixed(0)}%</td>
+                            <td className="py-3 font-bold text-slate-500">0</td>
+                            <td className="py-3 text-right">
+                              <button className={`p-1.5 rounded-lg border transition-colors ${isDark ? "border-[#1F2937] hover:bg-slate-800 text-slate-400" : "border-[#E5E7EB] hover:bg-slate-100 text-slate-500"}`}>
+                                <Edit2 size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
