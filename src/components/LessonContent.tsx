@@ -287,9 +287,16 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         },
         events: {
           'onReady': (event: any) => {
-            // Note: Autoplay might be blocked by browser. User can click to play.
+            try {
+              event.target.unloadModule("captions");
+              event.target.unloadModule("cc");
+            } catch (e) {}
           },
           'onStateChange': (event: any) => {
+            try {
+              event.target.unloadModule("captions");
+              event.target.unloadModule("cc");
+            } catch (e) {}
             if (event.data === (window as any).YT.PlayerState.PLAYING) {
               setIsVideoPlaying(true);
             } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
@@ -770,13 +777,19 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       {/* Control Buttons */}
                       <div className="flex items-center justify-between text-white mt-1 pointer-events-auto">
                         <div className="flex items-center gap-4">
-                          <button 
-                            onClick={() => changeSpeed(playbackRate === 1 ? 0.75 : 1)}
-                            className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 bg-black/50 hover:bg-[#2EC4B6]/20 border border-white/10 rounded-lg transition-colors"
-                          >
-                            <Gauge size={16} />
-                            {playbackRate === 1 ? "Slow Down 🐌" : "Normal Speed 🐇"}
-                          </button>
+                        <div className="flex items-center gap-4 bg-black/50 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-md">
+                          <Gauge size={16} className="text-[#2EC4B6]" />
+                          <span className="text-xs font-bold font-mono min-w-[40px]">{playbackRate}x</span>
+                          <input
+                            type="range"
+                            min="0.25"
+                            max="2"
+                            step="0.25"
+                            value={playbackRate}
+                            onChange={(e) => changeSpeed(parseFloat(e.target.value))}
+                            className="w-24 h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer accent-[#2EC4B6]"
+                          />
+                        </div>
                         </div>
 
                         <div className="flex items-center gap-4">
