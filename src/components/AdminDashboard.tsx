@@ -532,6 +532,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
   const [newLessonDuration, setNewLessonDuration] = useState("5");
   const [newLessonVideoUrl, setNewLessonVideoUrl] = useState("");
+  const [newLessonCompanionExplanation, setNewLessonCompanionExplanation] = useState("");
 
   // Kobe & Chibi Companion Manager State
   const [selectedCompanion, setSelectedCompanion] = useState<"kobe" | "chibi">("kobe");
@@ -938,6 +939,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
           title: newLessonTitle, 
           description: newLessonDescription || `Custom ${newLessonType} curated for system intelligence.`,
           video_url: newLessonVideoUrl || "",
+          companion_explanation: newLessonCompanionExplanation || "",
           lesson_order: (curriculumData[selectedAgeGroup]?.lessons?.length || 0) + 1,
           estimated_duration: est,
           status: "published"
@@ -949,6 +951,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
         setNewLessonTitle("");
         setNewLessonDescription("");
         setNewLessonVideoUrl("");
+        setNewLessonCompanionExplanation("");
         setNewLessonDuration("5");
         setEditingLessonId(null);
         const fresh = await pullCurriculumFromSupabase();
@@ -965,6 +968,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
     setEditingLessonId(les.id);
     setNewLessonTitle(les.title?.en || les.title);
     setNewLessonDescription(les.description?.en || les.description || "");
+    setNewLessonCompanionExplanation(les.companion_explanation || "");
     
     // Explicitly focus the parent module so saving works without manual clicks
     if (les.moduleId || les.module_id) {
@@ -3123,6 +3127,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                             />
                           </div>
                           <div className="space-y-1">
+                            <label className="text-[10px] text-slate-500 block font-mono font-bold uppercase tracking-wider">Mascot Explanation (Optional)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Technology helps us solve problems!"
+                              value={newLessonCompanionExplanation}
+                              onChange={(e) => setNewLessonCompanionExplanation(e.target.value)}
+                              className={`w-full border rounded-xl p-2 outline-none focus:ring-1 focus:ring-[#14B8A6] focus:border-[#14B8A6] ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-[#E5E7EB] text-slate-800"}`}
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="text-[10px] text-slate-500 block font-mono font-bold uppercase tracking-wider">YouTube Video ID (Optional)</label>
                             <input
                               type="text"
@@ -4960,6 +4974,7 @@ CREATE TABLE IF NOT EXISTS lessons (
   title TEXT NOT NULL,
   description TEXT,
   video_url TEXT,
+  companion_explanation TEXT,
   lesson_order INTEGER DEFAULT 1,
   estimated_duration TEXT DEFAULT '5 mins',
   status TEXT DEFAULT 'published'
@@ -5663,6 +5678,20 @@ ON CONFLICT (email) DO NOTHING;
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                      Mascot Explanation (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Technology helps us solve problems!"
+                      value={newLessonCompanionExplanation}
+                      onChange={(e) => setNewLessonCompanionExplanation(e.target.value)}
+                      className={`w-full border rounded-xl p-2.5 text-xs outline-none focus:ring-1 focus:ring-[#14B8A6] focus:border-[#14B8A6] transition-all font-mono font-semibold ${
+                        isDark ? "bg-[#0B0F14] border-[#1F2937] text-white" : "bg-white border-[#E5E7EB] text-[#111827]"
+                      }`}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                       YouTube Video ID (Optional)
                     </label>
                     <input
@@ -5685,6 +5714,7 @@ ON CONFLICT (email) DO NOTHING;
                       setNewLessonTitle("");
                       setNewLessonDescription("");
                       setNewLessonVideoUrl("");
+                      setNewLessonCompanionExplanation("");
                       setNewLessonDuration("5");
                     }}
                     className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${

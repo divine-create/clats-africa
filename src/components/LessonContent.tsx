@@ -264,11 +264,11 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       }
     };
 
-    (window as any).onYouTubeIframeAPIReady = () => {
+    const initPlayer = () => {
       if (ytPlayerRef.current) {
         ytPlayerRef.current.destroy();
       }
-      ytPlayerRef.current = new (window as any).YT.Player("youtube-player-container", {
+      ytPlayerRef.current = new (window as any).YT.Player(`youtube-player-${currentVideoData.embedId}`, {
         height: '100%',
         width: '100%',
         videoId: currentVideoData.embedId,
@@ -299,10 +299,12 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       });
     };
 
+    (window as any).onYouTubeIframeAPIReady = initPlayer;
+
     if (!(window as any).YT) {
       loadYoutubeAPI();
     } else if ((window as any).YT && (window as any).YT.Player) {
-      (window as any).onYouTubeIframeAPIReady();
+      initPlayer();
     }
 
     return () => {
@@ -783,13 +785,14 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                 ) : (
                   <div 
+                    key={currentVideoData.embedId}
                     ref={videoContainerRef}
                     className="relative w-full h-full group bg-black"
                     onMouseEnter={() => setShowControls(true)}
                     onMouseLeave={() => setShowControls(false)}
                   >
                     {/* YT Iframe Container */}
-                    <div id="youtube-player-container" style={{ width: "100%", height: "100%", pointerEvents: "none" }}></div>
+                    <div id={`youtube-player-${currentVideoData.embedId}`} style={{ width: "100%", height: "100%", pointerEvents: "none" }}></div>
                     
                     {/* Transparent Click Overlay to trigger our own controls */}
                     <div 
