@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, Check, LogOut, Download, Copy, Share2, CreditCard, Users, TrendingUp, DollarSign, Settings } from "lucide-react";
+import { Link, Check, LogOut, Download, Copy, Share2, CreditCard, Users, TrendingUp, DollarSign, Settings, Image, MessageCircle } from "lucide-react";
 
 interface PartnerDashboardProps {
   partner: any;
@@ -84,6 +84,19 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
             <div className="flex items-center gap-3">
               <Users size={18} />
               Network
+            </div>
+          </button>
+          <button 
+            onClick={() => setActiveTab("assets")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === "assets" 
+                ? (isDark ? "bg-pink-500/20 text-pink-500" : "bg-pink-50 text-pink-600") 
+                : (isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-50")
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Image size={18} />
+              Marketing Kit
             </div>
           </button>
           <button 
@@ -265,6 +278,90 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
                   Save Changes
                 </button>
               </div>
+            </div>
+          )}
+
+          {activeTab === "assets" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h2 className={`text-xl font-black m-0 ${textPrimary}`}>Marketing Kit</h2>
+                  <p className={`text-sm mt-1 ${textSecondary}`}>Everything you need to promote CLATS and earn commissions.</p>
+                </div>
+              </div>
+
+              {/* WhatsApp Templates */}
+              <div className={`p-6 rounded-2xl border ${bgCard} space-y-4`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageCircle size={18} className="text-emerald-500" />
+                  <h3 className={`text-sm font-bold ${textPrimary}`}>WhatsApp Broadcast Templates</h3>
+                </div>
+                <div className={`p-4 rounded-xl border relative ${isDark ? "bg-slate-900 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
+                  <p className={`text-sm whitespace-pre-wrap ${textSecondary}`}>
+                    Hey parents! 👋{"\n"}
+                    I just discovered CLATS Future Tech Academy, an amazing AI-powered coding and robotics platform for kids.{"\n\n"}
+                    If you want to prepare your child for the future, sign up using my special link below:{"\n"}
+                    <span className="text-[#2EC4B6] font-bold">{referralLink}</span>
+                  </p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`Hey parents! 👋\nI just discovered CLATS Future Tech Academy, an amazing AI-powered coding and robotics platform for kids.\n\nIf you want to prepare your child for the future, sign up using my special link below:\n${referralLink}`);
+                      alert("Template copied!");
+                    }}
+                    className="absolute top-4 right-4 p-2 rounded-lg bg-[#2EC4B6]/10 text-[#2EC4B6] hover:bg-[#2EC4B6] hover:text-white transition-colors"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Social Media Banners */}
+              <div className={`p-6 rounded-2xl border ${bgCard}`}>
+                <div className="flex items-center gap-2 mb-6">
+                  <Image size={18} className="text-pink-500" />
+                  <h3 className={`text-sm font-bold ${textPrimary}`}>Social Media Banners & Flyers</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Banner 1 */}
+                  <div className={`rounded-xl border overflow-hidden ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                    <div className="aspect-video bg-gradient-to-br from-[#2EC4B6] to-teal-700 flex flex-col items-center justify-center p-6 text-center text-white relative">
+                      <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                      <h4 className="text-xl font-black mb-2 relative z-10">Future-Proof Your Child</h4>
+                      <p className="text-xs font-semibold relative z-10 opacity-90">Join CLATS Academy Today!</p>
+                    </div>
+                    <div className={`p-4 flex justify-between items-center ${isDark ? "bg-slate-900" : "bg-slate-50"}`}>
+                      <span className={`text-xs font-bold ${textPrimary}`}>Instagram Post (1:1)</span>
+                      <button className="flex items-center gap-2 text-xs font-bold bg-[#B8A0FF] hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors">
+                        <Download size={14} /> Download
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Flyer with QR */}
+                  <div className={`rounded-xl border overflow-hidden ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                    <div className="aspect-video bg-gradient-to-br from-slate-800 to-black flex items-center justify-between p-6 text-white relative">
+                      <div>
+                        <h4 className="text-lg font-black mb-1">Learn to Code!</h4>
+                        <p className="text-[10px] text-slate-400">Scan to register</p>
+                      </div>
+                      <div className="h-20 w-20 bg-white rounded-lg p-1 flex items-center justify-center">
+                        {/* Placeholder for QR Code */}
+                        <div className="w-full h-full border-4 border-dashed border-slate-300 flex items-center justify-center">
+                          <span className="text-[8px] font-black text-slate-400">QR CODE</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`p-4 flex justify-between items-center ${isDark ? "bg-slate-900" : "bg-slate-50"}`}>
+                      <span className={`text-xs font-bold ${textPrimary}`}>Printable Flyer (A4)</span>
+                      <button className="flex items-center gap-2 text-xs font-bold bg-[#B8A0FF] hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors">
+                        <Download size={14} /> Download
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
         </div>
