@@ -22,6 +22,40 @@ export async function POST(req: Request) {
 
     if (error) throw new Error(error.message);
 
+    // Handle referrals and partner commissions
+    if (email) {
+      const { data: parent } = await sb.from("clats_parents").select("referred_by, partner_id").eq("email", email).single();
+      
+      if (parent) {
+        // 1. Reward the referrer (e.g. +1 free month)
+        if (parent.referred_by) {
+          const { data: referrer } = await sb.from("clats_parents").select("id, free_months").eq("referral_code", parent.referred_by).single();
+          if (referrer) {
+            await sb.from("clats_parents").update({ free_months: (referrer.free_months || 0) + 1 }).eq("id", referrer.id);
+          }
+        }
+        
+        // 2. Calculate and insert partner commission
+        if (parent.partner_id) {
+          const amount = 5000; // Mock amount for prototype
+          const { data: partner } = await sb.from("clats_partners").select("commission_rate").eq("partner_code", parent.partner_id).single();
+          const rate = partner?.commission_rate || 20; // Default to 20%
+          const commission_earned = (rate / 100) * amount;
+
+          await sb.from("clats_commissions_ledger").insert({
+            partner_id: parent.partner_id,
+            parent_email: email,
+            child_id: child_id,
+            plan_id: plan_id || 'premium',
+            amount_paid: amount,
+            commission_rate: rate,
+            commission_earned: commission_earned,
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return NextResponse.json({ ok: false, msg: err.message }, { status: 500 });

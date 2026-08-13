@@ -40,7 +40,8 @@ type TabType =
   | "government"
   | "reports"
   | "settings"
-  | "releases";
+  | "releases"
+  | "partners";
 
 type AgeGroupType = "early" | "young" | "future"; // 2-5, 6-12, 13-18
 
@@ -330,7 +331,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [rolesPermissions, setRolesPermissions] = useState<Record<AdminRole, { description: string; visibleTabs: TabType[]; customActions: string[] }>>({
     "Super Admin": {
       description: "Full Platform Control & Super Admin / CTO privileges. No restrictions.",
-      visibleTabs: ["overview", "analytics", "users", "curriculum", "games", "rewards", "companion", "community", "library", "schools", "government", "reports", "settings", "releases"],
+      visibleTabs: ["overview", "analytics", "users", "curriculum", "games", "rewards", "companion", "community", "library", "schools", "government", "reports", "settings", "releases", "partners"],
       customActions: ["Create Roles", "Edit Roles", "Delete Roles", "Assign Permissions", "View Revenue", "Manage Subscriptions", "Export All Data"]
     },
     "Content Manager": {
@@ -1602,6 +1603,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
             { id: "community", label: "Community Mod", icon: MessageSquare },
             { id: "schools", label: "B2B Schools", icon: Building },
             { id: "government", label: "B2G Government & CSR", icon: Globe },
+            { id: "partners", label: "Partners & Referrals", icon: Users },
             { id: "reports", label: "Reports Center", icon: FileDown },
             { id: "settings", label: "Platform Settings", icon: Settings }
           ].filter((item) => {
@@ -5359,6 +5361,148 @@ ON CONFLICT (email) DO NOTHING;
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: PARTNERS & REFERRALS */}
+          {activeTab === "partners" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h2 className={`text-xl font-black m-0 tracking-tight ${textPrimary}`}>
+                    Partners & Referrals
+                  </h2>
+                  <p className="text-[11px] font-mono font-semibold text-[#14B8A6] uppercase tracking-widest mt-0.5">
+                    Manage B2B Agents & Referral Rewards
+                  </p>
+                </div>
+                <button
+                  className="bg-[#14B8A6] hover:bg-[#0d9488] text-white font-black text-xs px-4 py-2 rounded-xl transition-all shadow flex items-center gap-2"
+                  onClick={() => showToast("Invite new partner flow initiated")}
+                >
+                  <Plus size={14} /> Invite Partner
+                </button>
+              </div>
+
+              {/* Global Settings & Ledger Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Global Settings */}
+                <div className={`p-6 rounded-3xl ${bgCard} space-y-4`}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Settings size={18} className="text-[#14B8A6]" />
+                    <h3 className="text-sm font-black m-0">Global Referral Settings</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 dark:text-slate-300">Enable Partner Referrals</span>
+                        <span className="text-[10px] text-slate-500">Allow B2B partners to refer students</span>
+                      </div>
+                      <button 
+                        onClick={() => showToast("Referrals toggled")}
+                        className="w-10 h-5 rounded-full bg-[#14B8A6] flex items-center p-1 justify-end transition-all"
+                      >
+                        <div className="w-3.5 h-3.5 rounded-full bg-white shadow-sm"></div>
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 dark:text-slate-300">Default Reward Type</span>
+                        <span className="text-[10px] text-slate-500">Cash payout vs platform credits</span>
+                      </div>
+                      <select className={`text-xs p-1.5 rounded-md border outline-none focus:border-[#14B8A6] font-semibold ${isDark ? "bg-[#0B0F14] border-[#1F2937] text-white" : "bg-slate-50 border-[#E5E7EB] text-slate-700"}`}>
+                        <option>Cash Commission</option>
+                        <option>App Credits</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ledger & Payouts */}
+                <div className={`p-6 rounded-3xl ${bgCard} space-y-4`}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <CreditCard size={18} className="text-[#B8A0FF]" />
+                    <h3 className="text-sm font-black m-0">Pending Payouts Ledger</h3>
+                  </div>
+                  <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+                    {[
+                      { partner: "Lagos Academy", amount: "$450.00", date: "Oct 12" },
+                      { partner: "TechForward Agents", amount: "$120.00", date: "Oct 10" },
+                      { partner: "EduConsult Inc", amount: "$890.00", date: "Oct 08" }
+                    ].map((tx, i) => (
+                      <div key={i} className={`flex justify-between items-center p-3 rounded-xl border transition-all ${isDark ? "border-[#1F2937] bg-[#0B0F14]/50" : "border-[#E5E7EB] bg-slate-50/50 hover:bg-slate-50"}`}>
+                        <div>
+                          <span className="block text-xs font-bold">{tx.partner}</span>
+                          <span className="text-[9px] text-slate-500 font-mono">{tx.date}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-black text-emerald-500">{tx.amount}</span>
+                          <button onClick={() => showToast(`Approved payout to ${tx.partner}`)} className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white p-1.5 rounded-lg transition-colors">
+                            <Check size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Partners Table */}
+              <div className={`p-6 rounded-3xl ${bgCard} space-y-4`}>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                  <h3 className="text-sm font-black m-0 flex items-center gap-2">
+                    <Users size={16} className="text-[#2EC4B6]" /> B2B Partners Directory
+                  </h3>
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="Search partners..." 
+                      className={`pl-8 pr-3 py-1.5 w-full sm:w-auto text-xs rounded-xl border outline-none focus:border-[#14B8A6] font-semibold transition-all ${isDark ? "bg-[#0B0F14] border-[#1F2937]" : "bg-slate-50 border-[#E5E7EB]"}`}
+                    />
+                  </div>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[500px]">
+                    <thead>
+                      <tr className={`border-b text-[10px] text-slate-400 uppercase tracking-wider font-mono ${isDark ? "border-[#1F2937]" : "border-[#E5E7EB]"}`}>
+                        <th className="pb-3 font-bold">Partner Name</th>
+                        <th className="pb-3 font-bold">Code</th>
+                        <th className="pb-3 font-bold">Type</th>
+                        <th className="pb-3 font-bold">Commission</th>
+                        <th className="pb-3 font-bold">Signups</th>
+                        <th className="pb-3 font-bold text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-xs">
+                      {[
+                        { name: "Lagos Academy", code: "LAGOS-2026", type: "School", comm: "15%", signups: 42 },
+                        { name: "TechForward Agents", code: "TECH-FWD", type: "Agent", comm: "20%", signups: 18 },
+                        { name: "EduConsult Inc", code: "EDU-PRO", type: "Agency", comm: "25%", signups: 105 }
+                      ].map((p, i) => (
+                        <tr key={i} className={`border-b transition-colors ${isDark ? "border-[#1F2937]/50 hover:bg-[#0B0F14]/40" : "border-[#E5E7EB]/50 hover:bg-slate-50/50"}`}>
+                          <td className="py-3 font-bold">{p.name}</td>
+                          <td className="py-3">
+                            <span className="bg-[#14B8A6]/10 text-[#14B8A6] font-mono px-2 py-0.5 rounded text-[10px] font-bold border border-[#14B8A6]/20">{p.code}</span>
+                          </td>
+                          <td className="py-3 text-slate-500 font-semibold">{p.type}</td>
+                          <td className="py-3 font-mono font-bold text-slate-600 dark:text-slate-300">{p.comm}</td>
+                          <td className="py-3 font-mono font-black">{p.signups}</td>
+                          <td className="py-3 flex justify-end gap-2">
+                            <button onClick={() => showToast(`Regenerated code for ${p.name}`)} className="text-slate-400 hover:text-[#14B8A6] transition-colors p-1" title="Generate New Code">
+                              <RotateCcw size={14} />
+                            </button>
+                            <button onClick={() => showToast(`Edit rates for ${p.name}`)} className="text-slate-400 hover:text-[#B8A0FF] transition-colors p-1" title="Edit Commission">
+                              <Edit2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

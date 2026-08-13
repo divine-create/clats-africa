@@ -215,6 +215,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     setTimeout(() => setToastMsg(null), 3500);
   };
 
+  const [activeTab, setActiveTab] = useState<"overview" | "refer">("overview");
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const referralCode = parent?.id ? parent.id.substring(0, 8).toUpperCase() : "CLATS26";
+  const referralLink = `https://app.clats.africa/register?ref=${referralCode}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+    showToast("Referral link copied!");
+  };
+
+  const friendsInvited = (parent as any)?.referrals_count || 0;
+  const freeMonths = (parent as any)?.free_months_earned || 0;
+
   const handleRSVP = async (id: string) => {
     if (rsvpedEvents.includes(id)) return;
     setRsvpedEvents(prev => {
@@ -668,8 +684,46 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       </header>
 
       {/* MAIN BODY LAYOUT */}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-12">
+      <main className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8 items-start">
         
+        {/* SIDEBAR NAVIGATION */}
+        <aside className={`w-full lg:w-64 flex-shrink-0 flex flex-col gap-2 p-4 rounded-2xl border ${isDark ? "bg-[#111827] border-slate-800" : "bg-white border-[#EAEAEA]"}`}>
+          <div className="mb-2 px-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Dashboard</span>
+          </div>
+          <button 
+            onClick={() => setActiveTab("overview")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === "overview" 
+                ? (isDark ? "bg-[#2EC4B6]/20 text-[#2EC4B6]" : "bg-teal-50 text-teal-700") 
+                : (isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-50")
+            }`}
+          >
+            <Activity size={18} />
+            Overview
+          </button>
+          <button 
+            onClick={() => setActiveTab("refer")}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === "refer" 
+                ? (isDark ? "bg-[#B8A0FF]/20 text-[#B8A0FF]" : "bg-purple-50 text-purple-700") 
+                : (isDark ? "text-slate-400 hover:bg-slate-800" : "text-slate-600 hover:bg-slate-50")
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Share2 size={18} />
+              Refer & Earn
+            </div>
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm">
+              Rewards
+            </span>
+          </button>
+        </aside>
+
+        {/* CONTENT AREA */}
+        <div className="flex-1 space-y-12 w-full min-w-0">
+          {activeTab === "overview" ? (
+            <>
         {/* HERO GREETING SECTION */}
         <section className={`p-8 rounded-2xl border transition-all duration-300 ${
           isDark 
@@ -1589,7 +1643,60 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           </div>
 
         </section>
+            </>
+          ) : (
+            {/* REFER & EARN TAB */}
+            <section className={`p-8 rounded-2xl border ${isDark ? "bg-[#111827] border-slate-800 text-white" : "bg-[#FFFFFF] border-[#EAEAEA] text-[#111111]"}`}>
+               <div className="flex flex-col items-center text-center space-y-8 py-8">
+                 <div className="h-24 w-24 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-xl shadow-orange-500/30 relative">
+                   <Award size={48} />
+                   <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-[#2EC4B6] border-2 border-white dark:border-slate-800 flex items-center justify-center text-white text-sm font-black">
+                     <Star size={16} />
+                   </div>
+                 </div>
+                 
+                 <div className="space-y-3">
+                   <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight m-0">Give a Month, Get a Month!</h2>
+                   <p className={`max-w-lg mx-auto text-sm md:text-base ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                     Invite friends to CLATS Future-Tech Academy. When they join, they get their first month free, and you earn a free month of Premium for each friend! Unlimited rewards!
+                   </p>
+                 </div>
 
+                 {/* Code Section */}
+                 <div className={`w-full max-w-xl p-6 rounded-2xl border ${isDark ? "bg-slate-900 border-slate-700" : "bg-slate-50 border-slate-200"} space-y-4`}>
+                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 font-mono">Your Unique Share Link</h3>
+                   <div className="flex items-center gap-2">
+                     <div className={`flex-1 px-4 py-3.5 rounded-xl border font-mono text-sm overflow-hidden text-ellipsis whitespace-nowrap text-left ${isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-white border-slate-300 text-slate-600"}`}>
+                       {referralLink}
+                     </div>
+                     <button
+                       onClick={handleCopy}
+                       className="px-6 py-3.5 rounded-xl bg-[#2EC4B6] hover:bg-teal-600 text-white font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-teal-500/20 flex-shrink-0"
+                     >
+                       {copiedCode ? <CheckCircle2 size={18} /> : <Share2 size={18} />}
+                       {copiedCode ? "Copied!" : "Copy Link"}
+                     </button>
+                   </div>
+                 </div>
+
+                 {/* Tracker */}
+                 <div className="w-full max-w-xl grid grid-cols-2 gap-6 mt-4">
+                   <div className={`p-6 rounded-2xl border flex flex-col items-center justify-center space-y-2 relative overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
+                     <div className="absolute top-0 left-0 h-1 w-full bg-[#B8A0FF]" />
+                     <span className="text-4xl font-black text-[#B8A0FF]">{friendsInvited}</span>
+                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Friends Invited</span>
+                   </div>
+                   <div className={`p-6 rounded-2xl border flex flex-col items-center justify-center space-y-2 relative overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
+                     <div className="absolute top-0 left-0 h-1 w-full bg-amber-500" />
+                     <span className="text-4xl font-black text-amber-500">{freeMonths}</span>
+                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Free Months Earned</span>
+                   </div>
+                 </div>
+
+               </div>
+            </section>
+          )}
+        </div>
       </main>
 
       {/* FOOTER POLICIES COGNITIVE FRAME */}

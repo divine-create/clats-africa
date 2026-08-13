@@ -10,7 +10,7 @@ function getSupabaseClient() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name, timezone, device, browser, phone, location } = await req.json();
+    const { email, password, name, timezone, device, browser, phone, location, referral_code, partner_code } = await req.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ ok: false, msg: "Email, password, and name are required." }, { status: 400 });
@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
     // 2. Insert into the legacy clats_parents table for compatibility
     // We save the actual password so the legacy fallback in login works seamlessly
     // even if Supabase Auth requires email confirmation.
+    const generated_referral_code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
     const parentPayload = {
       email: email.toLowerCase().trim(),
       password: password, 
@@ -51,6 +53,9 @@ export async function POST(req: NextRequest) {
       login_device: device || "Unknown",
       login_browser: browser || "Unknown",
       user_id: authData.user?.id || "",
+      referral_code: generated_referral_code,
+      referred_by: referral_code || null,
+      partner_id: partner_code || null,
     };
 
     const { error: insertError } = await sb.from("clats_parents").upsert(parentPayload, { onConflict: "email" });
