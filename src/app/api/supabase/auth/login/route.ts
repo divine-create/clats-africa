@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
         last_active_at: kid.last_active_at || null,
         streak_count: kid.streak_count || 0,
         best_streak: kid.best_streak || 0,
+        is_premium: kid.is_premium || false,
     }));
 
     // Update last login (non-critical, don't fail login if columns are missing)
