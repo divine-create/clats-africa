@@ -9,6 +9,7 @@ import { C, F, AGE_META } from "../utils/config";
 import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
+import confetti from "canvas-confetti";
 // Using native iframe instead of react-player for better compatibility
 
 interface LessonContentProps {
@@ -444,6 +445,36 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
   const activeProgressProgress =
     learningStep === "video" ? 33 : learningStep === "quiz" ? 66 : 100;
+
+  useEffect(() => {
+    if (learningStep === "reward" && isLastLessonInModule) {
+      // Fire confetti celebration for module completion
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#2EC4B6', '#FFD166', '#c084fc', '#f43f5e']
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#2EC4B6', '#FFD166', '#c084fc', '#f43f5e']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
+    }
+  }, [learningStep, isLastLessonInModule]);
 
   return (
     <div
