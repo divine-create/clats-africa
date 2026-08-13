@@ -1645,9 +1645,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
         </section>
             </>
           ) : (
-            {/* REFER & EARN TAB */}
-            <section className={`p-8 rounded-2xl border ${isDark ? "bg-[#111827] border-slate-800 text-white" : "bg-[#FFFFFF] border-[#EAEAEA] text-[#111111]"}`}>
-               <div className="flex flex-col items-center text-center space-y-8 py-8">
+            <>
+              {/* REFER & EARN TAB */}
+              <section className={`p-8 rounded-2xl border ${isDark ? "bg-[#111827] border-slate-800 text-white" : "bg-[#FFFFFF] border-[#EAEAEA] text-[#111111]"}`}>
+                <div className="flex flex-col items-center text-center space-y-8 py-8">
                  <div className="h-24 w-24 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-xl shadow-orange-500/30 relative">
                    <Award size={48} />
                    <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-[#2EC4B6] border-2 border-white dark:border-slate-800 flex items-center justify-center text-white text-sm font-black">
@@ -1694,7 +1695,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                  </div>
 
                </div>
-            </section>
+             </section>
+            </>
           )}
         </div>
       </main>
