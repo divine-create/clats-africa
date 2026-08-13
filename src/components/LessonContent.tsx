@@ -825,7 +825,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 </div>
                 {/* Customization Tip */}
                 <div className="bg-[#FFFBEB] text-[#D97706] px-4 py-2.5 text-[11px] font-bold font-mono tracking-wide flex items-center justify-center gap-2 border-t border-[#FDE68A]">
-                  💡 TIP: HOVER OVER THE VIDEO TO ADJUST THE PLAYBACK SPEED 🐌
+                  💡 TIP: SPEAKING TOO FAST? USE THE SLIDER AT THE BOTTOM LEFT OF THE VIDEO TO SLOW IT DOWN! 🐌
                 </div>
               </>
             ) : (
@@ -1233,10 +1233,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     <span style={{ fontSize: 54 }}>🎓</span>
                     <div>
                       <Txt size={14} weight={900} color="#fdf4ff" style={{ textTransform: "uppercase", display: "block", letterSpacing: 1 }}>
-                        ALL LESSONS COMPLETE!
+                        MODULE COMPLETED!
                       </Txt>
                       <Txt size={20} weight={950} color="#ffffff">
-                        Return to the map to face the Boss!
+                        You've mastered this entire section!
                       </Txt>
                     </div>
                   </div>
@@ -1270,28 +1270,54 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {isLastLessonInModule ? (
-                  <button
-                    onClick={() => {
-                      sfx.playLevelUp();
-                      onClose();
-                    }}
-                    style={{
-                      width: "100%",
-                      background: `linear-gradient(135deg, #6366f1, #4f46e5)`,
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: 20,
-                      padding: "20px 24px",
-                      fontSize: 18,
-                      fontWeight: 950,
-                      cursor: "pointer",
-                      boxShadow: "0 6px 0 #3730a3",
-                      marginBottom: 8
-                    }}
-                  >
-                    FACE THE MODULE BOSS! 👑
-                    <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>Return to map</div>
-                  </button>
+                  isNextModuleLocked ? (
+                    <button
+                      onClick={() => {
+                        sfx.playLevelUp();
+                        if (onShowPaywall) onShowPaywall();
+                      }}
+                      style={{
+                        width: "100%",
+                        background: `linear-gradient(135deg, #fbbf24, #d97706)`,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 20,
+                        padding: "20px 24px",
+                        fontSize: 18,
+                        fontWeight: 950,
+                        cursor: "pointer",
+                        boxShadow: "0 6px 0 #b45309",
+                        marginBottom: 8
+                      }}
+                    >
+                      <span style={{ fontSize: 24, marginRight: 8, verticalAlign: "middle" }}>⭐</span>
+                      UNLOCK NEXT MODULE
+                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle} (Premium Zone)</div>}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        sfx.playLevelUp();
+                        if (onNextModule) onNextModule();
+                      }}
+                      style={{
+                        width: "100%",
+                        background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 20,
+                        padding: "20px 24px",
+                        fontSize: 18,
+                        fontWeight: 950,
+                        cursor: "pointer",
+                        boxShadow: "0 6px 0 #0f766e",
+                        marginBottom: 8
+                      }}
+                    >
+                      START NEXT MODULE 🚀
+                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle}</div>}
+                    </button>
+                  )
                 ) : (
                   onNextLesson && (
                     <button
