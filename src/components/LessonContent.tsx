@@ -274,17 +274,17 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         videoId: currentVideoData.embedId,
         playerVars: {
           autoplay: 1,
-          controls: 0,
-          disablekb: 1,
+          controls: 1,
+          disablekb: 0,
           modestbranding: 1,
           rel: 0,
           showinfo: 0,
+          fs: 0,
           cc_load_policy: subtitlesOn ? 1 : 0
         },
         events: {
           'onReady': (event: any) => {
-            event.target.playVideo();
-            setIsVideoPlaying(true);
+            // Note: Autoplay might be blocked by browser. User can click to play.
           },
           'onStateChange': (event: any) => {
             if (event.data === (window as any).YT.PlayerState.PLAYING) {
@@ -792,13 +792,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     onMouseLeave={() => setShowControls(false)}
                   >
                     {/* YT Iframe Container */}
-                    <div id={`youtube-player-${currentVideoData.embedId}`} style={{ width: "100%", height: "100%", pointerEvents: "none" }}></div>
-                    
-                    {/* Transparent Click Overlay to trigger our own controls */}
-                    <div 
-                      className="absolute inset-0 z-10 cursor-pointer"
-                      onClick={togglePlay}
-                    ></div>
+                    <div id={`youtube-player-${currentVideoData.embedId}`} style={{ width: "100%", height: "100%" }}></div>
                     
                     {/* Custom Controls Overlay */}
                     <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 flex flex-col justify-end gap-2 ${showControls || !isVideoPlaying ? "opacity-100" : "opacity-0"}`}>
@@ -814,13 +808,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       {/* Control Buttons */}
                       <div className="flex items-center justify-between text-white mt-1">
                         <div className="flex items-center gap-4">
-                          <button 
-                            onClick={togglePlay}
-                            className="hover:text-[#2EC4B6] transition-colors"
-                          >
-                            {isVideoPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
-                          </button>
-
                           <div className="flex items-center gap-2 relative group/speed">
                             <button className="flex items-center gap-1 text-sm font-bold hover:text-[#2EC4B6] transition-colors">
                               <Gauge size={18} />
