@@ -10,23 +10,32 @@ export default function PartnerRegister() {
   const isDark = theme === "dark";
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock partner registration
-    setTimeout(() => {
-      localStorage.setItem("clats_partner_session", JSON.stringify({
-        id: "partner-new",
-        type: "affiliate",
-        name: "New Affiliate",
-        partner_code: "AFFIL-NEW",
-        commission_rate: 0.1, // 10% default
-        total_earnings: 0,
-        available_balance: 0,
-        status: "pending_approval"
-      }));
+    try {
+      const inputs = (e.target as HTMLFormElement).querySelectorAll('input');
+      const name = inputs[0].value;
+      const email = inputs[1].value;
+      const password = inputs[2].value;
+      
+      const res = await fetch("/api/supabase/partner/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.msg || "Registration failed");
+      }
+      
+      localStorage.setItem("clats_partner_session", JSON.stringify(data.partner));
       router.push("/partner/dashboard");
-    }, 1500);
+    } catch (err: any) {
+      alert(err.message);
+      setLoading(false);
+    }
   };
 
   const handleGoogleRegister = () => {

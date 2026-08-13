@@ -27,18 +27,30 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({ partner, onL
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSaveSettings = () => {
-    if (onUpdate) {
-      onUpdate({
-        ...partner,
-        name: editName,
-        email: editEmail,
-        bank_details: {
-          bank_name: editBank,
-          account_number: editAccount
-        }
+  const handleSaveSettings = async () => {
+    try {
+      const res = await fetch("/api/supabase/partner/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: partner.id,
+          name: editName,
+          email: editEmail,
+          bank_details: { bank_name: editBank, account_number: editAccount }
+        }),
       });
-      alert("Settings saved successfully!");
+      const data = await res.json();
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.msg || "Failed to save settings");
+      }
+      
+      if (onUpdate) {
+        onUpdate(data.partner);
+        alert("Settings saved successfully to database!");
+      }
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 

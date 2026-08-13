@@ -10,24 +10,31 @@ export default function PartnerLogin() {
   const isDark = theme === "dark";
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock partner login
-    setTimeout(() => {
-      // In a real app, this would set the partner context
-      localStorage.setItem("clats_partner_session", JSON.stringify({
-        id: "partner-test",
-        type: "affiliate",
-        name: "Test Partner",
-        partner_code: "TEST-LINK",
-        commission_rate: 0.1,
-        total_earnings: 0,
-        available_balance: 0,
-        referrals: []
-      }));
+    
+    try {
+      const emailInput = (e.target as HTMLFormElement).querySelector('input[type="email"]') as HTMLInputElement;
+      const passInput = (e.target as HTMLFormElement).querySelector('input[type="password"]') as HTMLInputElement;
+      
+      const res = await fetch("/api/supabase/partner/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput.value, password: passInput.value }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.msg || "Login failed");
+      }
+      
+      localStorage.setItem("clats_partner_session", JSON.stringify(data.partner));
       router.push("/partner/dashboard");
-    }, 1000);
+    } catch (err: any) {
+      alert(err.message);
+      setLoading(false);
+    }
   };
 
   return (
