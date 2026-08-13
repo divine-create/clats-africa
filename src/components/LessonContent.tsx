@@ -820,8 +820,12 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       </svg>
                       FULL SCREEN
                     </button>
-                    <Chip color={C.teal} bg="rgba(46,196,182,0.1)">HD CC</Chip>
+                    <Chip color={C.teal} bg="rgba(46,196,182,0.1)">HD</Chip>
                   </div>
+                </div>
+                {/* Customization Tip */}
+                <div className="bg-[#FFFBEB] text-[#D97706] px-4 py-2.5 text-[11px] font-bold font-mono tracking-wide flex items-center justify-center gap-2 border-t border-[#FDE68A]">
+                  💡 TIP: HOVER OVER THE VIDEO TO ADJUST THE PLAYBACK SPEED 🐌
                 </div>
               </>
             ) : (
