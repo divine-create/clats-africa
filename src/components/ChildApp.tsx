@@ -619,26 +619,47 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       )}
 
       {/* Active Lesson Quiz & Chat Portal */}
-      {activeTab === "chat" && (
-        <LessonContent
-          child={child}
-          lesson={selLesson}
-          onLessonComplete={handleLessonComplete}
-          lang={lang}
-          onClose={() => {
-            setSelLesson(null);
-            setActiveTab("lessons");
-          }}
-          onNextLesson={() => {
-            if (selModule && selLesson) {
-              const idx = selModule.lessons.findIndex((l) => l.id === selLesson.id);
-              if (idx !== -1 && idx + 1 < selModule.lessons.length) {
-                setSelLesson(selModule.lessons[idx + 1]);
+      {activeTab === "chat" && (() => {
+        const isLastLesson = selModule && selLesson && selModule.lessons.findIndex((l) => l.id === selLesson.id) === selModule.lessons.length - 1;
+        const course = CURRICULUM[child.ageGroup || "early explorers"];
+        let nextModule = null;
+        if (selModule && course && course.modules) {
+          const modIdx = course.modules.findIndex(m => m.id === selModule.id);
+          if (modIdx !== -1 && modIdx + 1 < course.modules.length) {
+            nextModule = course.modules[modIdx + 1];
+          }
+        }
+
+        return (
+          <LessonContent
+            child={child}
+            lesson={selLesson}
+            onLessonComplete={handleLessonComplete}
+            lang={lang}
+            onClose={() => {
+              setSelLesson(null);
+              setActiveTab("lessons");
+            }}
+            onNextLesson={!isLastLesson ? () => {
+              if (selModule && selLesson) {
+                const idx = selModule.lessons.findIndex((l) => l.id === selLesson.id);
+                if (idx !== -1 && idx + 1 < selModule.lessons.length) {
+                  setSelLesson(selModule.lessons[idx + 1]);
+                }
               }
-            }
-          }}
-        />
-      )}
+            } : undefined}
+            isLastLessonInModule={isLastLesson}
+            nextModuleTitle={nextModule?.title?.en}
+            onNextModule={nextModule ? () => {
+              setSelModule(nextModule);
+              setActiveTab("lessons"); // take them to the next module's path map!
+            } : () => {
+              // End of the entire curriculum!
+              setActiveTab("rewards");
+            }}
+          />
+        );
+      })()}
 
       {/* Analytics Student Profile */}
       {activeTab === "progress" && (

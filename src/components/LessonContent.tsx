@@ -28,6 +28,9 @@ interface LessonContentProps {
   lang: Language;
   onClose: () => void;
   onNextLesson?: () => void;
+  isLastLessonInModule?: boolean;
+  onNextModule?: () => void;
+  nextModuleTitle?: string;
 }
 
 export const LessonContent: React.FC<LessonContentProps> = ({
@@ -36,7 +39,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   onLessonComplete,
   lang,
   onClose,
-  onNextLesson
+  onNextLesson,
+  isLastLessonInModule,
+  onNextModule,
+  nextModuleTitle
 }) => {
   const isAges6To12 = child.ageGroup === "young innovators";
   const isEarlyExplorers = child.ageGroup === "early explorers";
@@ -1047,6 +1053,35 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                 </div>
 
+                {isLastLessonInModule && (
+                  <div
+                    style={{
+                      background: "linear-gradient(135deg, #c084fc, #9333ea)",
+                      border: "4px solid #fdf4ff",
+                      boxShadow: "0 8px 24px rgba(147, 51, 234, 0.3)",
+                      borderRadius: 22,
+                      padding: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 16,
+                      textAlign: "left",
+                      color: "white",
+                      marginBottom: 24,
+                      animation: "bounce 2s infinite"
+                    }}
+                  >
+                    <span style={{ fontSize: 54 }}>🎓</span>
+                    <div>
+                      <Txt size={14} weight={900} color="#fdf4ff" style={{ textTransform: "uppercase", display: "block", letterSpacing: 1 }}>
+                        MODULE COMPLETED!
+                      </Txt>
+                      <Txt size={20} weight={950} color="#ffffff">
+                        You've mastered this entire section!
+                      </Txt>
+                    </div>
+                  </div>
+                )}
+
                 {true && (
                   <div
                     style={{
@@ -1074,34 +1109,59 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {onNextLesson && (
+                {isLastLessonInModule ? (
                   <button
                     onClick={() => {
-                      sfx.playTap();
-                      onNextLesson();
-                      setLearningStep("video");
-                      setCurrentSlideIndex(0);
-                      setSelectedTools([]);
-                      setToolFeedback("");
-                      setCurrentQuizIndex(0);
-                      setQuizSelectedOption(null);
-                      setQuizFeedback("");
-                      setQuizIsAnswered(false);
+                      sfx.playLevelUp();
+                      if (onNextModule) onNextModule();
                     }}
                     style={{
                       width: "100%",
-                      background: `linear-gradient(135deg, #FFD166, #e6bb5c)`,
-                      color: "#1e293b",
+                      background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
+                      color: "#ffffff",
                       border: "none",
                       borderRadius: 20,
-                      padding: "16px 24px",
+                      padding: "20px 24px",
                       fontSize: 18,
                       fontWeight: 950,
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      boxShadow: "0 6px 0 #0f766e",
+                      marginBottom: 8
                     }}
                   >
-                    CONTINUE TO NEXT LESSON →
+                    START NEXT MODULE 🚀
+                    {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle}</div>}
                   </button>
+                ) : (
+                  onNextLesson && (
+                    <button
+                      onClick={() => {
+                        sfx.playTap();
+                        onNextLesson();
+                        setLearningStep("video");
+                        setCurrentSlideIndex(0);
+                        setSelectedTools([]);
+                        setToolFeedback("");
+                        setCurrentQuizIndex(0);
+                        setQuizSelectedOption(null);
+                        setQuizFeedback("");
+                        setQuizIsAnswered(false);
+                      }}
+                      style={{
+                        width: "100%",
+                        background: `linear-gradient(135deg, #FFD166, #e6bb5c)`,
+                        color: "#1e293b",
+                        border: "none",
+                        borderRadius: 20,
+                        padding: "16px 24px",
+                        fontSize: 18,
+                        fontWeight: 950,
+                        cursor: "pointer"
+                      }}
+                    >
+                      CONTINUE TO NEXT LESSON →
+                    </button>
+                  )
                 )}
                 
                 <button
