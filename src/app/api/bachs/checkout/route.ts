@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { getServiceSupabase } from "@/utils/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { email, amount, currency, planName, childId } = body;
 
-    const supabase = getServiceSupabase();
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    const supabase = createClient(url, key, { auth: { persistSession: false } });
     
     // Fetch Bachs API keys from our database
     const { data: gateways } = await supabase

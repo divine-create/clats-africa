@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServiceSupabase } from "@/utils/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -12,7 +12,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing signature" }, { status: 401 });
     }
 
-    const supabase = getServiceSupabase();
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    const supabase = createClient(url, key, { auth: { persistSession: false } });
     
     // Fetch Bachs API keys
     const { data: gateways } = await supabase
