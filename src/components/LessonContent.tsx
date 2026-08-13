@@ -106,6 +106,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const [quizIsAnswered, setQuizIsAnswered] = useState(false);
   const [correctAnswersList, setCorrectAnswersList] = useState<boolean[]>([]);
 
+  // Video Duration Capture
+  const [videoDurationStr, setVideoDurationStr] = useState<string>("");
+
   // Real Web Speech API TTS speaker
   const speakText = (text: string) => {
     companionVoice.speak(text, child.companion || "kobe", child.ageGroup);
@@ -280,7 +283,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           rel: 0,
           showinfo: 0,
           fs: 0,
-          cc_load_policy: subtitlesOn ? 1 : 0
+          cc_load_policy: 0
         },
         events: {
           'onReady': (event: any) => {
@@ -329,6 +332,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               } else {
                 setWatchedFraction(fraction);
               }
+              const minutes = Math.floor(duration / 60);
+              const seconds = Math.floor(duration % 60);
+              setVideoDurationStr(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
             }
           }
         } catch (e) {}
@@ -764,30 +770,16 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       {/* Control Buttons */}
                       <div className="flex items-center justify-between text-white mt-1 pointer-events-auto">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2 relative group/speed">
-                            <button className="flex items-center gap-1 text-sm font-bold hover:text-[#2EC4B6] transition-colors">
-                              <Gauge size={18} />
-                              {playbackRate}x
-                            </button>
-                            {/* Speed Menu (Appears on Hover) */}
-                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover/speed:flex flex-col bg-slate-900/90 rounded-lg overflow-hidden border border-slate-700">
-                              {[0.5, 0.75, 1, 1.25, 1.5].map(rate => (
-                                <button 
-                                  key={rate}
-                                  onClick={() => changeSpeed(rate)}
-                                  className={`px-4 py-2 text-xs font-bold hover:bg-slate-800 transition-colors ${playbackRate === rate ? "text-[#2EC4B6]" : "text-white"}`}
-                                >
-                                  {rate}x {rate < 1 && "🐌"} {rate > 1 && "🐇"}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          <button 
+                            onClick={() => changeSpeed(playbackRate === 1 ? 0.75 : 1)}
+                            className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 bg-black/50 hover:bg-[#2EC4B6]/20 border border-white/10 rounded-lg transition-colors"
+                          >
+                            <Gauge size={16} />
+                            {playbackRate === 1 ? "Slow Down 🐌" : "Normal Speed 🐇"}
+                          </button>
                         </div>
 
                         <div className="flex items-center gap-4">
-                          {subtitlesOn && (
-                            <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded">CC</span>
-                          )}
                           <button 
                             onClick={handleFullScreen}
                             className="hover:text-[#2EC4B6] transition-colors"
@@ -802,7 +794,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 <div style={{ background: "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <Txt size={16} weight={900} color="#0f172a">{currentVideoData.title}</Txt>
-                    <Txt size={13} color="#64748b" style={{ display: "block" }}>⏱️ {currentVideoData.duration} Video Lecture</Txt>
+                    <Txt size={13} color="#64748b" style={{ display: "block" }}>⏱️ {videoDurationStr || currentVideoData.duration} Video Lecture</Txt>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button
@@ -1224,10 +1216,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     <span style={{ fontSize: 54 }}>🎓</span>
                     <div>
                       <Txt size={14} weight={900} color="#fdf4ff" style={{ textTransform: "uppercase", display: "block", letterSpacing: 1 }}>
-                        MODULE COMPLETED!
+                        ALL LESSONS COMPLETE!
                       </Txt>
                       <Txt size={20} weight={950} color="#ffffff">
-                        You've mastered this entire section!
+                        Return to the map to face the Boss!
                       </Txt>
                     </div>
                   </div>
@@ -1261,54 +1253,28 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {isLastLessonInModule ? (
-                  isNextModuleLocked ? (
-                    <button
-                      onClick={() => {
-                        sfx.playLevelUp();
-                        if (onShowPaywall) onShowPaywall();
-                      }}
-                      style={{
-                        width: "100%",
-                        background: `linear-gradient(135deg, #fbbf24, #d97706)`,
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: 20,
-                        padding: "20px 24px",
-                        fontSize: 18,
-                        fontWeight: 950,
-                        cursor: "pointer",
-                        boxShadow: "0 6px 0 #b45309",
-                        marginBottom: 8
-                      }}
-                    >
-                      <span style={{ fontSize: 24, marginRight: 8, verticalAlign: "middle" }}>⭐</span>
-                      UNLOCK NEXT MODULE
-                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle} (Premium Zone)</div>}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        sfx.playLevelUp();
-                        if (onNextModule) onNextModule();
-                      }}
-                      style={{
-                        width: "100%",
-                        background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: 20,
-                        padding: "20px 24px",
-                        fontSize: 18,
-                        fontWeight: 950,
-                        cursor: "pointer",
-                        boxShadow: "0 6px 0 #0f766e",
-                        marginBottom: 8
-                      }}
-                    >
-                      START NEXT MODULE 🚀
-                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle}</div>}
-                    </button>
-                  )
+                  <button
+                    onClick={() => {
+                      sfx.playLevelUp();
+                      onClose();
+                    }}
+                    style={{
+                      width: "100%",
+                      background: `linear-gradient(135deg, #6366f1, #4f46e5)`,
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 20,
+                      padding: "20px 24px",
+                      fontSize: 18,
+                      fontWeight: 950,
+                      cursor: "pointer",
+                      boxShadow: "0 6px 0 #3730a3",
+                      marginBottom: 8
+                    }}
+                  >
+                    FACE THE MODULE BOSS! 👑
+                    <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>Return to map</div>
+                  </button>
                 ) : (
                   onNextLesson && (
                     <button
