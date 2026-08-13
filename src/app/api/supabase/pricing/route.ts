@@ -38,8 +38,7 @@ export async function PUT(req: Request) {
 
     const { data, error } = await sb
       .from("clats_pricing_plans")
-      .update(updates)
-      .eq("plan_name", plan_name)
+      .upsert({ plan_name, ...updates }, { onConflict: 'plan_name' })
       .select()
       .single();
 

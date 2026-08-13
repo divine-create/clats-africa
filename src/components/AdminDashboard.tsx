@@ -657,7 +657,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   // Pricing Settings
   const [monthlyPrice, setMonthlyPrice] = useState("5000");
   const [yearlyPrice, setYearlyPrice] = useState("50000");
-  const [currency, setCurrency] = useState("NGN");
+  const [monthlyPriceUsd, setMonthlyPriceUsd] = useState("12");
+  const [yearlyPriceUsd, setYearlyPriceUsd] = useState("120");
 
   const fetchGatewaysAndPricing = async () => {
     try {
@@ -683,10 +684,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
         priceData.plans.forEach((plan: any) => {
           if (plan.plan_name === "Monthly Premium") {
             setMonthlyPrice(plan.price.toString());
-            setCurrency(plan.currency);
           } else if (plan.plan_name === "Yearly Premium") {
             setYearlyPrice(plan.price.toString());
-            setCurrency(plan.currency);
+          } else if (plan.plan_name === "Monthly Premium USD") {
+            setMonthlyPriceUsd(plan.price.toString());
+          } else if (plan.plan_name === "Yearly Premium USD") {
+            setYearlyPriceUsd(plan.price.toString());
           }
         });
       }
@@ -4774,38 +4777,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                       Set the prices parents will pay to unlock premium pathways.
                     </p>
                     
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Currency</span>
-                        <select 
-                          value={currency} 
-                          onChange={e => setCurrency(e.target.value)}
-                          className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
-                        >
-                          <option value="NGN">NGN (Naira)</option>
-                          <option value="GHS">GHS (Cedis)</option>
-                          <option value="KES">KES (Shilling)</option>
-                          <option value="ZAR">ZAR (Rand)</option>
-                          <option value="USD">USD (Dollars)</option>
-                        </select>
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* NGN CONFIG */}
+                      <div className="space-y-3">
+                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold">🇳🇬 NAIRA (NGN) PRICING</span>
+                        <div>
+                          <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Monthly Price (NGN)</span>
+                          <input
+                            type="number"
+                            value={monthlyPrice}
+                            onChange={(e) => setMonthlyPrice(e.target.value)}
+                            className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                          />
+                        </div>
+                        <div>
+                          <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Yearly Price (NGN)</span>
+                          <input
+                            type="number"
+                            value={yearlyPrice}
+                            onChange={(e) => setYearlyPrice(e.target.value)}
+                            className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Monthly Price</span>
-                        <input
-                          type="number"
-                          value={monthlyPrice}
-                          onChange={(e) => setMonthlyPrice(e.target.value)}
-                          className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
-                        />
-                      </div>
-                      <div>
-                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Yearly Price</span>
-                        <input
-                          type="number"
-                          value={yearlyPrice}
-                          onChange={(e) => setYearlyPrice(e.target.value)}
-                          className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
-                        />
+
+                      {/* USD CONFIG */}
+                      <div className="space-y-3">
+                        <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold">🇺🇸 DOLLAR (USD) PRICING</span>
+                        <div>
+                          <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Monthly Price (USD)</span>
+                          <input
+                            type="number"
+                            value={monthlyPriceUsd}
+                            onChange={(e) => setMonthlyPriceUsd(e.target.value)}
+                            className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                          />
+                        </div>
+                        <div>
+                          <span className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">Yearly Price (USD)</span>
+                          <input
+                            type="number"
+                            value={yearlyPriceUsd}
+                            onChange={(e) => setYearlyPriceUsd(e.target.value)}
+                            className={`w-full border rounded p-2 outline-none focus:border-[#2EC4B6] font-mono text-[10px] ${isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`}
+                          />
+                        </div>
                       </div>
                     </div>
                     
@@ -4816,12 +4832,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                             await fetch("/api/supabase/pricing", {
                               method: "PUT",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ plan_name: "Monthly Premium", price: Number(monthlyPrice), currency })
+                              body: JSON.stringify({ plan_name: "Monthly Premium", price: Number(monthlyPrice), currency: "NGN", interval: "monthly" })
                             });
                             await fetch("/api/supabase/pricing", {
                               method: "PUT",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ plan_name: "Yearly Premium", price: Number(yearlyPrice), currency })
+                              body: JSON.stringify({ plan_name: "Yearly Premium", price: Number(yearlyPrice), currency: "NGN", interval: "yearly" })
+                            });
+                            await fetch("/api/supabase/pricing", {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan_name: "Monthly Premium USD", price: Number(monthlyPriceUsd), currency: "USD", interval: "monthly" })
+                            });
+                            await fetch("/api/supabase/pricing", {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ plan_name: "Yearly Premium USD", price: Number(yearlyPriceUsd), currency: "USD", interval: "yearly" })
                             });
                             showToast("Global Pricing Updated successfully!");
                           } catch (e) {

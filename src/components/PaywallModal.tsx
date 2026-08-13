@@ -17,13 +17,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
   const [bachsKey, setBachsKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState<"NGN" | "USD">("NGN");
-
-  const EXCHANGE_RATE = 1500; // 1 USD = 1500 NGN
-
-  const getPrice = (basePrice: number) => {
-    return selectedCurrency === "USD" ? Math.ceil(basePrice / EXCHANGE_RATE) : basePrice;
-  };
+  const [selectedCurrency, setSelectedCurrency] = useState<"NGN" | "USD">("USD");
 
   useEffect(() => {
 
@@ -57,7 +51,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: parentEmail,
-          amount: getPrice(plan.price),
+          amount: plan.price,
           currency: selectedCurrency,
           planName: plan.name,
           childId
@@ -78,8 +72,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
     }
   };
 
-  const monthlyPlan = plans.find(p => p.interval === "monthly");
-  const yearlyPlan = plans.find(p => p.interval === "yearly");
+  const monthlyPlan = plans.find(p => p.interval === "monthly" && p.currency === selectedCurrency);
+  const yearlyPlan = plans.find(p => p.interval === "yearly" && p.currency === selectedCurrency);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fade-in">
@@ -145,7 +139,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
                     <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Billed every month</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-black text-[#2EC4B6]">{selectedCurrency} {getPrice(monthlyPlan.price).toLocaleString()}</span>
+                    <span className="text-xl font-black text-[#2EC4B6]">{selectedCurrency} {monthlyPlan.price.toLocaleString()}</span>
                     <span className={`text-[10px] block ${isDark ? "text-slate-500" : "text-slate-400"}`}>/mo</span>
                   </div>
                 </div>
@@ -165,7 +159,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
                     <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Billed once a year</p>
                   </div>
                   <div className="text-right mt-2">
-                    <span className="text-xl font-black text-[#2EC4B6]">{selectedCurrency} {getPrice(yearlyPlan.price).toLocaleString()}</span>
+                    <span className="text-xl font-black text-[#2EC4B6]">{selectedCurrency} {yearlyPlan.price.toLocaleString()}</span>
                     <span className={`text-[10px] block ${isDark ? "text-slate-500" : "text-slate-400"}`}>/yr</span>
                   </div>
                 </div>
