@@ -17,6 +17,13 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
   const [bachsKey, setBachsKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<"NGN" | "USD">("NGN");
+
+  const EXCHANGE_RATE = 1500; // 1 USD = 1500 NGN
+
+  const getPrice = (basePrice: number) => {
+    return selectedCurrency === "USD" ? Math.ceil(basePrice / EXCHANGE_RATE) : basePrice;
+  };
 
   useEffect(() => {
 
@@ -50,8 +57,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: parentEmail,
-          amount: plan.price,
-          currency: plan.currency,
+          amount: getPrice(plan.price),
+          currency: selectedCurrency,
           planName: plan.name,
           childId
         })
@@ -102,9 +109,25 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
             <X size={20} />
           </button>
           
-          <div className="mb-6 text-center">
+          <div className="mb-4 text-center">
             <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}>Select a Plan</h3>
-            <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-slate-500"}`}>Cancel anytime. Secure checkout via Bachs.io (Accepts NGN & USD).</p>
+            <p className={`text-xs mt-1 mb-4 ${isDark ? "text-slate-500" : "text-slate-500"}`}>Cancel anytime. Secure checkout via Bachs.io</p>
+            
+            {/* Currency Toggle */}
+            <div className="inline-flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              <button 
+                onClick={() => setSelectedCurrency("NGN")}
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${selectedCurrency === "NGN" ? "bg-white dark:bg-slate-700 shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                🇳🇬 NGN
+              </button>
+              <button 
+                onClick={() => setSelectedCurrency("USD")}
+                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${selectedCurrency === "USD" ? "bg-white dark:bg-slate-700 shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                🇺🇸 USD
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -122,7 +145,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
                     <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Billed every month</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-black text-[#2EC4B6]">{monthlyPlan.currency} {monthlyPlan.price.toLocaleString()}</span>
+                    <span className="text-xl font-black text-[#2EC4B6]">{selectedCurrency} {getPrice(monthlyPlan.price).toLocaleString()}</span>
                     <span className={`text-[10px] block ${isDark ? "text-slate-500" : "text-slate-400"}`}>/mo</span>
                   </div>
                 </div>
@@ -142,7 +165,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
                     <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Billed once a year</p>
                   </div>
                   <div className="text-right mt-2">
-                    <span className="text-xl font-black text-[#2EC4B6]">{yearlyPlan.currency} {yearlyPlan.price.toLocaleString()}</span>
+                    <span className="text-xl font-black text-[#2EC4B6]">{selectedCurrency} {getPrice(yearlyPlan.price).toLocaleString()}</span>
                     <span className={`text-[10px] block ${isDark ? "text-slate-500" : "text-slate-400"}`}>/yr</span>
                   </div>
                 </div>
