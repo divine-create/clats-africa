@@ -71,9 +71,19 @@ export async function POST(req: Request) {
 
     const responseData = await response.json();
 
+    const checkoutUrl = responseData.url 
+      || responseData.checkout_url
+      || responseData.session_url
+      || (responseData.data && (responseData.data.url || responseData.data.authorization_url || responseData.data.checkout_url || responseData.data.link))
+      || responseData.checkoutUrl;
+
+    if (!checkoutUrl) {
+      return NextResponse.json({ ok: false, error: `Success payload missing URL field. Payload received: ${JSON.stringify(responseData)}` }, { status: 400 });
+    }
+
     return NextResponse.json({
       ok: true,
-      checkoutUrl: responseData.url || (responseData.data && responseData.data.authorization_url) || responseData.checkoutUrl
+      checkoutUrl: checkoutUrl
     });
 
   } catch (error: any) {
