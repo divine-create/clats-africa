@@ -26,10 +26,15 @@ export async function POST(req: Request) {
     
     const bachsPayload = {
       amount: amount * 100, // typically in cents/kobo
-      currency: currency || "NGN", // Defaulting to NGN but can be USD
-      email: email,
+      currency: currency || "NGN",
+      customer: {
+        email: email
+      },
+      customer_email: email, // Fallback for some API versions
       reference: `clats_${childId}_${Date.now()}`,
       callback_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard?payment=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard?payment=cancel`,
       metadata: {
         childId,
         planName
