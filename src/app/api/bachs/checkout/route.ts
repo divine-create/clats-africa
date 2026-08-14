@@ -50,8 +50,8 @@ export async function POST(req: Request) {
       body: JSON.stringify(bachsPayload)
     });
 
-    // Handle mock response if the API is fictional or credentials invalid during testing
     if (!response.ok) {
+      const errorText = await response.text();
       // In development, we can simulate a successful link generation
       if (process.env.NODE_ENV === 'development') {
         return NextResponse.json({ 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
           checkoutUrl: `/payment/mock?ref=${bachsPayload.reference}&amount=${amount}&currency=${currency}`
         });
       }
-      return NextResponse.json({ ok: false, error: "Failed to initialize Bachs transaction" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: `Failed to initialize Bachs transaction: ${errorText}` }, { status: 400 });
     }
 
     const responseData = await response.json();
