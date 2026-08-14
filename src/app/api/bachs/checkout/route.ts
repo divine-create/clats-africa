@@ -34,9 +34,9 @@ export async function POST(req: Request) {
         name: "CLATS Parent"
       },
       reference: `clats_${childId}_${Date.now()}`,
-      callback_url: `https://app.clats.org/parent/dashboard`,
-      success_url: `https://app.clats.org/parent/dashboard?payment=success`,
-      cancel_url: `https://app.clats.org/parent/dashboard?payment=cancel`,
+      callback_url: `https://app.clats.org/dashboard`,
+      success_url: `https://app.clats.org/dashboard?payment=success`,
+      cancel_url: `https://app.clats.org/dashboard?payment=cancel`,
       metadata: {
         childId,
         planName
