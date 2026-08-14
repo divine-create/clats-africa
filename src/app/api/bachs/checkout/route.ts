@@ -32,9 +32,9 @@ export async function POST(req: Request) {
         name: "CLATS Parent"
       },
       reference: `clats_${childId}_${Date.now()}`,
-      callback_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard`,
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard?payment=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard?payment=cancel`,
+      callback_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.clats.org'}/parent/dashboard`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.clats.org'}/parent/dashboard?payment=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.clats.org'}/parent/dashboard?payment=cancel`,
       metadata: {
         childId,
         planName
