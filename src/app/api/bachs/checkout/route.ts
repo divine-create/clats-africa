@@ -25,8 +25,10 @@ export async function POST(req: Request) {
     // to their API. This assumes standard Bachs API integration:
     
     const bachsPayload = {
-      amount: amount * 100, // typically in cents/kobo
-      currency: currency || "NGN",
+      pricing: {
+        amount: amount * 100,
+        currency: currency || "NGN"
+      },
       customer: {
         email: email || "parent@clats.org",
         name: "CLATS Parent"
