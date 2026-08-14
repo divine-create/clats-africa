@@ -14,7 +14,7 @@ interface PaywallModalProps {
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId, childName, onClose, onSuccess, isDark = false }) => {
   const [plans, setPlans] = useState<any[]>([]);
-  const [bachsKey, setBachsKey] = useState<string | null>(null);
+  const [bachsActive, setBachsActive] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<"NGN" | "USD">("USD");
@@ -30,7 +30,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
       if (gwData.ok) {
         const ps = gwData.gateways.find((g: any) => g.gateway_name === "bachs");
         if (ps && ps.is_active) {
-          setBachsKey(ps.public_key);
+          setBachsActive(true);
         }
       }
       setLoading(false);
@@ -38,7 +38,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ parentEmail, childId
   }, []);
 
   const handleCheckout = async (plan: any) => {
-    if (!bachsKey) {
+    if (!bachsActive) {
       alert("Payment gateway is currently not configured or inactive.");
       return;
     }
