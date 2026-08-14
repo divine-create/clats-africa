@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     
     const bachsPayload = {
       pricing: {
-        amount: amount * 100,
+        amount: Math.round(amount * 100).toString(),
         currency: currency || "NGN"
       },
       customer: {
