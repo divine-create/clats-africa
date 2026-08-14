@@ -28,9 +28,9 @@ export async function POST(req: Request) {
       amount: amount * 100, // typically in cents/kobo
       currency: currency || "NGN",
       customer: {
-        email: email
+        email: email || "parent@clats.org",
+        name: "CLATS Parent"
       },
-      customer_email: email, // Fallback for some API versions
       reference: `clats_${childId}_${Date.now()}`,
       callback_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard`,
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/parent/dashboard?payment=success`,
