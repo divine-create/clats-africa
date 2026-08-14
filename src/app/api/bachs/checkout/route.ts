@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     // const response = await bachs.transaction.initialize(bachsPayload);
 
     // Using fetch directly as a fallback to their REST API
-    const response = await fetch("https://api.bachs.io/v1/transaction/initialize", {
+    const response = await fetch("https://api.bachs.io/v1/checkout-sessions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${gateways.secret_key}`,
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      checkoutUrl: responseData.data.authorization_url
+      checkoutUrl: responseData.url || (responseData.data && responseData.data.authorization_url) || responseData.checkoutUrl
     });
 
   } catch (error: any) {
