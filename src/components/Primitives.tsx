@@ -318,33 +318,62 @@ export const FieldInput: React.FC<FieldInputProps> = ({
   theme = "dark"
 }) => {
   const [focus, setFocus] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const isDark = theme !== "light";
+  
+  const isPasswordField = type === "password";
+  const actualType = isPasswordField && showPassword ? "text" : type;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
       {label && <Label style={{ color: isDark ? C.stone : "#475569" }}>{label}</Label>}
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        onFocus={() => setFocus(true)}
-        onBlur={() => setFocus(false)}
-        style={{
-          fontFamily: F.body,
-          fontSize: 14,
-          fontWeight: 500,
-          color: isDark ? "#FFFFFF" : "#1E293B",
-          background: isDark ? "rgba(0,0,0,0.4)" : "#F8FAFC",
-          border: "2px solid " + (error ? C.red : focus ? "#19C6C6" : (isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0")),
-          borderRadius: 12,
-          padding: "11px 14px",
-          outline: "none",
-          transition: "all 0.2s ease-in-out",
-          width: "100%",
-          boxSizing: "border-box",
-          boxShadow: focus ? (isDark ? "0 0 12px rgba(25, 198, 198, 0.2)" : "0 0 12px rgba(25, 198, 198, 0.15)") : "none"
-        }}
-      />
+      <div style={{ position: "relative", width: "100%" }}>
+        <input
+          type={actualType}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          onFocus={() => setFocus(true)}
+          onBlur={() => setFocus(false)}
+          style={{
+            fontFamily: F.body,
+            fontSize: 14,
+            fontWeight: 500,
+            color: isDark ? "#FFFFFF" : "#1E293B",
+            background: isDark ? "rgba(0,0,0,0.4)" : "#F8FAFC",
+            border: "2px solid " + (error ? C.red : focus ? "#19C6C6" : (isDark ? "rgba(255,255,255,0.08)" : "#E2E8F0")),
+            borderRadius: 12,
+            padding: "11px 14px",
+            paddingRight: isPasswordField ? 40 : 14,
+            outline: "none",
+            transition: "all 0.2s ease-in-out",
+            width: "100%",
+            boxSizing: "border-box",
+            boxShadow: focus ? (isDark ? "0 0 12px rgba(25, 198, 198, 0.2)" : "0 0 12px rgba(25, 198, 198, 0.15)") : "none"
+          }}
+        />
+        {isPasswordField && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 14,
+              opacity: focus ? 0.9 : 0.6,
+              transition: "opacity 0.2s"
+            }}
+            title={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        )}
+      </div>
       {hint && !error && (
         <Txt size={11} color={C.stone}>
           {hint}
