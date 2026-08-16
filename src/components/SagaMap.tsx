@@ -134,12 +134,15 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                   const alignPattern = ["self-start ml-8", "self-center", "self-end mr-8", "self-center"];
                   const alignment = alignPattern[lesIndex % 4];
 
+                  const isLastLesson = lesIndex === mod.lessons.length - 1;
+                  const isBossNode = isLastLesson;
+
                   return (
                     <div key={les.id} className={`relative z-10 flex flex-col items-center ${alignment}`}>
                       
                       {isActive && (
-                        <div className="absolute -top-12 animate-bounce z-20">
-                           <KobeAvatar size={45} character={child.companion || "kobe"} ageGroup={ageGroup} />
+                        <div className="absolute -top-14 animate-[bounce_2s_ease-in-out_infinite] z-20">
+                           <KobeAvatar size={55} character={child.companion || "kobe"} ageGroup={ageGroup} />
                         </div>
                       )}
 
@@ -156,18 +159,19 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                             onSelectLesson(les);
                           }
                         }}
-                        className={`w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-xl transition-all duration-300 relative group
+                        className={`rounded-full flex items-center justify-center border-4 shadow-xl transition-all duration-300 relative group
+                          ${isBossNode ? "w-24 h-24 border-[6px]" : "w-20 h-20"}
                           ${isCompleted ? "bg-white border-white scale-95" : ""}
-                          ${isActive ? "scale-110 ring-8 ring-white/20 animate-pulse border-white bg-gradient-to-br from-white to-slate-200" : ""}
-                          ${totallyLocked ? (isDark ? "bg-slate-800 border-slate-700 opacity-80" : "bg-slate-200 border-slate-300 opacity-80") : ""}
+                          ${isActive ? "scale-110 ring-8 ring-[#2EC4B6]/30 animate-pulse border-white bg-gradient-to-br from-[#2EC4B6] to-[#20877d]" : ""}
+                          ${totallyLocked ? (isDark ? "bg-slate-800 border-slate-700 opacity-60" : "bg-slate-200 border-slate-300 opacity-60") : ""}
                         `}
                         style={{
-                          boxShadow: isActive ? `0 0 40px ${biome.node}` : isCompleted ? `0 0 20px ${biome.node}80` : 'none'
+                          boxShadow: isActive ? `0 0 40px #2EC4B6` : isCompleted ? `0 0 20px ${biome.node}80` : 'none'
                         }}
                       >
-                        {isCompleted && <Check size={32} className="text-black" />}
-                        {isActive && <Play size={32} className="text-black ml-1" />}
-                        {totallyLocked && <Lock size={28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
+                        {isCompleted && (isBossNode ? <Star size={40} className="text-[#2EC4B6] fill-[#2EC4B6]" /> : <Check size={32} className="text-black" />)}
+                        {isActive && <Play size={isBossNode ? 40 : 32} className="text-white ml-1" />}
+                        {totallyLocked && <Lock size={isBossNode ? 36 : 28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
 
                         {/* Node Label */}
                         <div className={`absolute top-1/2 -translate-y-1/2 transition-opacity whitespace-nowrap px-3 py-1.5 rounded-lg pointer-events-none z-30 shadow-sm border
