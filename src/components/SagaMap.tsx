@@ -20,11 +20,11 @@ interface SagaMapProps {
 }
 
 const BIOME_COLORS = [
-  { bgLight: "#7DF9FF", bgDark: "#0052CC", node: "#00F0FF", accent: "#007BFF" }, // Neon Cyan
-  { bgLight: "#B2FF59", bgDark: "#1B5E20", node: "#39FF14", accent: "#00E676" }, // Lime Green
-  { bgLight: "#EA80FC", bgDark: "#4A148C", node: "#D500F9", accent: "#AA00FF" }, // Hot Violet
-  { bgLight: "#FF8A80", bgDark: "#880E4F", node: "#FF1744", accent: "#D50000" }, // Candy Red
-  { bgLight: "#FFFF8D", bgDark: "#FF6F00", node: "#FFEA00", accent: "#FFAB00" }, // Electric Yellow
+  { bgLight: "#FEF08A", bgDark: "#854D0E", node: "#FBBF24", accent: "#F59E0B" }, // Sunny Beach (Sand)
+  { bgLight: "#A5F3FC", bgDark: "#164E63", node: "#06B6D4", accent: "#0891B2" }, // Tropical Ocean (Aqua)
+  { bgLight: "#BBF7D0", bgDark: "#14532D", node: "#22C55E", accent: "#16A34A" }, // Jungle Canopy (Green)
+  { bgLight: "#FFEDD5", bgDark: "#7C2D12", node: "#F97316", accent: "#EA580C" }, // Island Sunset (Orange)
+  { bgLight: "#C7D2FE", bgDark: "#312E81", node: "#6366F1", accent: "#4F46E5" }, // Deep Reef (Indigo)
 ];
 
 export const SagaMap: React.FC<SagaMapProps> = ({
@@ -60,13 +60,37 @@ export const SagaMap: React.FC<SagaMapProps> = ({
 
   return (
     <div 
-      className="w-full min-h-screen pb-32 transition-colors duration-500"
+      className="w-full min-h-screen pb-32 transition-colors duration-500 overflow-hidden relative"
       style={{
         background: isDark 
-          ? "linear-gradient(180deg, #0f172a 0%, #020617 100%)" 
-          : "linear-gradient(180deg, #f0fdfa 0%, #e0f2fe 100%)"
+          ? "linear-gradient(180deg, #082f49 0%, #042f2e 100%)" // Deep tropical night
+          : "linear-gradient(180deg, #e0f2fe 0%, #ccfbf1 100%)" // Sky to tropical water
       }}
     >
+      <style>{`
+        @keyframes drift {
+          0% { transform: translateX(-100px); opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.6; }
+          100% { transform: translateX(120vw); opacity: 0; }
+        }
+        @keyframes bob {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+      `}</style>
+
+      {/* Moving Tropical Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className={`absolute top-32 left-0 text-6xl opacity-40 animate-[drift_25s_linear_infinite] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
+        <div className={`absolute top-96 left-0 text-5xl opacity-30 animate-[drift_35s_linear_infinite_5s] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
+        <div className={`absolute top-[600px] left-0 text-7xl opacity-20 animate-[drift_45s_linear_infinite_2s] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
+        
+        {/* Tropical Leaves */}
+        <div className="absolute top-[200px] -left-10 text-6xl opacity-20 animate-[bob_6s_ease-in-out_infinite] rotate-45">🌿</div>
+        <div className="absolute top-[500px] -right-12 text-7xl opacity-20 animate-[bob_8s_ease-in-out_infinite_1s] -rotate-45">🌴</div>
+        <div className="absolute top-[900px] -left-8 text-5xl opacity-20 animate-[bob_7s_ease-in-out_infinite_2s] rotate-90">🌺</div>
+      </div>
       {/* Map Header */}
       <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-4 flex items-center justify-between shadow-sm ${
         isDark ? "bg-[#0B1120]/80 border-slate-800" : "bg-white/80 border-slate-200"
