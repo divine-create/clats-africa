@@ -477,9 +477,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           id="voice-narration-toggle"
           onClick={handleToggleNarration}
           style={{
-            position: "absolute",
-            top: 24,
-            right: 88,
+            position: "fixed",
+            bottom: 110,
+            right: 24,
+            top: "auto",
+            left: "auto",
             background: isDark ? "#1e293b" : "#ffffff",
             border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
             borderRadius: "50px",
@@ -489,7 +491,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             gap: "6px",
             cursor: "pointer",
             zIndex: 999,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             transition: "all 0.2s"
           }}
           title="Toggle companion voice reader"
@@ -504,14 +506,17 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         onClick={onToggleTheme}
         title="Toggle Theme style"
         style={{
-          position: "absolute",
-          top: 16,
+          position: "fixed",
+          bottom: 160,
           right: 24,
-          fontSize: 52,
+          top: "auto",
+          left: "auto",
+          fontSize: 48,
           cursor: onToggleTheme ? "pointer" : "default",
           zIndex: 999,
           userSelect: "none",
-          transition: "transform 0.2s"
+          transition: "transform 0.2s",
+          filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
         }}
         onMouseEnter={(e) => { if (onToggleTheme) e.currentTarget.style.transform = "scale(1.15) rotate(15deg)"; }}
         onMouseLeave={(e) => { if (onToggleTheme) e.currentTarget.style.transform = ""; }}
