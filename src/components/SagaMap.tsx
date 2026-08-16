@@ -184,15 +184,15 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         }}
                         className={`rounded-full flex items-center justify-center border-4 shadow-xl transition-all duration-300 relative group
                           ${isBossNode ? "w-24 h-24 border-[6px]" : "w-20 h-20"}
-                          ${isCompleted ? "bg-white border-white scale-95" : ""}
+                          ${isCompleted ? "bg-gradient-to-br from-[#2EC4B6] to-[#20877d] border-white scale-95" : ""}
                           ${isActive ? "scale-110 ring-8 ring-[#2EC4B6]/30 animate-pulse border-white bg-gradient-to-br from-[#2EC4B6] to-[#20877d]" : ""}
                           ${totallyLocked ? (isDark ? "bg-slate-800 border-slate-700 opacity-60" : "bg-slate-200 border-slate-300 opacity-60") : ""}
                         `}
                         style={{
-                          boxShadow: isActive ? `0 0 40px #2EC4B6` : isCompleted ? `0 0 20px ${biome.node}80` : 'none'
+                          boxShadow: isActive ? `0 0 40px #2EC4B6` : isCompleted ? `0 0 20px #2EC4B6` : 'none'
                         }}
                       >
-                        {isCompleted && (isBossNode ? <Star size={40} className="text-[#2EC4B6] fill-[#2EC4B6]" /> : <Check size={32} className="text-black" />)}
+                        {isCompleted && (isBossNode ? <Star size={40} className="text-white fill-white" /> : <Check size={32} className="text-white" />)}
                         {isActive && <Play size={isBossNode ? 40 : 32} className="text-white ml-1" />}
                         {totallyLocked && <Lock size={isBossNode ? 36 : 28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
 
