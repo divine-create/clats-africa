@@ -59,7 +59,14 @@ export const SagaMap: React.FC<SagaMapProps> = ({
   const isDark = theme === "dark";
 
   return (
-    <div className={`w-full min-h-screen pb-32 ${isDark ? "bg-[#0B1120]" : "bg-slate-50"}`}>
+    <div 
+      className="w-full min-h-screen pb-32 transition-colors duration-500"
+      style={{
+        background: isDark 
+          ? "linear-gradient(180deg, #0f172a 0%, #020617 100%)" 
+          : "linear-gradient(180deg, #f0fdfa 0%, #e0f2fe 100%)"
+      }}
+    >
       {/* Map Header */}
       <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-4 flex items-center justify-between shadow-sm ${
         isDark ? "bg-[#0B1120]/80 border-slate-800" : "bg-white/80 border-slate-200"
@@ -77,7 +84,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
       </div>
 
       {/* The Biomes */}
-      <div className="flex flex-col">
+      <div className="flex flex-col relative">
         {modules.map((mod, modIndex) => {
           const biome = BIOME_COLORS[modIndex % BIOME_COLORS.length];
           const isPremiumModule = modIndex > 0;
@@ -86,8 +93,12 @@ export const SagaMap: React.FC<SagaMapProps> = ({
           return (
             <div 
               key={mod.id} 
-              className={`relative py-16 px-4 flex flex-col items-center border-b-[8px] ${isDark ? "border-black/40" : "border-black/10"}`}
-              style={{ backgroundColor: isDark ? biome.bgDark : biome.bgLight }}
+              className="relative py-24 px-4 flex flex-col items-center"
+              style={{ 
+                background: isDark 
+                  ? `linear-gradient(to bottom, transparent, ${biome.bgDark}80, transparent)` 
+                  : `linear-gradient(to bottom, transparent, ${biome.bgLight}90, transparent)` 
+              }}
             >
               {/* Module Header Overlay */}
               <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-6 py-2 rounded-2xl text-center shadow-lg z-10 w-[90%] max-w-sm ${
