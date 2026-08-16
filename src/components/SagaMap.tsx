@@ -60,12 +60,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
 
   return (
     <div 
-      className="w-full min-h-screen pb-32 transition-colors duration-500 overflow-hidden relative"
-      style={{
-        background: isDark 
-          ? "linear-gradient(180deg, #082f49 0%, #042f2e 100%)" // Deep tropical night
-          : "linear-gradient(180deg, #e0f2fe 0%, #ccfbf1 100%)" // Sky to tropical water
-      }}
+      className={`w-full min-h-screen pb-32 transition-colors duration-500 overflow-hidden relative ${isDark ? "bg-[#0f172a]" : "bg-[#f8fafc]"}`}
     >
       <style>{`
         @keyframes drift {
@@ -78,18 +73,27 @@ export const SagaMap: React.FC<SagaMapProps> = ({
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-20px); }
         }
+        @keyframes wave {
+          0%, 100% { transform: translateX(0) scale(1); }
+          50% { transform: translateX(-15px) scale(1.05); }
+        }
       `}</style>
 
-      {/* Moving Tropical Background Elements */}
+      {/* Moving Beach Background Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className={`absolute top-32 left-0 text-6xl opacity-40 animate-[drift_25s_linear_infinite] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
-        <div className={`absolute top-96 left-0 text-5xl opacity-30 animate-[drift_35s_linear_infinite_5s] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
-        <div className={`absolute top-[600px] left-0 text-7xl opacity-20 animate-[drift_45s_linear_infinite_2s] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
+        {/* Clouds */}
+        <div className={`absolute top-20 left-0 text-6xl opacity-30 animate-[drift_25s_linear_infinite] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
+        <div className={`absolute top-64 left-0 text-5xl opacity-20 animate-[drift_35s_linear_infinite_5s] ${isDark ? 'grayscale brightness-50' : ''}`}>☁️</div>
         
-        {/* Tropical Leaves */}
-        <div className="absolute top-[200px] -left-10 text-6xl opacity-20 animate-[bob_6s_ease-in-out_infinite] rotate-45">🌿</div>
-        <div className="absolute top-[500px] -right-12 text-7xl opacity-20 animate-[bob_8s_ease-in-out_infinite_1s] -rotate-45">🌴</div>
-        <div className="absolute top-[900px] -left-8 text-5xl opacity-20 animate-[bob_7s_ease-in-out_infinite_2s] rotate-90">🌺</div>
+        {/* Sun/Moon */}
+        <div className={`absolute top-32 right-12 text-7xl opacity-40 animate-[bob_10s_ease-in-out_infinite]`}>{isDark ? '🌕' : '☀️'}</div>
+
+        {/* Beach Items (Drifting / Bobbing) */}
+        <div className="absolute top-[400px] left-0 text-5xl opacity-40 animate-[drift_40s_linear_infinite_2s]">⛵</div>
+        <div className="absolute top-[700px] -right-10 text-6xl opacity-30 animate-[bob_6s_ease-in-out_infinite] rotate-12">⛱️</div>
+        <div className="absolute top-[1100px] -left-8 text-5xl opacity-30 animate-[wave_8s_ease-in-out_infinite] -rotate-12">🌊</div>
+        <div className="absolute top-[1500px] right-4 text-4xl opacity-30 animate-[bob_7s_ease-in-out_infinite_1s] rotate-45">🐚</div>
+        <div className="absolute top-[1900px] left-0 text-6xl opacity-30 animate-[drift_50s_linear_infinite_10s]">🚤</div>
       </div>
       {/* Map Header */}
       <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-4 flex items-center justify-between shadow-sm ${
@@ -118,11 +122,6 @@ export const SagaMap: React.FC<SagaMapProps> = ({
             <div 
               key={mod.id} 
               className="relative py-24 px-4 flex flex-col items-center"
-              style={{ 
-                background: isDark 
-                  ? `linear-gradient(to bottom, transparent, ${biome.bgDark}80, transparent)` 
-                  : `linear-gradient(to bottom, transparent, ${biome.bgLight}90, transparent)` 
-              }}
             >
               {/* Module Header Overlay */}
               <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-6 py-2 rounded-2xl text-center shadow-lg z-10 w-[90%] max-w-sm ${
@@ -198,14 +197,14 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         {totallyLocked && <Lock size={isBossNode ? 36 : 28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
 
                         {/* Node Label */}
-                        <div className={`absolute top-1/2 -translate-y-1/2 transition-opacity whitespace-nowrap px-3 py-1.5 rounded-lg pointer-events-none z-30 shadow-sm border
-                          ${isDark ? "bg-[#1e293b]/90 text-white border-slate-700" : "bg-white/90 text-slate-800 border-slate-200"}
+                        <div className={`absolute top-1/2 -translate-y-1/2 transition-opacity whitespace-nowrap px-4 py-2 rounded-xl pointer-events-none z-30 shadow-md border
+                          ${isDark ? "bg-[#1e293b]/95 text-white border-slate-700" : "bg-white/95 text-slate-800 border-slate-200"}
                           ${(lesIndex % 4 === 0) ? "left-full ml-4" : (lesIndex % 4 === 2) ? "right-full mr-4" : "left-full ml-4"}
                         `}>
-                          <span className="font-black text-sm block">
+                          <span className="font-black text-lg block">
                             {les.title?.[lang] || les.title?.en}
                           </span>
-                          <div className={`text-[9px] font-bold mt-0.5 max-w-[150px] whitespace-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                          <div className={`text-xs font-bold mt-1 max-w-[180px] whitespace-normal leading-snug ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                             {les.desc?.[lang] || les.desc?.en}
                           </div>
                         </div>
