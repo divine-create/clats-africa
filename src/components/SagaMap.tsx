@@ -89,7 +89,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                   Section {modIndex + 1}
                 </span>
                 <h3 className="text-lg font-black text-white leading-tight" style={{ fontFamily: F.display }}>
-                  {mod.title[lang] || mod.title.en}
+                  {mod.title?.[lang] || mod.title?.en}
                 </h3>
               </div>
 
@@ -154,9 +154,9 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg pointer-events-none z-30
                           ${(lesIndex % 4 === 0) ? "left-full ml-4" : (lesIndex % 4 === 2) ? "right-full mr-4" : "left-full ml-4"}
                         `}>
-                          {les.title[lang] || les.title.en}
+                          {les.title?.[lang] || les.title?.en}
                           <div className="text-[9px] text-slate-400 font-normal mt-0.5 max-w-[150px] whitespace-normal">
-                            {les.desc[lang] || les.desc.en}
+                            {les.desc?.[lang] || les.desc?.en}
                           </div>
                         </div>
                       </button>
