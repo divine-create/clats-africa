@@ -17,13 +17,11 @@ import { Card, Heading, Txt, Chip, Btn } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { companionVoice } from "../utils/audio";
 import { ChildWelcomeScreen } from "./ChildWelcome";
-import { ModulesOverview } from "./ModulesOverview";
-import { LearningPath } from "./LearningPath";
+import { SagaMap } from "./SagaMap";
 import { ChildProgressScreen } from "./ChildProgress";
 import { LessonContent } from "./LessonContent";
 import { ChildGames } from "./ChildGames";
 import { ChildRewards } from "./ChildRewards";
-import { ModuleDetails } from "./ModuleDetails";
 import { CURRICULUM } from "../data/curriculum";
 import { PaywallModal } from "./PaywallModal";
 
@@ -37,7 +35,7 @@ interface ChildAppProps {
   onToggleTheme?: () => void;
 }
 
-type TabType = "home" | "modules" | "module-details" | "lessons" | "progress" | "chat" | "games" | "rewards";
+type TabType = "home" | "map" | "progress" | "chat" | "games" | "rewards";
 
 const AGE_META_RESOLVE = (ag: string) => {
   if (ag === "early explorers") return { color: C.amber, soft: C.yellowSoft };
@@ -588,7 +586,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           slotLimit={slotLimit}
           onEnterAIPathway={(acadId) => {
             setSelectedAcademyId(acadId || "academy-1");
-            setActiveTab("modules");
+            setActiveTab("map");
           }}
           onResume={() => {
             const course = CURRICULUM[child.ageGroup || "early explorers"];
@@ -616,47 +614,17 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         />
       )}
 
-      {/* Screen 2: Course Modules List */}
-      {activeTab === "modules" && (
-        <ModulesOverview
+      {/* The Saga Map */}
+      {activeTab === "map" && (
+        <SagaMap
           child={child}
-          onSelectModule={(m) => {
-            setSelModule(m);
-            setActiveTab("lessons"); // Bypassing module-details!
-          }}
           lang={lang}
-          onBack={() => setActiveTab("home")}
-          slotLimit={slotLimit}
-          slotUsed={slotUsed}
           theme={theme}
-          selectedAcademyId={selectedAcademyId}
-          onShowPaywall={() => setShowHandoff(true)}
-        />
-      )}
-
-      {/* Screen 2.5: Module Details Screen */}
-      {activeTab === "module-details" && selModule && (
-        <ModuleDetails
-          child={child}
-          module={selModule}
-          onBack={() => setActiveTab("modules")}
-          onStartModule={() => setActiveTab("lessons")}
-          lang={lang}
-        />
-      )}
-
-      {/* Screen 3: Module Hub winding path map */}
-      {activeTab === "lessons" && selModule && (
-        <LearningPath
-          child={child}
-          module={selModule}
           onSelectLesson={(l) => {
             setSelLesson(l);
             setActiveTab("chat");
           }}
-          onBackToModules={() => setActiveTab("modules")}
-          lang={lang}
-          theme={theme}
+          onShowPaywall={() => setShowHandoff(true)}
         />
       )}
 
@@ -683,7 +651,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             lang={lang}
             onClose={() => {
               setSelLesson(null);
-              setActiveTab("lessons");
+              setActiveTab("map");
             }}
             onNextLesson={!isLastLesson ? () => {
               if (selModule && selLesson) {
@@ -699,7 +667,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             nextModuleTitle={nextModule?.title?.en}
             onNextModule={nextModule ? () => {
               setSelModule(nextModule);
-              setActiveTab("lessons"); // take them to the next module's path map!
+              setActiveTab("map"); // take them to the next module's path map!
             } : () => {
               // End of the entire curriculum!
               setActiveTab("rewards");
@@ -764,7 +732,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             { id: "progress" as const, label: "Profile", icon: "📊" }
           ].map(({ id, label, icon }) => {
             const isSel = activeTab === id || 
-              (id === "home" && (activeTab === "modules" || activeTab === "module-details" || activeTab === "lessons"));
+              (id === "home" && activeTab === "map");
             return (
               <button
                 key={id}

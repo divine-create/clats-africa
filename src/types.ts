@@ -11,7 +11,7 @@ export interface Child {
   id: string;
   name: string;
   ageGroup: AgeGroup;
-  avatar: string;
+  avatar?: string;
   username: string;
   pin: string;
   interests: string[];

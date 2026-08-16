@@ -8,6 +8,7 @@ import { Child, Language } from "../types";
 import { C, F, T, getLevel as getLevelConfig, getParentLimits } from "../utils/config";
 import { CURRICULUM } from "../data/curriculum";
 import { MascotImage } from "./Onboarding";
+import { KobeAvatar } from "./KobeAvatar";
 import { sfx } from "../utils/audio";
 import { calculateStudyAnalytics } from "../utils/timeTracker";
 import { 
@@ -148,7 +149,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   // State managers
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempName, setTempName] = useState(child.name);
-  const [tempAvatar, setTempAvatar] = useState(child.avatar);
+
   const [tempFrame, setTempFrame] = useState(selectedFrame);
 
   // Certificate Modal State
@@ -275,8 +276,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
     if (onUpdateChild) {
       onUpdateChild({
         ...child,
-        name: tempName || child.name,
-        avatar: tempAvatar || child.avatar
+        name: tempName || child.name
       });
     }
     setIsEditingProfile(false);
@@ -465,10 +465,8 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
                 {/* Visual Frame Render */}
                 <div className="relative">
-                  <div className={`w-28 h-28 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 border-4 transition-all duration-300 ${
-                    framesList.find(f => f.id === selectedFrame)?.design || "border-slate-300"
-                  }`}>
-                    <span className="text-6xl select-none">{child.avatar}</span>
+                  <div className={`w-28 h-28 flex items-center justify-center transition-all duration-300`}>
+                    <KobeAvatar size={100} character={child.companion as any || "kobe"} ageGroup={child.ageGroup} />
                   </div>
                   
                   {/* Decorative tag for chosen custom frame */}
@@ -1507,94 +1505,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                 />
               </div>
  
-              {/* Avatar Emoji grids */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block uppercase mb-1">
-                  Select Avatar Character
-                </label>
-                <div className="grid grid-cols-8 gap-1.5 overflow-y-auto max-h-20 p-1">
-                  {avatarPresets.map((em) => (
-                    <button
-                      key={em}
-                      type="button"
-                      onClick={() => {
-                        if (soundEnabled) sfx.playTap();
-                        setTempAvatar(em);
-                      }}
-                      className={`text-xl p-0.5 rounded-lg transition-all ${
-                        tempAvatar === em 
-                          ? "bg-[#2EC4B6]/25 border-2 border-[#2EC4B6]" 
-                          : isDark 
-                            ? "bg-black border border-slate-800 hover:bg-slate-900 text-white" 
-                            : "bg-white border border-slate-200 hover:bg-slate-100 text-black"
-                      }`}
-                    >
-                      {em}
-                    </button>
-                  ))}
-                </div>
-              </div>
- 
-              {/* Frames Customizer Selection list */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block uppercase mb-1">
-                  Select Unlocked Frame Halo
-                </label>
-                <div className="space-y-1.5">
-                  {framesList.map((f) => {
-                    const unlocked = f.unlocked;
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        disabled={!unlocked}
-                        onClick={() => {
-                          if (soundEnabled) sfx.playTap();
-                          setTempFrame(f.id);
-                        }}
-                        className={`w-full p-2 rounded-xl flex items-center justify-between border text-left transition-all ${
-                          !unlocked 
-                            ? "opacity-35 select-none cursor-not-allowed " + (isDark ? "border-slate-850" : "border-slate-100")
-                            : tempFrame === f.id
-                              ? "border-[#2EC4B6] bg-[#2EC4B6]/5 text-[#2EC4B6]"
-                              : isDark
-                                ? "border-slate-800 bg-black hover:bg-slate-900 text-white"
-                                : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] ${f.design}`}>
-                            {tempAvatar}
-                          </span>
-                          <div>
-                            <div className="text-[10px] font-black">{f.name}</div>
-                            <div className="text-[9px] text-slate-400">{f.label}</div>
-                          </div>
-                        </div>
- 
-                        <div>
-                          {unlocked ? (
-                            tempFrame === f.id ? (
-                              <span className="text-[10px] text-[#2EC4B6] font-black flex items-center gap-0.5">
-                                <Check size={11} /> Active
-                              </span>
-                            ) : (
-                              <span className="text-[9px] text-slate-400 font-bold uppercase">
-                                Equip
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-[9px] text-slate-400 font-bold flex items-center gap-1 uppercase">
-                              <Lock size={8} /> Locked
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
- 
+
               {/* Trigger Footer */}
               <div className="pt-2 flex gap-1.5">
                 <button

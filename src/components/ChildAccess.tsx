@@ -349,7 +349,6 @@ export const ChildLoginScreen: React.FC<ChildLoginScreenProps> = ({
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  <span style={{ fontSize: 38 }}>{child.avatar || "👦🏾"}</span>
                   <span style={{ fontFamily: F.display, fontSize: 15, fontWeight: 900, color: isDark ? "#FFF" : "#1E293B" }}>
                     {child.name}
                   </span>

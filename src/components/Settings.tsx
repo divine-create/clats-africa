@@ -16,7 +16,6 @@ import {
   AGE_AGES,
   AGE_META,
   LANG_OPTIONS,
-  AVATARS,
   INTERESTS
 } from "../utils/config";
 import { CURRICULUM } from "../data/curriculum";
@@ -59,7 +58,6 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [ageGroup, setAgeGroup] = useState<AgeGroup>("young innovators");
-  const [avatar, setAvatar] = useState("👦🏾");
   const [pin, setPin] = useState("");
   const [pin2, setPin2] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -134,15 +132,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         setErr("Username must only contain lowercase letters, numbers, and underscores.");
         return;
       }
-      // Populate custom default avatar depending on ageGroup choice
-      setAvatar(ageGroup === "early explorers" ? "🧸" : ageGroup === "young innovators" ? "👦🏾" : "💻");
       setInterests([]);
-      setStep(1);
-    } else if (step === 1) {
-      if (!avatar) {
-        setErr("Please select an avatar.");
-        return;
-      }
       setStep(2);
     } else if (step === 2) {
       if (pin.length < 4) {
@@ -181,7 +171,6 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         name: name.trim(),
         username: username.trim().toLowerCase().replace(/\s+/g, '_'),
         ageGroup,
-        avatar,
         pin,
         interests,
         completed: {},
@@ -470,37 +459,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
                 </div>
               </div>
 
-              <Label style={{ marginBottom: 10, color: textMuted }}>Select Avatar</Label>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: 10,
-                  marginBottom: 16
-                }}
-              >
-                {(ageGroup === "early explorers" ? ["🧸", "🐱", "🐶", "👾"] : AVATARS.slice(0, 8)).map((av) => (
-                  <div
-                    key={av}
-                    onClick={() => setAvatar(av)}
-                    style={{
-                      height: 52,
-                      borderRadius: 12,
-                      border: "2px solid " + (avatar === av ? borderCol : border),
-                      background: avatar === av ? borderCol + "12" : innerBg,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 26,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                      transform: avatar === av ? "scale(1.05)" : "scale(1)"
-                    }}
-                  >
-                    {av}
-                  </div>
-                ))}
-              </div>
+
 
             </Card>
           </div>
@@ -598,7 +557,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
                   border: "1px solid " + border
                 }}
               >
-                {avatar}
+                <KobeAvatar size={60} character={companion} ageGroup={ageGroup} />
               </div>
             </div>
             <Heading size={22} color={text}>{name} is enrolled!</Heading>
@@ -653,7 +612,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
             </Btn>
           )}
           {step > 0 && (
-            <Btn variant="ghost" onClick={() => { setStep((s) => s - 1); setErr(""); }} style={{ color: text, background: innerBg, borderColor: border }}>
+            <Btn variant="ghost" onClick={() => { setStep((s) => s === 2 ? 0 : s - 1); setErr(""); }} style={{ color: text, background: innerBg, borderColor: border }}>
               Back
             </Btn>
           )}
@@ -892,7 +851,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     border: "1.5px solid " + border
                   }}
                 >
-                  {c.avatar}
+                  <KobeAvatar size={34} character={c.companion as any || "kobe"} ageGroup={c.ageGroup} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Txt size={14} weight={700} color={text} style={{ display: "block", marginBottom: 2 }}>

@@ -964,13 +964,6 @@ export async function logSystemEvent(eventType: string, eventName: string, child
   }
 }
 
-export const AVATARS = [
-  "👦🏾", "👧🏾", "👦🏿", "👧🏿", "👦🏽", "👧🏽", "🧒🏾", "🧒🏿", "👦", "👧", "🧒",
-  "👩‍💻", "👨‍💻", "🧑‍💻", "👩‍🚀", "👨‍🚀", "🧑‍🚀", "👩‍🔬", "👨‍🔬", "🧑‍🔬",
-  "🤖", "👾", "🛸", "💻", "🎮", "🕹️", "🛰️", "⚙️",
-  "🧸", "🐱", "🐶", "🦊", "🦁", "🦄", "🐉", "🦉", "🦖",
-  "🚀", "🪐", "⭐", "🧪", "🧬", "⚡", "🔮"
-];
 export const INTERESTS = [
   "Technology",
   "Design",

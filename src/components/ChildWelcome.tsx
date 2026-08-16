@@ -167,9 +167,6 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
                 character={child.companion || "kobe"}
               />
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-900 font-extrabold text-xs px-2 py-0.5 rounded-full border border-white">
-              {child.avatar}
-            </div>
           </div>
           <div>
             <Heading size={24} className="text-slate-900 font-black tracking-tight" style={{ fontWeight: 900 }}>

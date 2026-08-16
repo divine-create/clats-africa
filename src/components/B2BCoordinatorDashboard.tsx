@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Parent, Language } from "../types";
-import { F, AVATARS } from "../utils/config";
+import { F } from "../utils/config";
 import { LogOut, Users, FileText, BarChart2, Plus, Shield, X, Copy, Check } from "lucide-react";
 
 interface Props {
@@ -35,7 +35,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newName, setNewName] = useState("");
   const [newAgeGroup, setNewAgeGroup] = useState("young");
-  const [newAvatar, setNewAvatar] = useState("👦🏾");
   const [newPin, setNewPin] = useState("");
   const [addingStudent, setAddingStudent] = useState(false);
   const [addError, setAddError] = useState("");
@@ -46,7 +45,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editPin, setEditPin] = useState("");
-  const [editAvatar, setEditAvatar] = useState("");
   const [editAgeGroup, setEditAgeGroup] = useState("");
   const [updatingStudent, setUpdatingStudent] = useState(false);
   const [editError, setEditError] = useState("");
@@ -139,7 +137,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     if (!orgId) {
       setB2bStudents(prev => prev.map(s => {
         if (s.id === editingStudentId) {
-          return { ...s, name: editName.trim(), pin: editPin, avatar: editAvatar, age_group: editAgeGroup };
+          return { ...s, name: editName.trim(), pin: editPin, age_group: editAgeGroup };
         }
         return s;
       }));
@@ -156,7 +154,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           childId: editingStudentId,
           name: editName.trim(),
           pin: editPin || undefined,
-          avatar: editAvatar,
           ageGroup: editAgeGroup
         })
       });
@@ -198,7 +195,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           student_id: studentId,
           name: newName.trim(),
           age_group: newAgeGroup,
-          avatar: newAvatar,
           pin: newPin,
           parent_email: parent.email,
         })
@@ -208,7 +204,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
       if (res.ok && data.ok) {
         const enrolled = { ...data.student, student_id: studentId, schoolCode };
         setNewlyAdded(enrolled);
-        setNewName(""); setNewPin(""); setNewAvatar("👦🏾"); setNewAgeGroup("young");
+        setNewName(""); setNewPin(""); setNewAgeGroup("young");
         await fetchStats();
       } else {
         // Mock mode: add locally if DB not available
@@ -216,7 +212,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           const mock = { id: Date.now().toString(), student_id: studentId, name: newName.trim(), xp: 0, lessonsDone: 0, status: "Active", schoolCode };
           setB2bStudents(prev => [...prev, mock]);
           setNewlyAdded({ ...mock, pin: newPin });
-          setNewName(""); setNewPin(""); setNewAvatar("👦🏾"); setNewAgeGroup("young");
+          setNewName(""); setNewPin(""); setNewAgeGroup("young");
         } else {
           setAddError(data.msg || "Failed to enroll student.");
         }
@@ -712,7 +708,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
             {newlyAdded ? (
               <div className="space-y-4">
                 <div className={`p-5 rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/10 text-center space-y-3`}>
-                  <span className="text-4xl block">{newAvatar}</span>
                   <h4 className="font-black text-lg">{newlyAdded.name}</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className={`p-3 rounded-xl ${isDark ? "bg-slate-900" : "bg-white"} border ${isDark ? "border-slate-700" : "border-slate-200"}`}>
@@ -754,19 +749,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                   </code>
                 </div>
 
-                {/* Avatar picker */}
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Choose Avatar</label>
-                  <div className="flex flex-wrap gap-2">
-                    {AVATARS.map(a => (
-                      <button
-                        key={a}
-                        onClick={() => setNewAvatar(a)}
-                        className={`text-2xl w-10 h-10 rounded-xl transition border-2 ${newAvatar === a ? "border-[#7A6FF0] bg-[#7A6FF0]/10" : "border-transparent hover:border-slate-300"}`}
-                      >{a}</button>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Name */}
                 <div>
@@ -844,19 +826,6 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl">{editError}</div>
               )}
 
-              {/* Avatar picker */}
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Choose Avatar</label>
-                <div className="flex flex-wrap gap-2" style={{ maxHeight: 110, overflowY: "auto" }}>
-                  {AVATARS.map(a => (
-                    <button
-                      key={a}
-                      onClick={() => setEditAvatar(a)}
-                      className={`text-2xl w-10 h-10 rounded-xl transition border-2 ${editAvatar === a ? "border-[#7A6FF0] bg-[#7A6FF0]/10" : "border-transparent hover:border-slate-300"}`}
-                    >{a}</button>
-                  ))}
-                </div>
-              </div>
 
               {/* Name */}
               <div>
