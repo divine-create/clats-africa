@@ -4,7 +4,6 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { C, F } from '@/utils/config';
-import { TutorialTour } from '@/components/TourOverlay';
 
 const ChildApp = lazy(() =>
   import('@/components/ChildApp').then(m => ({ default: m.ChildApp ?? m.default }))
@@ -44,7 +43,6 @@ export default function ChildAppPage() {
   const isDark = theme === 'dark';
 
   const [activeTab, setActiveTab] = useState('home');
-  const [showChildTour, setShowChildTour] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,11 +51,6 @@ export default function ChildAppPage() {
       return;
     }
     setMounted(true);
-    // Show tour for child first session ONLY if not completed in DB
-    const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
-    if (!localStorage.getItem(tourKey) && activeChild.child_tutorial_completed !== true) {
-      setShowChildTour(true);
-    }
   }, [activeChild, router]);
 
   const handleChildUpdate = (updatedChild: any) => {
@@ -108,26 +101,6 @@ export default function ChildAppPage() {
         fontFamily: F.body,
       }}
     >
-      {showChildTour && (
-        <TutorialTour
-          role="child"
-          childAgeGroup={activeChild.ageGroup || "young innovators"}
-          onComplete={() => {
-            setShowChildTour(false);
-            const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
-            localStorage.setItem(tourKey, 'true');
-            handleChildUpdate({ ...activeChild, child_tutorial_completed: true });
-          }}
-          onSkip={() => {
-            setShowChildTour(false);
-            const tourKey = `clats_child_tour_${activeChild.id ?? activeChild.name}`;
-            localStorage.setItem(tourKey, 'true');
-            handleChildUpdate({ ...activeChild, child_tutorial_completed: true });
-          }}
-          onSetChildTab={handleTabChange}
-        />
-      )}
-
       <Suspense fallback={<LoadingScreen />}>
         <ChildApp
           child={activeChild}

@@ -33,8 +33,7 @@ interface ChildAppProps {
   onExit: () => void;
   lang: Language;
   onUpdateChild: (updated: Child) => void;
-  activeTourTab?: TabType;
-  theme?: "light" | "dark";
+  theme: "light" | "dark";
   onToggleTheme?: () => void;
 }
 
@@ -60,7 +59,6 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   onExit,
   lang,
   onUpdateChild,
-  activeTourTab,
   theme,
   onToggleTheme
 }) => {
@@ -68,7 +66,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const isDark = theme === "dark";
 
   // States
-  const [activeTab, setActiveTab] = useState<TabType>(activeTourTab || "home");
+  const [activeTab, setActiveTab] = useState<TabType>("home");
   const [selModule, setSelModule] = useState<Module | null>(null);
   const [selLesson, setSelLesson] = useState<Lesson | null>(null);
   const [showHandoff, setShowHandoff] = useState(false);
@@ -122,20 +120,6 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       companionVoice.stop();
     }
   };
-
-  // Synchronize activeTab automatically during the guided tutorial tours!
-  useEffect(() => {
-    if (activeTourTab) {
-      setActiveTab(activeTourTab);
-      if (activeTourTab === "lessons" && !selModule) {
-        const KEY = child.ageGroup || "early explorers";
-        const course = CURRICULUM[KEY];
-        if (course && course.modules && course.modules.length > 0) {
-          setSelModule(course.modules[0]);
-        }
-      }
-    }
-  }, [activeTourTab, child.ageGroup, selModule]);
 
   // Screen time tracking
   const [slot, setSlot] = useState<"morning" | "afternoon" | "evening" | null>(getCurrentSlot());

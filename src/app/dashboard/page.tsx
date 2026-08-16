@@ -4,14 +4,9 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { C, F, syncToSupabase, S } from '@/utils/config';
-import { TutorialTour } from '@/components/TourOverlay';
 
 const ParentDashboard = lazy(() =>
   import('@/components/ParentDashboard').then(m => ({ default: (m as any).ParentDashboard ?? (m as any).default }))
-);
-
-const WelcomeModal = lazy(() =>
-  import('@/components/TourOverlay').then(m => ({ default: (m as any).WelcomeModal ?? (m as any).default }))
 );
 
 function LoadingScreen() {
@@ -50,8 +45,6 @@ export default function DashboardPage() {
   } = useApp();
   const isDark = theme === 'dark';
 
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [showTour, setShowTour] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -67,12 +60,6 @@ export default function DashboardPage() {
       return;
     }
     setMounted(true);
-    setMounted(true);
-    // Show welcome modal for new users ONLY if not completed in DB
-    const welcomed = localStorage.getItem('clats_welcomed');
-    if (!welcomed && parent.tutorial_completed !== true) {
-      setShowWelcome(true);
-    }
   }, [parent, router]);
 
   const handleLogout = () => {
@@ -91,23 +78,6 @@ export default function DashboardPage() {
     if (screen === 'community') router.push('/dashboard/community');
   };
 
-  const handleWelcomeStart = () => {
-    setShowWelcome(false);
-    setShowTour(true);
-  };
-
-  const handleWelcomeSkip = () => {
-    setShowWelcome(false);
-    localStorage.setItem('tutorialSkipped', 'true');
-    localStorage.setItem('clats_welcomed', 'true');
-    
-    if (parent) {
-      const updatedParent = { ...parent, tutorial_completed: true };
-      setParent(updatedParent);
-      syncToSupabase(updatedParent, true);
-    }
-  };
-
   if (!mounted || !parent) {
     return <LoadingScreen />;
   }
@@ -122,41 +92,6 @@ export default function DashboardPage() {
       }}
     >
       <Suspense fallback={<LoadingScreen />}>
-        {showWelcome && (
-          <Suspense fallback={null}>
-            <WelcomeModal
-              onStartTour={handleWelcomeStart}
-              onSkip={handleWelcomeSkip}
-            />
-          </Suspense>
-        )}
-
-        {showTour && (
-          <TutorialTour
-            role="parent"
-            onComplete={() => {
-              setShowTour(false);
-              localStorage.setItem('hasCompletedParentTutorial', 'true');
-              localStorage.setItem('clats_welcomed', 'true');
-              if (parent) {
-                const updatedParent = { ...parent, tutorial_completed: true };
-                setParent(updatedParent);
-                syncToSupabase(updatedParent, true);
-              }
-            }}
-            onSkip={() => {
-              setShowTour(false);
-              localStorage.setItem('tutorialSkipped', 'true');
-              localStorage.setItem('clats_welcomed', 'true');
-              if (parent) {
-                const updatedParent = { ...parent, tutorial_completed: true };
-                setParent(updatedParent);
-                syncToSupabase(updatedParent, true);
-              }
-            }}
-          />
-        )}
-
         <ParentDashboard
           parent={parent}
           lang={lang}
