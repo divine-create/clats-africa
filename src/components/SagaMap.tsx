@@ -195,25 +195,19 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         {isCompleted && (isBossNode ? <Star size={40} className="text-white fill-white" /> : <Check size={32} className="text-white" />)}
                         {isActive && <Play size={isBossNode ? 40 : 32} className="text-white ml-1" />}
                         {totallyLocked && <Lock size={isBossNode ? 36 : 28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
-
-                        {/* Node Label */}
-                        <div className={`absolute top-1/2 -translate-y-1/2 transition-opacity whitespace-nowrap px-4 py-2 rounded-xl pointer-events-none z-30 shadow-md border
-                          ${isDark ? "bg-[#1e293b]/95 text-white border-slate-700" : "bg-white/95 text-slate-800 border-slate-200"}
-                          ${(lesIndex % 4 === 0) ? "left-full ml-4" : (lesIndex % 4 === 2) ? "right-full mr-4" : "left-full ml-4"}
-                        `}>
-                          <span className="font-black text-lg block">
-                            {les.title?.[lang] || les.title?.en}
-                          </span>
-                          <div className={`text-xs font-bold mt-1 max-w-[180px] whitespace-normal leading-snug ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                            {les.desc?.[lang] || les.desc?.en}
-                          </div>
-                        </div>
                       </button>
 
-                      <div className="mt-3 text-center w-24">
-                        <span className={`text-xs font-black drop-shadow-md leading-tight block ${isDark ? "text-white/90" : "text-slate-800"}`}>
-                          Lesson {lesIndex + 1}
+                      {/* Node Label (Centered below) */}
+                      <div className={`mt-4 px-4 py-2 rounded-xl z-30 shadow-md border text-center w-max max-w-[200px] flex flex-col items-center
+                        ${isDark ? "bg-[#1e293b]/95 text-white border-slate-700" : "bg-white/95 text-slate-800 border-slate-200"}
+                      `}>
+                        <span className="font-black text-[10px] uppercase tracking-wider opacity-60 mb-0.5">Lesson {lesIndex + 1}</span>
+                        <span className="font-black text-base block leading-tight">
+                          {les.title?.[lang] || les.title?.en}
                         </span>
+                        <div className={`text-[10px] font-bold mt-1 leading-snug ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                          {les.desc?.[lang] || les.desc?.en}
+                        </div>
                       </div>
                     </div>
                   );
