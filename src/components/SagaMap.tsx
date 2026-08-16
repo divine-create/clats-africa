@@ -124,13 +124,13 @@ export const SagaMap: React.FC<SagaMapProps> = ({
               className="relative py-24 px-4 flex flex-col items-center"
             >
               {/* Module Header Overlay */}
-              <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-6 py-2 rounded-2xl text-center shadow-lg z-10 w-[90%] max-w-sm ${
+              <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-8 py-3 rounded-2xl text-center shadow-lg z-10 w-[90%] max-w-sm md:max-w-md ${
                 isDark ? "bg-black/50 border-white/10" : "bg-white/60 border-slate-300"
               }`}>
-                <span className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 ${isDark ? "text-white/70" : "text-slate-500"}`}>
+                <span className={`text-xs md:text-sm font-black uppercase tracking-widest block mb-1 ${isDark ? "text-white/70" : "text-slate-500"}`}>
                   Section {modIndex + 1}
                 </span>
-                <h3 className={`text-lg font-black leading-tight ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
+                <h3 className={`text-xl md:text-2xl font-black leading-tight ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
                   {mod.title?.[lang] || mod.title?.en}
                 </h3>
               </div>
