@@ -415,7 +415,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     onUpdateChild(updated);
   };
 
-  const handleAddGamesXP = (amount: number) => {
+  const handleAddGamesXP = async (amount: number) => {
     const freshXP = (child.xp || 0) + amount;
     
     const newlyUnlocked: string[] = [];
@@ -428,6 +428,25 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     }
 
     const newBadgesList = [...currentBadges, ...newlyUnlocked];
+
+    // Sync to database
+    if (parent) {
+      try {
+        await fetch("/api/supabase/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            child_id: child.id,
+            parent_id: parent.id,
+            xp_earned: amount,
+            stars_earned: 0,
+            badges_unlocked_ids: newlyUnlocked
+          })
+        });
+      } catch (e) {
+        console.warn("[SYNC] Failed to sync game XP:", e);
+      }
+    }
 
     const updated = {
       ...child,
