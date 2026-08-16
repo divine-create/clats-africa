@@ -20,11 +20,11 @@ interface SagaMapProps {
 }
 
 const BIOME_COLORS = [
-  { bg: "#0F172A", node: "#3B82F6", accent: "#60A5FA" }, // Module 1: Blue/Night
-  { bg: "#14532D", node: "#22C55E", accent: "#4ADE80" }, // Module 2: Green/Forest
-  { bg: "#4C1D95", node: "#A855F7", accent: "#C084FC" }, // Module 3: Purple/Cosmic
-  { bg: "#7F1D1D", node: "#EF4444", accent: "#F87171" }, // Module 4: Red/Volcano
-  { bg: "#083344", node: "#06B6D4", accent: "#22D3EE" }, // Module 5: Cyan/Ice
+  { bgLight: "#DBEAFE", bgDark: "#1E3A8A", node: "#3B82F6", accent: "#60A5FA" }, // Blue
+  { bgLight: "#DCFCE7", bgDark: "#14532D", node: "#22C55E", accent: "#4ADE80" }, // Green
+  { bgLight: "#F3E8FF", bgDark: "#4C1D95", node: "#A855F7", accent: "#C084FC" }, // Purple
+  { bgLight: "#FEE2E2", bgDark: "#7F1D1D", node: "#EF4444", accent: "#F87171" }, // Red
+  { bgLight: "#CFFAFE", bgDark: "#083344", node: "#06B6D4", accent: "#22D3EE" }, // Cyan
 ];
 
 export const SagaMap: React.FC<SagaMapProps> = ({
@@ -56,17 +56,23 @@ export const SagaMap: React.FC<SagaMapProps> = ({
   // Find the first uncompleted lesson globally to mark as "Active"
   let foundActive = false;
 
+  const isDark = theme === "dark";
+
   return (
-    <div className="w-full min-h-screen bg-[#0B1120] pb-32">
+    <div className={`w-full min-h-screen pb-32 ${isDark ? "bg-[#0B1120]" : "bg-slate-50"}`}>
       {/* Map Header */}
-      <div className="sticky top-0 z-50 bg-[#0B1120]/90 backdrop-blur-md border-b border-slate-800 p-4 flex items-center justify-between shadow-xl">
+      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-4 flex items-center justify-between shadow-sm ${
+        isDark ? "bg-[#0B1120]/80 border-slate-800" : "bg-white/80 border-slate-200"
+      }`}>
         <div>
-          <h2 className="text-xl font-black text-white" style={{ fontFamily: F.display }}>Learning Map</h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Your Adventure</p>
+          <h2 className={`text-xl font-black ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>Learning Map</h2>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Your Adventure</p>
         </div>
-        <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+          isDark ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-200"
+        }`}>
           <Star size={14} className="text-amber-400" />
-          <span className="text-white text-xs font-black">{child.xp || 0} XP</span>
+          <span className={`text-xs font-black ${isDark ? "text-white" : "text-slate-900"}`}>{child.xp || 0} XP</span>
         </div>
       </div>
 
@@ -80,15 +86,17 @@ export const SagaMap: React.FC<SagaMapProps> = ({
           return (
             <div 
               key={mod.id} 
-              className="relative py-16 px-4 flex flex-col items-center border-b-[8px] border-black/40"
-              style={{ backgroundColor: biome.bg }}
+              className={`relative py-16 px-4 flex flex-col items-center border-b-[8px] ${isDark ? "border-black/40" : "border-black/10"}`}
+              style={{ backgroundColor: isDark ? biome.bgDark : biome.bgLight }}
             >
               {/* Module Header Overlay */}
-              <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md border border-white/10 px-6 py-2 rounded-2xl text-center shadow-2xl z-10 w-[90%] max-w-sm">
-                <span className="text-[10px] text-white/70 font-black uppercase tracking-widest block mb-0.5">
+              <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-6 py-2 rounded-2xl text-center shadow-lg z-10 w-[90%] max-w-sm ${
+                isDark ? "bg-black/50 border-white/10" : "bg-white/60 border-slate-300"
+              }`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest block mb-0.5 ${isDark ? "text-white/70" : "text-slate-500"}`}>
                   Section {modIndex + 1}
                 </span>
-                <h3 className="text-lg font-black text-white leading-tight" style={{ fontFamily: F.display }}>
+                <h3 className={`text-lg font-black leading-tight ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
                   {mod.title?.[lang] || mod.title?.en}
                 </h3>
               </div>
@@ -96,7 +104,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
               {/* Lesson Nodes Path */}
               <div className="mt-20 w-full max-w-md flex flex-col items-center relative space-y-12">
                 {/* SVG dashed path connecting nodes behind them */}
-                <div className="absolute top-0 bottom-0 w-2 border-l-4 border-dashed border-white/10 left-1/2 -translate-x-[2px]" />
+                <div className={`absolute top-0 bottom-0 w-2 border-l-4 border-dashed left-1/2 -translate-x-[2px] ${isDark ? "border-white/10" : "border-black/10"}`} />
 
                 {mod.lessons.map((les, lesIndex) => {
                   const isCompleted = !!child.completed?.[les.id];
@@ -140,7 +148,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         className={`w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-xl transition-all duration-300 relative group
                           ${isCompleted ? "bg-white border-white scale-95" : ""}
                           ${isActive ? "scale-110 ring-8 ring-white/20 animate-pulse border-white bg-gradient-to-br from-white to-slate-200" : ""}
-                          ${totallyLocked ? "bg-slate-800 border-slate-700 opacity-80" : ""}
+                          ${totallyLocked ? (isDark ? "bg-slate-800 border-slate-700 opacity-80" : "bg-slate-200 border-slate-300 opacity-80") : ""}
                         `}
                         style={{
                           boxShadow: isActive ? `0 0 40px ${biome.node}` : isCompleted ? `0 0 20px ${biome.node}80` : 'none'
@@ -148,7 +156,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                       >
                         {isCompleted && <Check size={32} className="text-black" />}
                         {isActive && <Play size={32} className="text-black ml-1" />}
-                        {totallyLocked && <Lock size={28} className="text-slate-500" />}
+                        {totallyLocked && <Lock size={28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
 
                         {/* Node Label Tooltip */}
                         <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg pointer-events-none z-30
@@ -162,7 +170,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                       </button>
 
                       <div className="mt-3 text-center w-24">
-                        <span className="text-xs font-black text-white/90 drop-shadow-md leading-tight block">
+                        <span className={`text-xs font-black drop-shadow-md leading-tight block ${isDark ? "text-white/90" : "text-slate-800"}`}>
                           Lesson {lesIndex + 1}
                         </span>
                       </div>
