@@ -20,11 +20,11 @@ interface SagaMapProps {
 }
 
 const BIOME_COLORS = [
-  { bgLight: "#DBEAFE", bgDark: "#1E3A8A", node: "#3B82F6", accent: "#60A5FA" }, // Blue
-  { bgLight: "#DCFCE7", bgDark: "#14532D", node: "#22C55E", accent: "#4ADE80" }, // Green
-  { bgLight: "#F3E8FF", bgDark: "#4C1D95", node: "#A855F7", accent: "#C084FC" }, // Purple
-  { bgLight: "#FEE2E2", bgDark: "#7F1D1D", node: "#EF4444", accent: "#F87171" }, // Red
-  { bgLight: "#CFFAFE", bgDark: "#083344", node: "#06B6D4", accent: "#22D3EE" }, // Cyan
+  { bgLight: "#7DF9FF", bgDark: "#0052CC", node: "#00F0FF", accent: "#007BFF" }, // Neon Cyan
+  { bgLight: "#B2FF59", bgDark: "#1B5E20", node: "#39FF14", accent: "#00E676" }, // Lime Green
+  { bgLight: "#EA80FC", bgDark: "#4A148C", node: "#D500F9", accent: "#AA00FF" }, // Hot Violet
+  { bgLight: "#FF8A80", bgDark: "#880E4F", node: "#FF1744", accent: "#D50000" }, // Candy Red
+  { bgLight: "#FFFF8D", bgDark: "#FF6F00", node: "#FFEA00", accent: "#FFAB00" }, // Electric Yellow
 ];
 
 export const SagaMap: React.FC<SagaMapProps> = ({
