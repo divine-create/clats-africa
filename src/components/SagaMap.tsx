@@ -158,12 +158,15 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         {isActive && <Play size={32} className="text-black ml-1" />}
                         {totallyLocked && <Lock size={28} className={isDark ? "text-slate-500" : "text-slate-400"} />}
 
-                        {/* Node Label Tooltip */}
-                        <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/90 text-white text-xs font-bold px-3 py-1.5 rounded-lg pointer-events-none z-30
+                        {/* Node Label */}
+                        <div className={`absolute top-1/2 -translate-y-1/2 transition-opacity whitespace-nowrap px-3 py-1.5 rounded-lg pointer-events-none z-30 shadow-sm border
+                          ${isDark ? "bg-[#1e293b]/90 text-white border-slate-700" : "bg-white/90 text-slate-800 border-slate-200"}
                           ${(lesIndex % 4 === 0) ? "left-full ml-4" : (lesIndex % 4 === 2) ? "right-full mr-4" : "left-full ml-4"}
                         `}>
-                          {les.title?.[lang] || les.title?.en}
-                          <div className="text-[9px] text-slate-400 font-normal mt-0.5 max-w-[150px] whitespace-normal">
+                          <span className="font-black text-sm block">
+                            {les.title?.[lang] || les.title?.en}
+                          </span>
+                          <div className={`text-[9px] font-bold mt-0.5 max-w-[150px] whitespace-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                             {les.desc?.[lang] || les.desc?.en}
                           </div>
                         </div>
