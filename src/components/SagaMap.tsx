@@ -16,6 +16,7 @@ interface SagaMapProps {
   lang: Language;
   onSelectLesson: (l: Lesson) => void;
   onShowPaywall: () => void;
+  onBack?: () => void;
   theme?: "light" | "dark";
 }
 
@@ -32,6 +33,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
   lang,
   onSelectLesson,
   onShowPaywall,
+  onBack,
   theme = "dark"
 }) => {
   const ageGroup: AgeGroup = child.ageGroup || "early explorers";
@@ -99,9 +101,23 @@ export const SagaMap: React.FC<SagaMapProps> = ({
       <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-4 flex items-center justify-between shadow-sm ${
         isDark ? "bg-[#0B1120]/80 border-slate-800" : "bg-white/80 border-slate-200"
       }`}>
-        <div>
-          <h2 className={`text-xl font-black ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>Learning Map</h2>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Your Adventure</p>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className={`p-2 rounded-xl transition-transform active:scale-95 flex-shrink-0 ${
+                isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+              }`}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <h2 className={`text-xl font-black ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>Learning Map</h2>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Your Adventure</p>
+          </div>
         </div>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
           isDark ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-200"

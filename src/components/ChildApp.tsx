@@ -644,6 +644,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           child={child}
           lang={lang}
           theme={theme}
+          onBack={() => setActiveTab("home")}
           onSelectLesson={(l) => {
             setSelLesson(l);
             setActiveTab("chat");
