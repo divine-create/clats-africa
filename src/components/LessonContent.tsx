@@ -674,11 +674,13 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         </div>
       </div>
 
-      <div style={{ maxWidth: 540, margin: "0 auto", padding: "20px 16px" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "20px 16px", width: "100%" }}>
         
         {/* PROGRESS STEPPER HEADER */}
         <div
           style={{
+            maxWidth: 600,
+            margin: "0 auto",
             display: "grid",
             gridTemplateColumns: "1fr 1fr 1fr",
             gap: 8,
