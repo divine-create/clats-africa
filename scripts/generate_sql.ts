@@ -54,7 +54,7 @@ courses.forEach(course => {
         // Quizzes
         if (les.quiz) {
           les.quiz.forEach((q, qIdx) => {
-            const qId = \`qz-\${les.id}-\${qIdx + 1}\`;
+            const qId = `qz-${les.id}-${qIdx + 1}`;
             const optA = q.opts.en[0] || '';
             const optB = q.opts.en[1] || '';
             const optC = q.opts.en[2] || '';

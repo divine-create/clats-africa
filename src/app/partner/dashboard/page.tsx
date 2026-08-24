@@ -6,8 +6,8 @@ import { useApp } from "@/context/AppContext";
 
 const PartnerDashboardComp = lazy(() =>
   import("@/components/PartnerDashboard").then((m) => ({
-    default: m.PartnerDashboard ?? m.default,
-  }))
+    default: m.PartnerDashboard
+  })) as Promise<{ default: React.ComponentType<any> }>
 );
 
 export default function PartnerDashboardPage() {

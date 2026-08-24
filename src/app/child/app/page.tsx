@@ -39,6 +39,7 @@ export default function ChildAppPage() {
     dbConnected,
     isSyncing,
     setTheme,
+    logout,
   } = useApp();
   const isDark = theme === 'dark';
 
@@ -46,12 +47,22 @@ export default function ChildAppPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!activeChild) {
+    if (!parent) {
+      // Not logged in or no parent wrapper
       router.push('/child/login');
       return;
     }
+    if (!activeChild) {
+      // Logged in but no child selected
+      if (parent.isB2B) {
+        router.push('/child/login');
+      } else {
+        router.push('/dashboard');
+      }
+      return;
+    }
     setMounted(true);
-  }, [activeChild, router]);
+  }, [parent, activeChild, router]);
 
   const handleChildUpdate = (updatedChild: any) => {
     if (!parent) return;
@@ -81,7 +92,11 @@ export default function ChildAppPage() {
 
   const handleExit = () => {
     setActiveChild(null);
-    router.push('/dashboard');
+    if (parent?.isB2B) {
+      logout('/child/login');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const handleTabChange = (tab: string) => {

@@ -12,7 +12,11 @@ export default function RegisterPage() {
 
   const handleAuth = (p: any) => {
     setParent(p);
-    router.push('/dashboard');
+    if (p.isB2B) {
+      router.push('/coordinator/dashboard');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const handleBack = () => {

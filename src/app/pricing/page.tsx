@@ -62,8 +62,7 @@ export default function PricingPage() {
       <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2EC4B6] to-teal-500 flex items-center justify-center text-white font-bold text-xl">C</div>
-            <span className="font-black text-xl tracking-tight">CLATS</span>
+            <CLATSLogo height={32} />
           </Link>
           <div className="flex gap-4">
             <Link href="/auth/login" className="px-5 py-2.5 rounded-full text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">Log In</Link>
@@ -264,10 +263,9 @@ export default function PricingPage() {
       {/* FOOTER */}
       <footer className="bg-slate-950 text-slate-400 py-12 text-center text-sm">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-white opacity-80">
-            <div className="w-6 h-6 rounded bg-[#2EC4B6] flex items-center justify-center font-bold text-[10px]">C</div>
-            <span className="font-black tracking-widest">CLATS</span>
-          </div>
+          <Link href="/" className="flex items-center gap-2 mb-4 md:mb-0">
+            <CLATSLogo height={32} />
+          </Link>
           <p>© {new Date().getFullYear()} CLATS. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

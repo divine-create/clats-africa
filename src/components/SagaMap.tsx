@@ -147,7 +147,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                   Section {modIndex + 1}
                 </span>
                 <h3 className={`text-xl md:text-2xl font-black leading-tight ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
-                  {mod.title?.[lang] || mod.title?.en}
+                  {mod.name?.[lang] || mod.name?.en}
                 </h3>
               </div>
 
@@ -221,9 +221,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                         <span className="font-black text-base block leading-tight">
                           {les.title?.[lang] || les.title?.en}
                         </span>
-                        <div className={`text-[10px] font-bold mt-1 leading-snug ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                          {les.desc?.[lang] || les.desc?.en}
-                        </div>
+
                       </div>
                     </div>
                   );

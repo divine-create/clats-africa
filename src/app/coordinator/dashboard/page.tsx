@@ -6,7 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { F } from '@/utils/config';
 
 const B2BCoordinatorDashboard = lazy(() =>
-  import('@/components/B2BCoordinatorDashboard').then(m => ({ default: m.B2BCoordinatorDashboard ?? m.default }))
+  import('@/components/B2BCoordinatorDashboard').then(m => ({ default: m.B2BCoordinatorDashboard })) as Promise<{ default: React.ComponentType<any> }>
 );
 
 function LoadingScreen() {
@@ -57,8 +57,7 @@ export default function CoordinatorDashboardPage() {
   }, [parent, router]);
 
   const handleLogout = () => {
-    logout();
-    router.push('/coordinator/login');
+    logout('/coordinator/login');
   };
 
   if (!mounted || !parent) {

@@ -108,7 +108,7 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
       
       // Bypass standard auth and provision a B2B session
       const b2bParent: Parent = {
-        user_id: "b2b_" + Date.now().toString(),
+        id: "b2b_" + Date.now().toString(),
         name: "Sponsor Parent",
         email: `b2b_${b2bCode.trim()}@clats.local`,
         children: [],
@@ -177,7 +177,8 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
       if (authRes.ok && authData && authData.ok) {
         // Success! Set session token
         const parentKey = email.toLowerCase().trim();
-        localStorage.setItem("clats_sess_v1", JSON.stringify({ type: "parent", email: parentKey }));
+        const isB2B = !!(authData.parent && authData.parent.isB2B);
+        localStorage.setItem("clats_sess_v1", JSON.stringify({ type: "parent", email: parentKey, isB2B }));
 
         // Run location and timezone background tracker to catch telemetry metrics
         detectAndStoreLocation(email);

@@ -106,6 +106,12 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.warn("Failed to update last_login_at:", e);
     }
+    
+    // Add B2B properties if applicable
+    if (parent.b2b_org_id) {
+      parent.isB2B = true;
+      parent.b2b_org_id = parent.b2b_org_id;
+    }
 
     return NextResponse.json({ ok: true, parent });
   } catch (err: any) {

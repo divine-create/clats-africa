@@ -103,28 +103,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onDismiss }) => {
             border: "1px solid rgba(255, 255, 255, 0.18)"
           }}
         >
-          <CLATSLogo height={88} />
+          <CLATSLogo height={120} />
         </div>
-
-        {/* Dynamic App Title */}
-        <h1
-          style={{
-            color: "#FFFFFF",
-            fontFamily: "'Baloo 2', system-ui, sans-serif",
-            fontSize: "44px",
-            fontWeight: 800,
-            lineHeight: 1.1,
-            margin: "0 0 10px 0",
-            letterSpacing: "-0.01em",
-            textShadow: "0 2px 8px rgba(0,0,0,0.06)"
-          }}
-        >
-          CLATS
-        </h1>
 
         {/* Rounded Modern Sub-brand Tagline */}
         <p
           style={{
+            marginTop: 16,
             color: "rgba(255, 255, 255, 0.95)",
             fontFamily: "'Baloo 2', system-ui, sans-serif",
             fontSize: "17px",

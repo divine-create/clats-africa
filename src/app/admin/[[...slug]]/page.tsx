@@ -6,7 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { C, F } from '@/utils/config';
 
 const AdminDashboard = lazy(() =>
-  import('@/components/AdminDashboard').then(m => ({ default: (m as any).AdminDashboard ?? (m as any).default }))
+  import('@/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })) as Promise<{ default: React.ComponentType<any> }>
 );
 
 function LoadingScreen() {

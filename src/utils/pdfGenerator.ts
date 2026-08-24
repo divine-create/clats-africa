@@ -19,6 +19,26 @@ function getActiveAcademyLabel(child: Child): string {
   return child.ageGroup === "future builders" ? "Innovation & Career Readiness" : "Adaptability & Lifelong Learning";
 }
 
+
+async function fetchImageAsBase64(url: string): Promise<string> {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch image at ${url}`);
+    }
+    const blob = await resp.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn("Could not fetch image as base64:", error);
+    return "";
+  }
+}
+
 // Fetch helper to register custom font in jsPDF
 async function fetchFontAsBase64(url: string): Promise<string> {
   const resp = await fetch(url);
@@ -84,12 +104,17 @@ export async function downloadProgressReport(parent: Parent) {
     format: "a4" // 210mm x 297mm
   });
 
+
   const children = parent.children || [];
   const liveDateTime = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric"
   });
+
+  // Fetch logo
+  const logoBase64 = await fetchImageAsBase64("/logo-3.png");
+
 
   // Attempt to register Montserrat font for brand precision
   let hasMontserrat = false;
@@ -151,17 +176,21 @@ export async function downloadProgressReport(parent: Parent) {
     doc.setFillColor(19, 34, 43); // Dark slate Blue/Black
     doc.rect(0, 272, 210, 25, "F");
 
-    // Left Icon and Brand Label (Image 2 style vector recreation)
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(14);
-    doc.setTextColor(46, 196, 182); // Vibrant branding turquoise
-    doc.text("🤖", 15, 287);
-    
-    drawText(doc, "CLATS", 23, 2855, { fontSize: 12, fontStyle: "bold", color: [46, 196, 182], hasMontserrat });
-    drawText(doc, "Children Learning AI Technology Solution", 23, 289.5, { fontSize: 8, color: [148, 163, 184], hasMontserrat });
+    if (logoBase64) {
+      doc.addImage(logoBase64, "PNG", 14, 276.5, 24, 9);
+    } else {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.setTextColor(46, 196, 182);
+      doc.text("🤖", 15, 287);
+      drawText(doc, "CLATS", 23, 285.5, { fontSize: 12, fontStyle: "bold", color: [46, 196, 182], hasMontserrat });
+    }
+
+    drawText(doc, "Building Tomorrow's Tech Minds Today!", 42, 283, { fontSize: 9, fontStyle: "bold", color: [255, 255, 255], hasMontserrat });
+    drawText(doc, "admin@clats.org", 42, 288, { fontSize: 8, color: [46, 196, 182], hasMontserrat });
 
     // Right page information
-    drawText(doc, `CLATS Progress Report  •  ${liveDateTime}`, 195, 287, { fontSize: 9, color: [255, 255, 255], align: "right", hasMontserrat });
+    drawText(doc, `CLATS Progress Report  •  ${liveDateTime}`, 195, 285, { fontSize: 8.5, color: [255, 255, 255], align: "right", hasMontserrat });
 
     doc.save(`CLATS_Progress_Report_Pending.pdf`);
     return;
@@ -342,10 +371,10 @@ export async function downloadProgressReport(parent: Parent) {
     doc.roundedRect(12, tableHeaderY, 130, 8, 1, 1, "F");
 
     // Table Columns definitions
-    drawText(doc, "Milestones:", 14, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 54, hasMontserrat });
-    drawText(doc, "Project Status:", 72, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 22, hasMontserrat });
-    drawText(doc, "Expected:", 98, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 18, hasMontserrat });
-    drawText(doc, "Actual Standing:", 118, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 22, hasMontserrat });
+    drawText(doc, "Milestones:", 14, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 58, hasMontserrat });
+    drawText(doc, "Project Status:", 74, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 22, hasMontserrat });
+    drawText(doc, "Expected:", 99, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 18, hasMontserrat });
+    drawText(doc, "Actual Standing:", 119, tableHeaderY + 5.5, { fontSize: 7.2, fontStyle: "bold", color: [255, 255, 255], maxWidth: 22, hasMontserrat });
 
     // Table Rows (Alternating color blocks)
     const milestoneUnits = [
@@ -387,7 +416,7 @@ export async function downloadProgressReport(parent: Parent) {
     ];
 
     const startRowY = tableHeaderY + 8;
-    const rowHeightMetric = 11;
+    const rowHeightMetric = 11.8;
 
     milestoneUnits.forEach((milestone, idx) => {
       const crtY = startRowY + (idx * rowHeightMetric);
@@ -406,10 +435,10 @@ export async function downloadProgressReport(parent: Parent) {
       doc.line(12, crtY + rowHeightMetric, 142, crtY + rowHeightMetric);
 
       // Print columns values
-      drawText(doc, milestone.unit, 14, crtY + 7, { fontSize: 7.2, fontStyle: "bold", color: [19, 34, 43], maxWidth: 54, hasMontserrat });
-      drawText(doc, milestone.status, 72, crtY + 7, { fontSize: 7.2, fontStyle: "bold", color: milestone.theme as [number, number, number], maxWidth: 22, hasMontserrat });
-      drawText(doc, milestone.expected, 98, crtY + 7, { fontSize: 7.2, color: [100, 116, 139], maxWidth: 18, hasMontserrat });
-      drawText(doc, milestone.actual, 118, crtY + 7, { fontSize: 7.2, fontStyle: "bold", color: [19, 34, 43], maxWidth: 22, hasMontserrat });
+      drawText(doc, milestone.unit, 14, crtY + 6.5, { fontSize: 7.2, fontStyle: "bold", color: [19, 34, 43], maxWidth: 58, hasMontserrat });
+      drawText(doc, milestone.status, 74, crtY + 6.5, { fontSize: 7.2, fontStyle: "bold", color: milestone.theme as [number, number, number], maxWidth: 22, hasMontserrat });
+      drawText(doc, milestone.expected, 99, crtY + 6.5, { fontSize: 7.2, color: [100, 116, 139], maxWidth: 18, hasMontserrat });
+      drawText(doc, milestone.actual, 119, crtY + 6.5, { fontSize: 7.2, fontStyle: "bold", color: [19, 34, 43], maxWidth: 22, hasMontserrat });
     });
 
     // 4) DUAL CARD ROW: INSIGHTS & SUGGESTED REINFORCEMENTS
@@ -500,18 +529,21 @@ export async function downloadProgressReport(parent: Parent) {
     doc.setFillColor(19, 34, 43); // Dark slate Blue/Black
     doc.rect(0, 272, 210, 25, "F");
 
-    // Recreate the visual identity representation in Image Reference 2
-    // Left: (🤖) CLATS • Tagline: Children Learning AI Technology Solution
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(14);
-    doc.setTextColor(46, 196, 182); // Turquoise brand signature
-    doc.text("🤖", 15, 287);
-    
-    drawText(doc, "CLATS", 23, 285.5, { fontSize: 12, fontStyle: "bold", color: [46, 196, 182], hasMontserrat });
-    drawText(doc, "Children Learning AI Technology Solution", 23, 289.5, { fontSize: 8, color: [148, 163, 184], hasMontserrat });
+    if (logoBase64) {
+      doc.addImage(logoBase64, "PNG", 14, 276.5, 24, 9);
+    } else {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.setTextColor(46, 196, 182);
+      doc.text("🤖", 15, 287);
+      drawText(doc, "CLATS", 23, 285.5, { fontSize: 12, fontStyle: "bold", color: [46, 196, 182], hasMontserrat });
+    }
+
+    drawText(doc, "Building Tomorrow's Tech Minds Today!", 42, 283, { fontSize: 9, fontStyle: "bold", color: [255, 255, 255], hasMontserrat });
+    drawText(doc, "admin@clats.org", 42, 288, { fontSize: 8, color: [46, 196, 182], hasMontserrat });
 
     // Right side: Progress report name and active student designation
-    drawText(doc, `CLATS Progress Report  •  STUDENT: ${child.name.toUpperCase()}`, 195, 287, { fontSize: 9, color: [255, 255, 255], align: "right", hasMontserrat });
+    drawText(doc, `CLATS Progress Report  •  STUDENT: ${child.name.toUpperCase()}`, 195, 285, { fontSize: 8.5, color: [255, 255, 255], align: "right", hasMontserrat });
   }
 
   // Save progress report file dynamically

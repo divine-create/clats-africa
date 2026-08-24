@@ -4,6 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { Shield, ArrowLeft } from "lucide-react";
 
+import { CLATSLogo } from "@/components/CLATSLogo";
+
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-[#2EC4B6]/30">
@@ -12,8 +14,7 @@ export default function PrivacyPage() {
       <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2EC4B6] to-teal-500 flex items-center justify-center text-white font-bold text-xl">C</div>
-            <span className="font-black text-xl tracking-tight">CLATS</span>
+            <CLATSLogo height={32} />
           </Link>
           <Link href="/pricing" className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
             Pricing

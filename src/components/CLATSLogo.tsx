@@ -9,6 +9,7 @@ interface CLATSLogoProps {
   height?: number | string;
   style?: React.CSSProperties;
   inline?: boolean;
+  theme?: string;
 }
 
 export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {}, inline = false }) => {
@@ -51,7 +52,7 @@ export const CLATSLogo: React.FC<CLATSLogoProps> = ({ height = 44, style = {}, i
             <g key={letter + i}>
               <text
                 x={x}
-                y={height * 0.78}
+                y={numericHeight * 0.78}
                 fontFamily="'Space Grotesk', system-ui, sans-serif"
                 fontStyle="italic"
                 fontSize={fontSize}

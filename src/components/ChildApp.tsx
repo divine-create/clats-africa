@@ -418,6 +418,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const handleAddGamesXP = async (amount: number) => {
     const freshXP = (child.xp || 0) + amount;
     
+    const currentBadges = child.badges || [];
     const newlyUnlocked: string[] = [];
     if (freshXP >= 250 && !currentBadges.includes("bdg-cyber-shield")) newlyUnlocked.push("bdg-cyber-shield");
     if (freshXP >= 500 && !currentBadges.includes("bdg-prompt-pro")) newlyUnlocked.push("bdg-prompt-pro");
@@ -854,7 +855,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               }
               if (nxtMod) {
                 setSelModule(nxtMod);
-                setActiveTab("lessons");
+                setActiveTab("map");
               }
             }, 500);
           }}

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { C, F, S } from '@/utils/config';
+import { Language, Parent } from '@/types';
 import { SettingsScreen } from '@/components/Settings';
 
 function LoadingScreen() {

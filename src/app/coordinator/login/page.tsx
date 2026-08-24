@@ -45,6 +45,7 @@ export default function CoordinatorLoginPage() {
       if (res.ok && data.ok) {
         // Authenticated as coordinator/sponsor
         const b2bParent = {
+          id: Date.now().toString(),
           email: `b2b_${code.trim().toLowerCase()}@clats.local`,
           name: 'School Coordinator',
           children: [],
@@ -88,7 +89,7 @@ export default function CoordinatorLoginPage() {
         localStorage.setItem('cl_b2b_org_id', data.org_id);
         localStorage.setItem('clats_sess_v1', JSON.stringify({ type: 'parent', email: data.parent.email, isB2B: true }));
 
-        setParent(data.parent);
+        setParent({ ...data.parent, id: data.parent.id || data.org_id });
         router.push('/coordinator/dashboard');
       } else {
         setError(data.msg || 'Invalid email or password.');

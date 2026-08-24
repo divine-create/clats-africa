@@ -37,42 +37,33 @@ export async function GET(req: NextRequest) {
     if (orgErr) throw new Error(orgErr.message);
     if (!org) return NextResponse.json({ ok: false, msg: "Organization not found." }, { status: 404 });
 
-    // 2. Fetch all parents registered under this organization
-    const { data: parents, error: parErr } = await sb
-      .from("clats_parents")
-      .select("email, name")
-      .eq("b2b_org_id", orgId);
+    // 2. Fetch all children belonging to this organization directly via org_id
+    const { data: kids, error: kidsErr } = await sb
+      .from("clats_children")
+      .select("*")
+      .eq("org_id", orgId);
 
-    if (parErr) throw new Error(parErr.message);
+    if (kidsErr) throw new Error(kidsErr.message);
 
-    const parentEmails = (parents || []).map(p => p.email.toLowerCase().trim());
+    const students = (kids || []).map(k => {
+      const completedCount = k.completed_lessons ? Object.keys(k.completed_lessons).length : 0;
+      let status = "Active";
+      if (completedCount >= 10) status = "Excelling";
+      else if (completedCount < 2) status = "Needs Support";
 
-    let students: any[] = [];
-    if (parentEmails.length > 0) {
-      // 3. Fetch children belonging to these parent emails
-      const { data: kids, error: kidsErr } = await sb
-        .from("clats_children")
-        .select("*")
-        .in("parent_email", parentEmails);
-
-      if (kidsErr) throw new Error(kidsErr.message);
-
-      students = (kids || []).map(k => {
-        const completedCount = k.completed_lessons ? Object.keys(k.completed_lessons).length : 0;
-        let status = "Active";
-        if (completedCount >= 10) status = "Excelling";
-        else if (completedCount < 2) status = "Needs Support";
-
-        return {
-          id: k.id,
-          name: k.name,
-          xp: k.xp || 0,
-          lessonsDone: completedCount,
-          status,
-          parentEmail: k.parent_email
-        };
-      });
-    }
+      return {
+        id: k.id,
+        student_id: k.student_id,
+        name: k.name,
+        pin: k.pin,
+        age_group: k.age_group,
+        avatar: k.avatar,
+        xp: k.xp || 0,
+        lessonsDone: completedCount,
+        status,
+        parentEmail: k.parent_email
+      };
+    });
 
     return NextResponse.json({
       ok: true,

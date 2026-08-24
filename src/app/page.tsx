@@ -111,25 +111,10 @@ export default function HomePage() {
         }}
       >
         {/* Logo */}
-        <CLATSLogo height={96} />
+        <CLATSLogo height={120} />
 
         {/* App name */}
-        <div style={{ textAlign: 'center' }}>
-          <h1
-            style={{
-              fontFamily: F.display ?? F.body,
-              fontSize: '2.5rem',
-              fontWeight: 800,
-              margin: 0,
-              background: 'linear-gradient(135deg, #22d3ee 0%, #6366f1 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            CLATS
-          </h1>
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
           <p
             style={{
               marginTop: '8px',

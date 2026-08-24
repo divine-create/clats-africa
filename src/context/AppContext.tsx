@@ -24,7 +24,7 @@ interface AppContextType {
   setActiveChild: (c: Child | null) => void;
   dbConnected: boolean;
   isSyncing: boolean;
-  logout: () => void;
+  logout: (redirectTo?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -66,6 +66,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (sess?.email && !parent) {
       if (sess.isB2B) {
         setParentState({
+          id: sess.email || "b2b_session",
           email: sess.email,
           name: "Sponsor Parent",
           children: [],
@@ -152,12 +153,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = (redirectTo: string = "/") => {
     S.clearSess();
     if (typeof window !== "undefined") localStorage.removeItem("clats_active_child");
     setParentState(null);
     setActiveChildState(null);
-    if (typeof window !== "undefined") window.location.href = "/";
+    if (typeof window !== "undefined") window.location.href = redirectTo;
   };
 
   return (

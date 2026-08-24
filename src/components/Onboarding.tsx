@@ -224,8 +224,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onSelectRole, lang, init
 
             {/* Typography */}
             <div className="space-y-3 px-4">
-              <h2 className={`text-3xl font-extrabold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"} leading-tight`}>
-                Welcome to <span className="text-[#19C6C6]">CLATS</span>
+              <h2 className={`text-3xl font-extrabold tracking-tight ${isDark ? "text-slate-100" : "text-slate-900"} leading-tight flex items-center justify-center`}>
+                Welcome to <CLATSLogo height={32} inline style={{ marginLeft: '8px' }} />
               </h2>
               <p className={`text-sm md:text-base ${isDark ? "text-slate-300" : "text-slate-600"} leading-relaxed max-w-xs mx-auto`}>
                 Learn AI, technology, creativity, and future-ready skills through fun lessons, games, and challenges.

@@ -31,11 +31,17 @@ export interface Child {
   last_active_at?: string;
   streak_count?: number;
   best_streak?: number;
+  streak: number;
+  badges?: string[];
+  completedLessons?: string[];
+  is_premium?: boolean;
 }
 
 export interface Parent {
+  id: string;
   email: string;
   name: string;
+  phone?: string;
   children: Child[];
   is_premium?: boolean;
   tutorial_completed?: boolean;

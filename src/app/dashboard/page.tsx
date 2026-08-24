@@ -6,7 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { C, F, syncToSupabase, S } from '@/utils/config';
 
 const ParentDashboard = lazy(() =>
-  import('@/components/ParentDashboard').then(m => ({ default: (m as any).ParentDashboard ?? (m as any).default }))
+  import('@/components/ParentDashboard').then(m => ({ default: m.ParentDashboard })) as Promise<{ default: React.ComponentType<any> }>
 );
 
 function LoadingScreen() {

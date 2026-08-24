@@ -10,7 +10,7 @@ import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
 import confetti from "canvas-confetti";
-import { Play, Pause, Settings, Gauge, Maximize } from "lucide-react";
+import { Play, Pause, Settings, Gauge, Maximize, Minimize } from "lucide-react";
 
 interface LessonContentProps {
   child: Child;
@@ -74,12 +74,44 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     }
   };
 
+  const handleExitFullScreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    } else if ((document as any).msExitFullscreen) {
+      (document as any).msExitFullscreen();
+    }
+  };
+
   // Active steps in the lesson progression
   const [learningStep, setLearningStep] = useState<"video" | "quiz" | "reward">("video");
+  const [earnedXpState, setEarnedXpState] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false); // Default false, will wait for user interaction to avoid autoplay block
   const [watchedFraction, setWatchedFraction] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showControls, setShowControls] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(
+        !!document.fullscreenElement || 
+        !!(document as any).webkitFullscreenElement || 
+        !!(document as any).msFullscreenElement
+      );
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("msfullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("msfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   // Story Slideshow state for Ages 2-5 or lessons with story elements
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -561,10 +593,15 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       const score = Math.round((countCorrect / totalQ) * 100);
       const isPassed = score >= 50;
 
+      const xpToAward = isPassed ? (score === 100 ? 50 : 35) : 10;
+      const alreadyCompleted = child.completed && child.completed[lesson?.id || "lesson-u"];
+      const actualXpEarned = (isPassed && !alreadyCompleted) ? xpToAward : 0;
+      setEarnedXpState(actualXpEarned);
+
       onLessonComplete(
         lesson?.id || "lesson-u",
         isPassed ? (score === 100 ? 3 : score >= 80 ? 2 : 1) : 0,
-        isPassed ? (score === 100 ? 50 : 35) : 10,
+        xpToAward,
         {
           score,
           correctCount: countCorrect,
@@ -797,10 +834,11 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
                         <div className="flex items-center gap-4">
                           <button 
-                            onClick={handleFullScreen}
+                            onClick={isFullscreen ? handleExitFullScreen : handleFullScreen}
                             className="hover:text-[#2EC4B6] transition-colors"
+                            title={isFullscreen ? "Exit Full Screen" : "Full Screen"}
                           >
-                            <Maximize size={20} />
+                            {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
                           </button>
                         </div>
                       </div>
@@ -814,14 +852,16 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button
-                      onClick={handleFullScreen}
+                      onClick={isFullscreen ? handleExitFullScreen : handleFullScreen}
                       className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-                      title="Full Screen"
+                      title={isFullscreen ? "Exit Full Screen" : "Full Screen"}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                      </svg>
-                      FULL SCREEN
+                      {isFullscreen ? <Minimize size={14} /> : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        </svg>
+                      )}
+                      {isFullscreen ? "EXIT FULL SCREEN" : "FULL SCREEN"}
                     </button>
                     <Chip color={C.teal} bg="rgba(46,196,182,0.1)">HD</Chip>
                   </div>
@@ -1170,9 +1210,8 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           const countCorrect = correctAnswersList.filter(Boolean).length;
           const pctScore = Math.round((countCorrect / activeQuiz.length) * 100);
           
-          // Rule: +10 XP for normal lessons, +20 XP for module challenges
           const isModuleChallenge = lesson?.title?.en?.toLowerCase().includes("challenge");
-          const xpGained = isModuleChallenge ? 20 : 10;
+          const xpGained = earnedXpState;
           
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 18, textAlign: "center" }}>
@@ -1197,11 +1236,14 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 </div>
 
                 <Heading size={32} color="#0f172a" style={{ marginBottom: 12 }}>
-                  You earned +{xpGained} XP
+                  {xpGained > 0 ? `You earned +${xpGained} XP` : "Quiz Completed Again!"}
                 </Heading>
 
                 <Txt size={16.5} color="#334155" style={{ display: "block", marginBottom: 24, lineHeight: 1.5, fontWeight: 700 }}>
-                  Great job! You checked your knowledge and earned XP. You can now advance to the next step in your learning journey!
+                  {xpGained > 0 
+                    ? "Great job! You checked your knowledge and earned XP. You can now advance to the next step in your learning journey!"
+                    : "Great job! You've already mastered this quiz before, so no new XP was added today, but practicing is always great for your brain!"
+                  }
                 </Txt>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>

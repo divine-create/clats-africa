@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         parent_email: parent_email || `b2b-coord-${org_id}@clats.local`,
         name: name.trim(),
         age_group: age_group || "young",
-        avatar: avatar || "👦🏾",
+        avatar: avatar || ["👦🏾", "👧🏽", "🧑🏿", "👩🏾", "👦🏽", "👧🏾"][Math.floor(Math.random() * 6)],
         pin,
         org_id,
         student_id,
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         xp: 0,
         stars: {},
         quiz_results: {},
-        companion: "kobe",
+        companion: Math.random() > 0.5 ? "kobe" : "chibi",
       })
       .select()
       .single();

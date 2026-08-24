@@ -134,8 +134,11 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() => {
     if (completedCount === 0) return [];
     try {
-      const val = localStorage.getItem(`clats_profile_claims_${child.id}`);
-      return val ? JSON.parse(val) : [];
+      if (typeof window !== 'undefined') {
+        const val = localStorage.getItem(`clats_profile_claims_${child.id}`);
+        return val ? JSON.parse(val) : [];
+      }
+      return [];
     } catch {
       return [];
     }
@@ -143,12 +146,16 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
   // Chosen Avatar frame & decoration stored in local Fallback
   const [selectedFrame, setSelectedFrame] = useState<string>(() => {
-    return localStorage.getItem(`clats_selected_frame_${child.id}`) || "none";
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(`clats_selected_frame_${child.id}`) || "none";
+    }
+    return "none";
   });
 
   // State managers
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempName, setTempName] = useState(child.name);
+  const [tempAvatar, setTempAvatar] = useState(child.avatar);
 
   const [tempFrame, setTempFrame] = useState(selectedFrame);
 
@@ -185,16 +192,22 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const findCurrentFocus = () => {
     if (!modules || modules.length === 0) return null;
     for (const m of modules) {
-      for (const l of m.lessons) {
-        if (!completed[l.id]) {
-          return { module: m, lesson: l };
+      if (m.lessons) {
+        for (const l of m.lessons) {
+          if (!completed[l.id]) {
+            return { module: m, lesson: l };
+          }
         }
       }
     }
-    // All done! Fallback to last
-    const lastM = modules[modules.length - 1];
-    const lastL = lastM?.lessons[lastM.lessons.length - 1];
-    return { module: lastM, lesson: lastL };
+    // All done! Fallback to last module that has lessons
+    for (let i = modules.length - 1; i >= 0; i--) {
+      const m = modules[i];
+      if (m.lessons && m.lessons.length > 0) {
+        return { module: m, lesson: m.lessons[m.lessons.length - 1] };
+      }
+    }
+    return null;
   };
 
   const activeFocus = findCurrentFocus();

@@ -39,6 +39,71 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   const [addingStudent, setAddingStudent] = useState(false);
   const [addError, setAddError] = useState("");
   const [newlyAdded, setNewlyAdded] = useState<any>(null);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+
+  const handleBulkCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsBulkUploading(true);
+    setAddError("");
+    
+    try {
+      const text = await file.text();
+      const rows = text.split("\n").map(r => r.trim()).filter(r => r.length > 0);
+      const startIndex = rows[0].toLowerCase().includes("name") ? 1 : 0;
+      
+      const studentsToAdd = rows.slice(startIndex).map(row => {
+        const parts = row.split(",").map(c => c.trim());
+        const name = parts[0];
+        const rawAgeGroup = parts[1] || "";
+        const pin = parts[2] || "";
+        let age_group = "young";
+        if (rawAgeGroup.toLowerCase().includes("early")) age_group = "early";
+        else if (rawAgeGroup.toLowerCase().includes("future")) age_group = "future";
+        return { name, age_group, pin };
+      }).filter(s => s.name.length > 0);
+
+      if (studentsToAdd.length === 0) {
+        alert("No students found in CSV. Format should be: Name, AgeGroup (optional), PIN (optional)");
+        setIsBulkUploading(false);
+        return;
+      }
+
+      if (studentsToAdd.length > 5) {
+         if (!confirm(`You are about to add ${studentsToAdd.length} students. Proceed?`)) {
+           setIsBulkUploading(false);
+           return;
+         }
+      }
+
+      const orgId = localStorage.getItem("cl_b2b_org_id") || "mock";
+      
+      const res = await fetch("/api/supabase/b2b/bulk-enroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          org_id: orgId,
+          parent_email: parent.email,
+          students: studentsToAdd
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        alert(`Successfully enrolled ${data.count} students!`);
+        await fetchStats();
+      } else {
+        alert(data.msg || "Failed to bulk enroll students.");
+      }
+    } catch (err: any) {
+      alert("Error parsing or uploading CSV: " + err.message);
+    } finally {
+      setIsBulkUploading(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
 
   // Edit Student Modal
   const [showEditStudent, setShowEditStudent] = useState(false);
@@ -120,7 +185,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     setEditingStudentId(student.id);
     setEditName(student.name);
     setEditPin(student.pin || "");
-    setEditAvatar(student.avatar || "👦🏾");
+
     setEditAgeGroup(student.age_group || "young");
     setEditError("");
     setShowEditStudent(true);
@@ -182,7 +247,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     const schoolCode = b2bOrg?.b2b_license_keys?.[0]?.code || "No Active Code";
 
     // Auto-generate next sequential 4-digit student ID
-    const existingIds = b2bStudents.map(s => parseInt(s.student_id || "0", 10));
+    const existingIds = b2bStudents.map(s => parseInt(s.student_id || "0", 10)).filter(n => !isNaN(n));
     const nextNum = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
     const studentId = String(nextNum).padStart(4, "0");
 
@@ -346,6 +411,67 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
       </html>
     `);
     printWindow.document.close();
+    printWindow.setTimeout(() => { printWindow.print(); }, 500);
+  };
+
+  const handlePrintCards = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to print/save the cards!");
+      return;
+    }
+
+    const schoolCode = b2bOrg?.b2b_license_keys?.[0]?.code || "No Active Code";
+    
+    const cardsHtml = b2bStudents.map(s => `
+      <div style="border: 2px dashed #cbd5e1; border-radius: 16px; padding: 20px; width: 300px; text-align: center; font-family: sans-serif; position: relative; overflow: hidden; page-break-inside: avoid;">
+        <div style="font-weight: 900; font-size: 20px; color: #0f172a; margin-bottom: 4px;">CLATS Academy</div>
+        <div style="font-size: 14px; color: #64748b; font-weight: bold; margin-bottom: 16px;">Student Login Card</div>
+        
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 12px; margin-bottom: 12px;">
+          <div style="font-size: 18px; font-weight: 800; color: #1e293b;">${s.name}</div>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="flex: 1; border: 1px solid #e2e8f0; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase;">School Code</div>
+            <div style="font-size: 14px; font-weight: 900; color: #7A6FF0; font-family: monospace;">${schoolCode}</div>
+          </div>
+          <div style="flex: 1; border: 1px solid #e2e8f0; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase;">Student ID</div>
+            <div style="font-size: 16px; font-weight: 900; color: #19C6C6; font-family: monospace;">${s.student_id || '----'}</div>
+          </div>
+        </div>
+        
+        <div style="border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; background: #fff;">
+          <div style="font-size: 10px; color: #94a3b8; font-weight: bold; text-transform: uppercase;">PIN</div>
+          <div style="font-size: 24px; font-weight: 900; letter-spacing: 8px; font-family: monospace;">${s.pin || '----'}</div>
+        </div>
+      </div>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>CLATS - Student Login Cards</title>
+          <style>
+            body { padding: 40px; margin: 0; }
+            .grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+            @media print {
+              body { padding: 0; }
+              .grid { gap: 10px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">
+            ${cardsHtml}
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.setTimeout(() => { printWindow.print(); }, 500);
   };
 
   // ── Loading / Error screens ──────────────────────────────────────────────
@@ -586,12 +712,22 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
             <div className="space-y-6">
               <h2 className="text-2xl font-black flex items-center justify-between">
                 Student Roster
-                <button
-                  onClick={() => { setShowAddStudent(true); setNewlyAdded(null); setAddError(""); }}
-                  className="text-sm bg-[#19C6C6] hover:bg-[#15abab] text-slate-900 px-4 py-2 rounded-xl transition shadow-md font-bold flex items-center gap-1.5"
-                >
-                  <Plus size={16}/> Enroll Student
-                </button>
+                <div className="flex gap-2">
+                  <input type="file" id="csv-upload" accept=".csv" className="hidden" onChange={handleBulkCSVUpload} />
+                  <button
+                    onClick={() => document.getElementById("csv-upload")?.click()}
+                    disabled={isBulkUploading}
+                    className="text-sm bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-xl transition shadow-md font-bold flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isBulkUploading ? "Uploading..." : "Bulk Import CSV"}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddStudent(true); setNewlyAdded(null); setAddError(""); }}
+                    className="text-sm bg-[#19C6C6] hover:bg-[#15abab] text-slate-900 px-4 py-2 rounded-xl transition shadow-md font-bold flex items-center gap-1.5"
+                  >
+                    <Plus size={16}/> Enroll Student
+                  </button>
+                </div>
               </h2>
 
               <div className={`rounded-2xl border overflow-hidden ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
@@ -679,6 +815,9 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                   <button onClick={handleExportCSV} className="bg-[#19C6C6] hover:bg-[#15abab] text-slate-900 font-bold py-2.5 px-6 rounded-xl transition shadow-md shadow-cyan-500/20 text-xs">
                     Export CSV
                   </button>
+                  <button onClick={handlePrintCards} className="bg-[#7A6FF0] hover:bg-[#665ad1] text-white font-bold py-2.5 px-6 rounded-xl transition shadow-md shadow-violet-500/20 text-xs whitespace-nowrap">
+                    🖨️ Print Login Cards
+                  </button>
                 </div>
               </div>
             </div>
@@ -745,7 +884,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                 <div className={`p-3 rounded-xl border ${isDark ? "bg-slate-900 border-slate-700" : "bg-slate-50 border-slate-200"} flex items-center justify-between`}>
                   <span className="text-xs font-bold text-slate-400">Auto-assigned Student ID</span>
                   <code className="font-mono font-black text-[#19C6C6] text-lg tracking-widest">
-                    {String((Math.max(...b2bStudents.map(s => parseInt(s.student_id || "0")), 0)) + 1).padStart(4, "0")}
+                    {String((Math.max(0, ...b2bStudents.map(s => parseInt(s.student_id || "0", 10)).filter(n => !isNaN(n)))) + 1).padStart(4, "0")}
                   </code>
                 </div>
 
@@ -777,7 +916,16 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
 
                 {/* PIN */}
                 <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Set 4-Digit PIN</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Set 4-Digit PIN</label>
+                    <button 
+                      type="button"
+                      onClick={() => setNewPin(Math.floor(1000 + Math.random() * 9000).toString())}
+                      className="text-[10px] font-bold text-[#7A6FF0] hover:text-[#5c50e6] transition flex items-center gap-1"
+                    >
+                      🎲 Auto-Generate
+                    </button>
+                  </div>
                   <input
                     value={newPin}
                     onChange={e => setNewPin(e.target.value.replace(/\D/g, "").slice(0,4))}
