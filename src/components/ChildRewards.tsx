@@ -124,7 +124,7 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   const aiModule = modules[0];
   const completedAiLessonsCount = aiModule ? aiModule.lessons.filter(l => completed[l.id]).length : 0;
   const totalAiLessonsCount = aiModule ? aiModule.lessons.length : 4;
-  const isAiModuleCompleted = aiModule ? aiModule.lessons.every(l => completed[l.id]) : false;
+  const isAiModuleCompleted = aiModule && aiModule.lessons?.length > 0 ? aiModule.lessons.every(l => completed[l.id]) : false;
   const aiPct = Math.round((completedAiLessonsCount / totalAiLessonsCount) * 100);
 
   const isNewUser = currentXP === 0 && completedCount === 0;
