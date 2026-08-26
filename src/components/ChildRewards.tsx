@@ -203,38 +203,29 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   const earnedBadgesCount = badgesData.filter(b => b.unlocked).length;
 
   // 6. Dynamic Certificates Map
+  const dynamicCertificates = modules.flatMap((mod: any) => 
+    (mod.lessons || []).map((l: any) => {
+      const title = l.title?.en || l.title || "Lesson";
+      return {
+        id: `cert-les-${l.id}`,
+        name: `${title} Certificate`,
+        desc: `Awarded for successfully completing the ${title}.`,
+        unlocked: !!completed[l.id],
+        requirement: `Complete the ${title} course`,
+        icon: "📜"
+      };
+    })
+  );
+
   const certificatesData = [
-    {
-      id: "ai-foundations",
-      name: "AI Foundations Certificate",
-      desc: "Demonstrated master capability of AI concepts, neural nodes and machines.",
-      unlocked: isAiModuleCompleted || completedCount >= 2,
-      requirement: "Complete first module",
-      icon: "🎓"
-    },
+    ...dynamicCertificates,
     {
       id: "ai-explorer-level",
-      name: "AI Explorer Certificate",
+      name: "Master Explorer Certificate",
       desc: "Acquired a high learning level and earned substantial XP milestones.",
       unlocked: currentXP >= 500,
       requirement: "Earn 500+ XP",
-      icon: "📜"
-    },
-    {
-      id: "digital-literacy",
-      name: "Digital Literacy Certificate",
-      desc: "Engaged in interactive logic, system design and safety modules.",
-      unlocked: completedCount >= 3,
-      requirement: "Complete 3+ Lessons",
       icon: "🌟"
-    },
-    {
-      id: "cyber-safety",
-      name: "Cyber Safety Certificate",
-      desc: "Coming Soon - Complete required modules to unlock.",
-      unlocked: false,
-      requirement: "Complete Cyber Track",
-      icon: "🔒"
     }
   ];
 
