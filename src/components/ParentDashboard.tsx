@@ -1564,9 +1564,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             </div>
             <div className="flex gap-2 flex-wrap">
               {[
-                { code: "en" as const, label: "EN" },
-                { code: "yo" as const, label: "YO" },
-                { code: "ig" as const, label: "IG" }
+                { code: "en" as const, label: "EN" }
               ].map((l) => (
                 <button
                   key={l.code}
@@ -1579,7 +1577,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  {l.label === "EN" ? "English" : l.label === "YO" ? "Yorùbá" : "Igbo"}
+                  English
                 </button>
               ))}
             </div>

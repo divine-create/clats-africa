@@ -943,9 +943,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </Txt>
           <div style={{ display: "flex", gap: 8 }}>
             {[
-              { code: "en", label: "English (EN)" },
-              { code: "yo", label: "Yorùbá (YO)" },
-              { code: "ig", label: "Igbo (IG)" }
+              { code: "en", label: "English (EN)" }
             ].map((l) => (
               <button
                 key={l.code}

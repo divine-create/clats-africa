@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Language = "en" | "ig" | "yo" | "fr" | "ha";
+export type Language = "en";
 
 export type AgeGroup = "early explorers" | "young innovators" | "future builders";
 
@@ -58,8 +58,8 @@ export interface Parent {
 
 export type Localized<T> = {
   en: T;
-  ig: T;
-  yo: T;
+  ig?: T;
+  yo?: T;
   fr?: T;
   ha?: T;
 };
