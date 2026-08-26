@@ -117,13 +117,13 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   // Inclusive Accessibility States
-  const [subtitlesOn, setSubtitlesOn] = useState(true);
-  const [voiceAssistActive, setVoiceAssistActive] = useState(isEarlyExplorers); // Auto-on for early explorers
+  const subtitlesOn = true;
+  const voiceAssistActive = isEarlyExplorers; // Auto-on for early explorers
   const [micActive, setMicActive] = useState(false);
-  const [colorMode, setColorMode] = useState<"normal" | "accessible" | "night">("normal");
-  const [fontSize, setFontSize] = useState<"normal" | "large" | "extra">("normal");
-  const [dyslexicMode, setDyslexicMode] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const colorMode = "normal";
+  const fontSize = "normal";
+  const dyslexicMode = false;
+  const reducedMotion = false;
 
   // Mini-Activity states
   const [selectedTools, setSelectedTools] = useState<string[]>([]);

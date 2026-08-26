@@ -166,17 +166,17 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   // General Settings toggles
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [accessibilityZoom, setAccessibilityZoom] = useState(false);
-  const [prefNotification, setPrefNotification] = useState(true);
+  const soundEnabled = true;
+  const accessibilityZoom = false;
+  const prefNotification = true;
 
   // Inclusive Accessibility Suite toggles
-  const [voiceReaderOn, setVoiceReaderOn] = useState(false);
-  const [subtitlesOn, setSubtitlesOn] = useState(true);
-  const [colorMode, setColorMode] = useState<"normal" | "accessible" | "night">("normal");
-  const [dyslexicMode, setDyslexicMode] = useState(false);
-  const [fontSizePref, setFontSizePref] = useState<"normal" | "large" | "extra">("normal");
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const voiceReaderOn = false;
+  const subtitlesOn = true;
+  const colorMode = "normal";
+  const dyslexicMode = false;
+  const fontSizePref = "normal";
+  const reducedMotion = false;
 
   // Track AI module lesson progress across ALL AI modules (Academy 1)
   const prefix = child.ageGroup === "early explorers" ? "t-a1" : child.ageGroup === "future builders" ? "p-a1" : "j-a1";
@@ -1262,226 +1262,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               </div>
             </div>
 
-            {/* QUICK LOCAL PROFILE SETTINGS */}
-            <div className={`p-6 rounded-3xl border ${
-              isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
-            }`}>
-              <h3 className="text-lg font-black mb-4 flex items-center gap-1 text-slate-500 dark:text-slate-350">
-                <span>⚙️</span> Shortcut Preference Toggles
-              </h3>
 
-              <div className="space-y-3.5 text-xs text-slate-400 font-extrabold">
-                {/* Toggle 1: Sound */}
-                <div className="flex justify-between items-center">
-                  <span className="flex items-center gap-1">
-                    {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />} Sounds & SFX Cheer
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={soundEnabled}
-                    onChange={() => setSoundEnabled(!soundEnabled)}
-                    className="w-4 h-4 rounded text-[#2EC4B6] focus:ring-[#2EC4B6]/25"
-                  />
-                </div>
-
-                {/* Toggle 2: Font Zoom accessibility */}
-                <div className="flex justify-between items-center">
-                  <span>🔎 High Visibility Accessibility Mode</span>
-                  <input
-                    type="checkbox"
-                    checked={accessibilityZoom}
-                    onChange={() => setAccessibilityZoom(!accessibilityZoom)}
-                    className="w-4 h-4 rounded text-[#2EC4B6] focus:ring-[#2EC4B6]/25"
-                  />
-                </div>
-
-                {/* Toggle 3: Sync notifications */}
-                <div className="flex justify-between items-center">
-                  <span>📨 Notify Parent on Email</span>
-                  <input
-                    type="checkbox"
-                    checked={prefNotification}
-                    onChange={() => setPrefNotification(!prefNotification)}
-                    className="w-4 h-4 rounded text-[#2EC4B6] focus:ring-[#2EC4B6]/25"
-                  />
-                </div>
-
-                {/* Onboarding Re-run banner */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    alert("Re-triggering initial mascot introduction simulation done! Keep exploring.");
-                  }}
-                  className="w-full text-center py-2 bg-slate-100 dark:bg-slate-850 rounded-xl hover:bg-slate-200 text-slate-500 dark:text-slate-300 text-xs font-bold"
-                >
-                  📖 Replay Introductory Guides
-                </button>
-              </div>
-            </div>
-
-            {/* INCLUSIVE ACCESSIBILITY SUITE */}
-            <div className={`p-6 mt-6 rounded-3xl border ${
-              isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
-            }`}>
-              <h3 className="text-[11px] font-black mb-4 text-center uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                ⚙️ INCLUSIVE ACCESSIBILITY SUITE
-              </h3>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {/* Voice-over Speech toggle */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    if (voiceReaderOn) {
-                      window.speechSynthesis.cancel();
-                    }
-                    setVoiceReaderOn(!voiceReaderOn);
-                  }}
-                  style={{
-                    background: voiceReaderOn ? "rgba(46,196,182,0.1)" : (isDark ? "#1e293b" : "#f8fafc"),
-                    border: `1.5px solid ${voiceReaderOn ? "#2EC4B6" : (isDark ? "#334155" : "#cbd5e1")}`,
-                    borderRadius: 14,
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    color: voiceReaderOn ? "#208a80" : (isDark ? "#cbd5e1" : "#334155")
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🔊</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontFamily: F.mono }}>
-                    READER {voiceReaderOn ? "ON" : "OFF"}
-                  </span>
-                </button>
-
-                {/* Toggle Subtitles */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    setSubtitlesOn(!subtitlesOn);
-                  }}
-                  style={{
-                    background: subtitlesOn ? "rgba(46,196,182,0.1)" : (isDark ? "#1e293b" : "#f8fafc"),
-                    border: `1.5px solid ${subtitlesOn ? "#2EC4B6" : (isDark ? "#334155" : "#cbd5e1")}`,
-                    borderRadius: 14,
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    color: subtitlesOn ? "#208a80" : (isDark ? "#cbd5e1" : "#334155")
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>📝</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontFamily: F.mono }}>
-                    SUBTITLES {subtitlesOn ? "ON" : "OFF"}
-                  </span>
-                </button>
-
-                {/* Accessible color contrasts */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    setColorMode((p) => p === "normal" ? "accessible" : p === "accessible" ? "night" : "normal");
-                  }}
-                  style={{
-                    background: colorMode !== "normal" ? "rgba(217,119,6,0.1)" : (isDark ? "#1e293b" : "#f8fafc"),
-                    border: `1.5px solid ${colorMode !== "normal" ? "#d97706" : (isDark ? "#334155" : "#cbd5e1")}`,
-                    borderRadius: 14,
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    color: colorMode !== "normal" ? "#d97706" : (isDark ? "#cbd5e1" : "#334155")
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🌗</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontFamily: F.mono }}>
-                    {colorMode === "normal" ? "STANDARD" : colorMode === "accessible" ? "HIGH CONTRAST" : "NIGHT SHADE"}
-                  </span>
-                </button>
-
-                {/* Dyslexia mode toggle */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    setDyslexicMode(!dyslexicMode);
-                  }}
-                  style={{
-                    background: dyslexicMode ? "rgba(139,92,246,0.1)" : (isDark ? "#1e293b" : "#f8fafc"),
-                    border: `1.5px solid ${dyslexicMode ? "#8b5cf6" : (isDark ? "#334155" : "#cbd5e1")}`,
-                    borderRadius: 14,
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    color: dyslexicMode ? "#8b5cf6" : (isDark ? "#cbd5e1" : "#334155")
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🔤</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontFamily: F.mono }}>
-                    DYSLEXIA {dyslexicMode ? "ON" : "OFF"}
-                  </span>
-                </button>
-
-                {/* Font Size Incrementor */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    setFontSizePref((p) => p === "normal" ? "large" : p === "large" ? "extra" : "normal");
-                  }}
-                  style={{
-                    background: fontSizePref !== "normal" ? "rgba(13,148,136,0.1)" : (isDark ? "#1e293b" : "#f8fafc"),
-                    border: `1.5px solid ${fontSizePref !== "normal" ? "#0d9488" : (isDark ? "#334155" : "#cbd5e1")}`,
-                    borderRadius: 14,
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    color: fontSizePref !== "normal" ? "#0d9488" : (isDark ? "#cbd5e1" : "#334155")
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🔍</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontFamily: F.mono }}>
-                    TEXT: {fontSizePref.toUpperCase()}
-                  </span>
-                </button>
-
-                {/* Reduced Motion Toggle */}
-                <button
-                  onClick={() => {
-                    if (soundEnabled) sfx.playTap();
-                    setReducedMotion(!reducedMotion);
-                  }}
-                  style={{
-                    background: reducedMotion ? "rgba(244,63,94,0.1)" : (isDark ? "#1e293b" : "#f8fafc"),
-                    border: `1.5px solid ${reducedMotion ? "#f43f5e" : (isDark ? "#334155" : "#cbd5e1")}`,
-                    borderRadius: 14,
-                    padding: "10px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    color: reducedMotion ? "#f43f5e" : (isDark ? "#cbd5e1" : "#334155")
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>🏃</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontFamily: F.mono }}>
-                    MOTION {reducedMotion ? "REDUCED" : "AUTO"}
-                  </span>
-                </button>
-              </div>
-            </div>
 
           </div>
         </div>
