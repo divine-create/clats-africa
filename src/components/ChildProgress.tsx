@@ -166,7 +166,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   // General Settings toggles
-  const soundEnabled = true;
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const accessibilityZoom = false;
   const prefNotification = true;
 
@@ -1262,6 +1262,28 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               </div>
             </div>
 
+            {/* SOUND PREFERENCES */}
+            <div className={`p-6 mt-6 rounded-3xl border ${
+              isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
+            }`}>
+              <h3 className="text-lg font-black mb-4 flex items-center gap-1 text-slate-500 dark:text-slate-350">
+                <span>🔊</span> Click Sounds
+              </h3>
+
+              <div className="space-y-3.5 text-xs text-slate-400 font-extrabold">
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1">
+                    {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />} Enable Click Sounds & SFX
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={soundEnabled}
+                    onChange={() => setSoundEnabled(!soundEnabled)}
+                    className="w-4 h-4 rounded text-[#2EC4B6] focus:ring-[#2EC4B6]/25 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
 
 
           </div>
