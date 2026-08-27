@@ -25,6 +25,8 @@ interface AppContextType {
   dbConnected: boolean;
   isSyncing: boolean;
   logout: (redirectTo?: string) => void;
+  soundEnabled: boolean;
+  setSoundEnabled: (v: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -50,6 +52,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [dbConnected, setDbConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Global button click sound handler
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__CLATS_SOUND_ENABLED__ = soundEnabled;
+    }
+    
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (!soundEnabled) return;
+      
+      const target = e.target as HTMLElement;
+      // Play sound if clicked on a button, a link, or anything with role="button"
+      const isClickable = target.closest('button') || target.closest('a') || target.closest('[role="button"]');
+      
+      if (isClickable) {
+        import("@/utils/audio").then(({ sfx }) => {
+          sfx.playTap();
+        });
+      }
+    };
+    
+    document.addEventListener("click", handleGlobalClick, true);
+    return () => document.removeEventListener("click", handleGlobalClick, true);
+  }, [soundEnabled]);
 
   // Restore persisted session on mount
   useEffect(() => {
@@ -162,7 +189,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ lang, setLang, theme, setTheme, parent, setParent, activeChild, setActiveChild, dbConnected, isSyncing, logout }}>
+    <AppContext.Provider value={{ lang, setLang, theme, setTheme, parent, setParent, activeChild, setActiveChild, dbConnected, isSyncing, logout, soundEnabled, setSoundEnabled }}>
       {children}
     </AppContext.Provider>
   );

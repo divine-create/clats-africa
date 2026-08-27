@@ -11,6 +11,7 @@ import { MascotImage } from "./Onboarding";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx } from "../utils/audio";
 import { calculateStudyAnalytics } from "../utils/timeTracker";
+import { useApp } from "../context/AppContext";
 import { 
   Trophy, 
   Star, 
@@ -166,7 +167,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   // General Settings toggles
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const { soundEnabled, setSoundEnabled } = useApp();
   const accessibilityZoom = false;
   const prefNotification = true;
 

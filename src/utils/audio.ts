@@ -16,8 +16,22 @@ class AudioSynth {
     return this.ctx;
   }
 
+  private lastTapTime: number = 0;
+
+  private isSoundEnabled(): boolean {
+    if (typeof window !== "undefined") {
+      // Default to true if not explicitly set to false
+      return (window as any).__CLATS_SOUND_ENABLED__ !== false;
+    }
+    return true;
+  }
+
   playTap() {
     try {
+      if (!this.isSoundEnabled()) return;
+      if (Date.now() - this.lastTapTime < 50) return;
+      this.lastTapTime = Date.now();
+      
       const ctx = this.init();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -41,6 +55,7 @@ class AudioSynth {
 
   playCoin() {
     try {
+      if (!this.isSoundEnabled()) return;
       const ctx = this.init();
       const now = ctx.currentTime;
       
@@ -66,6 +81,7 @@ class AudioSynth {
 
   playBuzzer() {
     try {
+      if (!this.isSoundEnabled()) return;
       const ctx = this.init();
       const now = ctx.currentTime;
 
@@ -91,6 +107,7 @@ class AudioSynth {
 
   playLevelUp() {
     try {
+      if (!this.isSoundEnabled()) return;
       const ctx = this.init();
       const now = ctx.currentTime;
 
