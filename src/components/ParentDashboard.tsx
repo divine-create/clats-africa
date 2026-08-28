@@ -234,6 +234,9 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       const data = await res.json();
       if (data.insight) {
         setAiInsight(data.insight);
+        if (data.cached) {
+          showToast("Using today's report. AI analysis can only be generated once a day.");
+        }
       } else {
         showToast(data.error || "Failed to generate AI insight");
         setShowAiModal(false);
@@ -1489,7 +1492,12 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       body: JSON.stringify({ childId: child.id }),
                     });
                     const data = await res.json();
-                    if (data.insight) fetchedInsight = data.insight;
+                    if (data.insight) {
+                      fetchedInsight = data.insight;
+                      if (data.cached) {
+                        showToast("Using today's report. AI analysis can only be generated once a day.");
+                      }
+                    }
                   } catch (e) {}
 
                   // Get the freshest child data from Supabase if available
