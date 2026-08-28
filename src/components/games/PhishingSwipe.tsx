@@ -70,6 +70,9 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
   
   const companionName = activeChild?.companion === "kobe" ? "Kobe" : "Chibi";
 
+  const [gameOver, setGameOver] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+
   const handleChoice = (chosePhishing: boolean) => {
     if (!currentCard) return;
     
@@ -78,6 +81,7 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
     
     if (isCorrect) {
       setScore(s => s + 10);
+      setCorrectCount(c => c + 1);
       setStreak(s => {
         const newStreak = s + 1;
         if (newStreak > highestStreak) setHighestStreak(newStreak);
@@ -85,7 +89,6 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
       });
       setShowFeedback(true);
       
-      // Auto-advance if correct after a short delay
       setTimeout(() => {
         advanceCard();
       }, 1500);
@@ -100,11 +103,86 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
     if (currentIndex < deck.length - 1) {
       setCurrentIndex(i => i + 1);
     } else {
-      // Reshuffle and start over if out of cards
-      setDeck([...SCENARIOS].sort(() => Math.random() - 0.5));
-      setCurrentIndex(0);
+      // All cards done — show game over
+      setGameOver(true);
     }
   };
+
+  const restartGame = () => {
+    setDeck([...SCENARIOS].sort(() => Math.random() - 0.5));
+    setCurrentIndex(0);
+    setScore(0);
+    setStreak(0);
+    setHighestStreak(0);
+    setCorrectCount(0);
+    setGameOver(false);
+    setShowFeedback(false);
+  };
+
+  const totalCards = deck.length;
+  const accuracy = totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0;
+
+  // GAME OVER SCREEN
+  if (gameOver) {
+    return (
+      <div className={`w-full max-w-4xl mx-auto h-[80vh] flex flex-col rounded-3xl overflow-hidden border shadow-2xl relative ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-6 shadow-xl shadow-orange-500/30">
+            <Shield size={48} className="text-white" />
+          </div>
+
+          <h2 className={`text-3xl md:text-4xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Mission Complete!
+          </h2>
+          <p className={`text-base mb-8 font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            You've scanned all {totalCards} messages. Here's how you did:
+          </p>
+
+          <div className="grid grid-cols-3 gap-4 w-full max-w-sm mb-10">
+            <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <div className="text-3xl font-black text-[#2EC4B6]">{score}</div>
+              <div className={`text-xs font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Score</div>
+            </div>
+            <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <div className="text-3xl font-black text-amber-500">{highestStreak}🔥</div>
+              <div className={`text-xs font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Best Streak</div>
+            </div>
+            <div className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <div className={`text-3xl font-black ${accuracy >= 80 ? 'text-emerald-500' : accuracy >= 50 ? 'text-amber-500' : 'text-red-500'}`}>{accuracy}%</div>
+              <div className={`text-xs font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Accuracy</div>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-xl mb-8 max-w-sm w-full ${accuracy >= 80 ? (isDark ? 'bg-emerald-950/50 border border-emerald-800' : 'bg-emerald-50 border border-emerald-200') : (isDark ? 'bg-amber-950/50 border border-amber-800' : 'bg-amber-50 border border-amber-200')}`}>
+            <p className={`text-sm font-bold ${accuracy >= 80 ? (isDark ? 'text-emerald-300' : 'text-emerald-700') : (isDark ? 'text-amber-300' : 'text-amber-700')}`}>
+              {accuracy >= 80
+                ? `🛡️ ${companionName} says: "You're a Cyber Guardian! Scammers don't stand a chance against you!"`
+                : accuracy >= 50
+                ? `💪 ${companionName} says: "Good effort! Keep practicing and you'll be spotting scams like a pro!"`
+                : `📚 ${companionName} says: "Let's study together! Remember: never click links from strangers or give out passwords."`
+              }
+            </p>
+          </div>
+
+          <div className="flex gap-4 w-full max-w-sm">
+            <button
+              onClick={restartGame}
+              className="flex-1 py-4 rounded-2xl bg-[#2EC4B6] hover:bg-teal-600 text-white font-black text-base shadow-lg transition-transform hover:scale-105 active:scale-95"
+            >
+              Play Again
+            </button>
+            <button
+              onClick={onBack}
+              className={`flex-1 py-4 rounded-2xl font-black text-base transition-transform hover:scale-105 active:scale-95 ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'}`}
+            >
+              Exit Game
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentCard) return null;
 
@@ -136,6 +214,17 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
           >
             Exit Game
           </button>
+        </div>
+      </div>
+
+      {/* PROGRESS BAR */}
+      <div className={`px-6 py-2 flex items-center gap-3 ${isDark ? 'bg-slate-950/30' : 'bg-white/50'}`}>
+        <span className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{currentIndex + 1}/{totalCards}</span>
+        <div className={`flex-1 h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+          <div 
+            className="h-full rounded-full bg-gradient-to-r from-[#2EC4B6] to-emerald-400 transition-all duration-500"
+            style={{ width: `${((currentIndex + 1) / totalCards) * 100}%` }}
+          />
         </div>
       </div>
 
