@@ -246,35 +246,32 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     const orgId = localStorage.getItem("cl_b2b_org_id");
     const schoolCode = b2bOrg?.b2b_license_keys?.[0]?.code || "No Active Code";
 
-    // Auto-generate next sequential 4-digit student ID
-    const existingIds = b2bStudents.map(s => parseInt(s.student_id || "0", 10)).filter(n => !isNaN(n));
-    const nextNum = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
-    const studentId = String(nextNum).padStart(4, "0");
-
     try {
       const res = await fetch("/api/supabase/b2b/enroll-student", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           org_id: orgId || "mock",
-          student_id: studentId,
           name: newName.trim(),
           age_group: newAgeGroup,
           pin: newPin,
           parent_email: parent.email,
+          // student_id is intentionally omitted — the server auto-generates a unique random ID
         })
       });
       const data = await res.json();
 
       if (res.ok && data.ok) {
-        const enrolled = { ...data.student, student_id: studentId, schoolCode };
+        const assignedId = data.student?.student_id || "????";
+        const enrolled = { ...data.student, student_id: assignedId, schoolCode };
         setNewlyAdded(enrolled);
         setNewName(""); setNewPin(""); setNewAgeGroup("young innovators");
         await fetchStats();
       } else {
         // Mock mode: add locally if DB not available
         if (!orgId) {
-          const mock = { id: Date.now().toString(), student_id: studentId, name: newName.trim(), xp: 0, lessonsDone: 0, status: "Active", schoolCode };
+          const mockId = String(Math.floor(1000 + Math.random() * 9000));
+          const mock = { id: Date.now().toString(), student_id: mockId, name: newName.trim(), xp: 0, lessonsDone: 0, status: "Active", schoolCode };
           setB2bStudents(prev => [...prev, mock]);
           setNewlyAdded({ ...mock, pin: newPin });
           setNewName(""); setNewPin(""); setNewAgeGroup("young innovators");

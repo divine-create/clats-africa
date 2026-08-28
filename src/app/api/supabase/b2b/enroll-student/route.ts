@@ -8,46 +8,64 @@ const getSB = () => {
   return createClient(url, key, { auth: { persistSession: false } });
 };
 
+/** Normalize age_group to full app AgeGroup type */
+function normalizeAge(raw: string): string {
+  const v = (raw || "").toLowerCase();
+  if (v === "early explorers" || v === "early") return "early explorers";
+  if (v === "future builders" || v === "future") return "future builders";
+  return "young innovators";
+}
+
+/**
+ * Generates a unique random 4-digit student ID (1000–9999) for a given org.
+ * Retries up to 100 times if collision occurs. Returns null if exhausted.
+ */
+async function generateUniqueStudentId(sb: any, org_id: string): Promise<string | null> {
+  // Fetch all existing student_ids for this org in one query
+  const { data: existing } = await sb
+    .from("clats_children")
+    .select("student_id")
+    .eq("org_id", org_id);
+
+  const usedIds = new Set<string>((existing || []).map((s: any) => s.student_id));
+
+  const MAX_TRIES = 100;
+  for (let i = 0; i < MAX_TRIES; i++) {
+    const candidate = String(Math.floor(1000 + Math.random() * 9000)); // 1000–9999
+    if (!usedIds.has(candidate)) {
+      return candidate;
+    }
+  }
+  return null; // All attempts exhausted (extremely unlikely with < 9000 students)
+}
+
 /**
  * POST /api/supabase/b2b/enroll-student
- * Coordinator enrolls a new student into their org with an auto-assigned 4-digit student_id.
+ * Coordinator enrolls a new student. A unique random 4-digit student_id is
+ * auto-generated per school — coordinators do NOT need to supply one.
  */
 export async function POST(req: NextRequest) {
   const sb = getSB();
   if (!sb) return NextResponse.json({ ok: false, msg: "Supabase not configured." }, { status: 503 });
 
   try {
-    const { org_id, student_id, name, age_group, avatar, pin, parent_email } = await req.json();
+    const { org_id, name, age_group, avatar, pin, parent_email } = await req.json();
 
-    if (!org_id || !student_id || !name || !pin) {
-      return NextResponse.json({ ok: false, msg: "org_id, student_id, name and pin are required." }, { status: 400 });
+    if (!org_id || !name || !pin) {
+      return NextResponse.json({ ok: false, msg: "org_id, name and pin are required." }, { status: 400 });
     }
 
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
       return NextResponse.json({ ok: false, msg: "PIN must be exactly 4 digits." }, { status: 400 });
     }
 
-    // Check uniqueness: same org_id + student_id combo must not exist
-    const { data: existing } = await sb
-      .from("clats_children")
-      .select("id")
-      .eq("org_id", org_id)
-      .eq("student_id", student_id)
-      .maybeSingle();
-
-    if (existing) {
-      return NextResponse.json({ ok: false, msg: `Student ID ${student_id} already exists in this organization.` }, { status: 409 });
+    // Auto-generate a unique random student ID for this school
+    const student_id = await generateUniqueStudentId(sb, org_id);
+    if (!student_id) {
+      return NextResponse.json({ ok: false, msg: "Could not generate a unique student ID. School may be at capacity." }, { status: 500 });
     }
 
     const childId = `b2b-${org_id}-${student_id}-${Date.now()}`;
-
-    // Normalize age_group to full app format
-    function normalizeAge(raw: string): string {
-      const v = (raw || "").toLowerCase();
-      if (v === "early explorers" || v === "early") return "early explorers";
-      if (v === "future builders" || v === "future") return "future builders";
-      return "young innovators";
-    }
 
     const { data: child, error } = await sb
       .from("clats_children")
