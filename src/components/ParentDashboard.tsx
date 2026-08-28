@@ -1715,55 +1715,31 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           ) : (
             <>
               {/* REFER & EARN TAB */}
-              <section className={`p-8 rounded-2xl border ${isDark ? "bg-[#111827] border-slate-800 text-white" : "bg-[#FFFFFF] border-[#EAEAEA] text-[#111111]"}`}>
-                <div className="flex flex-col items-center text-center space-y-8 py-8">
-                 <div className="h-24 w-24 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-xl shadow-orange-500/30 relative">
-                   <Award size={48} />
-                   <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-[#2EC4B6] border-2 border-white dark:border-slate-800 flex items-center justify-center text-white text-sm font-black">
-                     <Star size={16} />
+              <section className={`p-12 rounded-2xl border ${isDark ? "bg-[#111827] border-slate-800 text-white" : "bg-[#FFFFFF] border-[#EAEAEA] text-[#111111]"}`}>
+                <div className="flex flex-col items-center justify-center text-center space-y-6 max-w-lg mx-auto">
+                 <div className="h-24 w-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 relative">
+                   <Share2 size={40} />
+                   <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg px-2 py-1 text-[10px] font-black text-white uppercase shadow-sm">
+                     Soon
                    </div>
                  </div>
                  
                  <div className="space-y-3">
-                   <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight m-0">Give a Month, Get a Month!</h2>
-                   <p className={`max-w-lg mx-auto text-sm md:text-base ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                     Invite friends to CLATS Future-Tech Academy. When they join, they get their first month free, and you earn a free month of Premium for each friend! Unlimited rewards!
+                   <h2 className="text-3xl font-extrabold tracking-tight m-0">Give a Month, Get a Month!</h2>
+                   <p className={`text-sm md:text-base ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                     We are putting the finishing touches on our new Referral Program. Soon, you'll be able to invite friends, give them their first month free, and earn unlimited free Premium months for your own family!
                    </p>
                  </div>
 
-                 {/* Code Section */}
-                 <div className={`w-full max-w-xl p-6 rounded-2xl border ${isDark ? "bg-slate-900 border-slate-700" : "bg-slate-50 border-slate-200"} space-y-4`}>
-                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 font-mono">Your Unique Share Link</h3>
-                   <div className="flex items-center gap-2">
-                     <div className={`flex-1 px-4 py-3.5 rounded-xl border font-mono text-sm overflow-hidden text-ellipsis whitespace-nowrap text-left ${isDark ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-white border-slate-300 text-slate-600"}`}>
-                       {referralLink}
-                     </div>
-                     <button
-                       onClick={handleCopy}
-                       className="px-6 py-3.5 rounded-xl bg-[#2EC4B6] hover:bg-teal-600 text-white font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-teal-500/20 flex-shrink-0"
-                     >
-                       {copiedCode ? <CheckCircle2 size={18} /> : <Share2 size={18} />}
-                       {copiedCode ? "Copied!" : "Copy Link"}
-                     </button>
-                   </div>
+                 <div className={`mt-8 px-6 py-4 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-200"} flex items-center gap-4`}>
+                    <Clock size={24} className="text-amber-500" />
+                    <div className="text-left">
+                      <div className="text-sm font-bold">Coming Soon</div>
+                      <div className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>Check back in a few weeks to start earning rewards!</div>
+                    </div>
                  </div>
-
-                 {/* Tracker */}
-                 <div className="w-full max-w-xl grid grid-cols-2 gap-6 mt-4">
-                   <div className={`p-6 rounded-2xl border flex flex-col items-center justify-center space-y-2 relative overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
-                     <div className="absolute top-0 left-0 h-1 w-full bg-[#B8A0FF]" />
-                     <span className="text-4xl font-black text-[#B8A0FF]">{friendsInvited}</span>
-                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Friends Invited</span>
-                   </div>
-                   <div className={`p-6 rounded-2xl border flex flex-col items-center justify-center space-y-2 relative overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
-                     <div className="absolute top-0 left-0 h-1 w-full bg-amber-500" />
-                     <span className="text-4xl font-black text-amber-500">{freeMonths}</span>
-                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Free Months Earned</span>
-                   </div>
-                 </div>
-
-               </div>
-             </section>
+                </div>
+              </section>
             </>
           )}
         </div>
