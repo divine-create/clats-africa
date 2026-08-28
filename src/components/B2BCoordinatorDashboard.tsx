@@ -34,7 +34,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   // Add Student Modal
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newAgeGroup, setNewAgeGroup] = useState("young");
+  const [newAgeGroup, setNewAgeGroup] = useState("young innovators");
   const [newPin, setNewPin] = useState("");
   const [addingStudent, setAddingStudent] = useState(false);
   const [addError, setAddError] = useState("");
@@ -58,9 +58,9 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
         const name = parts[0];
         const rawAgeGroup = parts[1] || "";
         const pin = parts[2] || "";
-        let age_group = "young";
-        if (rawAgeGroup.toLowerCase().includes("early")) age_group = "early";
-        else if (rawAgeGroup.toLowerCase().includes("future")) age_group = "future";
+        let age_group = "young innovators";
+        if (rawAgeGroup.toLowerCase().includes("early")) age_group = "early explorers";
+        else if (rawAgeGroup.toLowerCase().includes("future")) age_group = "future builders";
         return { name, age_group, pin };
       }).filter(s => s.name.length > 0);
 
@@ -269,7 +269,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
       if (res.ok && data.ok) {
         const enrolled = { ...data.student, student_id: studentId, schoolCode };
         setNewlyAdded(enrolled);
-        setNewName(""); setNewPin(""); setNewAgeGroup("young");
+        setNewName(""); setNewPin(""); setNewAgeGroup("young innovators");
         await fetchStats();
       } else {
         // Mock mode: add locally if DB not available
@@ -277,7 +277,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           const mock = { id: Date.now().toString(), student_id: studentId, name: newName.trim(), xp: 0, lessonsDone: 0, status: "Active", schoolCode };
           setB2bStudents(prev => [...prev, mock]);
           setNewlyAdded({ ...mock, pin: newPin });
-          setNewName(""); setNewPin(""); setNewAgeGroup("young");
+          setNewName(""); setNewPin(""); setNewAgeGroup("young innovators");
         } else {
           setAddError(data.msg || "Failed to enroll student.");
         }
@@ -908,9 +908,9 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                     onChange={e => setNewAgeGroup(e.target.value)}
                     className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-bold transition ${isDark ? "bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]" : "bg-slate-50 border-slate-200 focus:border-[#7A6FF0]"}`}
                   >
-                    <option value="early">Early Explorers (5–8)</option>
-                    <option value="young">Young Innovators (9–12)</option>
-                    <option value="future">Future Leaders (13+)</option>
+                     <option value="early explorers">Early Explorers (Ages 5–8)</option>
+                     <option value="young innovators">Young Innovators (Ages 9–12)</option>
+                     <option value="future builders">Future Builders (Ages 13+)</option>
                   </select>
                 </div>
 
@@ -994,10 +994,10 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                   onChange={e => setEditAgeGroup(e.target.value)}
                   className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-bold transition ${isDark ? "bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]" : "bg-slate-50 border-slate-200 focus:border-[#7A6FF0]"}`}
                 >
-                  <option value="early">Early Explorers (5–8)</option>
-                  <option value="young">Young Innovators (9–12)</option>
-                  <option value="future">Future Leaders (13+)</option>
-                </select>
+                   <option value="early explorers">Early Explorers (Ages 5–8)</option>
+                   <option value="young innovators">Young Innovators (Ages 9–12)</option>
+                   <option value="future builders">Future Builders (Ages 13+)</option>
+                 </select>
               </div>
 
               {/* PIN reset */}
