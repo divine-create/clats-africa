@@ -25,7 +25,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Child not found" }, { status: 404 });
     }
 
-    // 2. Check cache: If insight was generated less than 3 days ago, return it
+    // 2. Check cache: Disabled temporarily for testing
+    /*
     if (child.ai_insight && child.ai_insight_generated_at) {
       const generatedAt = new Date(child.ai_insight_generated_at);
       const daysSince = (new Date().getTime() - generatedAt.getTime()) / (1000 * 3600 * 24);
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ insight: child.ai_insight, cached: true });
       }
     }
+    */
 
     // 3. Fetch deep session data
     const { data: sessionsData } = await supabase
