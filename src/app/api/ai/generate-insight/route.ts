@@ -91,7 +91,7 @@ Return ONLY valid JSON. No markdown formatting, no extra text.`;
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("Groq API Error:", errText);
-      return NextResponse.json({ error: "Failed to generate AI insight" }, { status: 500 });
+      return NextResponse.json({ error: `Groq API Error: ${errText}` }, { status: 500 });
     }
 
     const aiData = await aiResponse.json();
