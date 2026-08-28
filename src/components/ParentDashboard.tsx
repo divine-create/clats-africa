@@ -1478,7 +1478,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                     showToast("Please select a child first.");
                     return;
                   }
-                  showToast(`Generating report for ${child.name}...`);
+                  showToast(`Generating Smart Report for ${child.name}...`);
+
+                  // Fetch AI Insight
+                  let fetchedInsight = null;
+                  try {
+                    const res = await fetch("/api/ai/generate-insight", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ childId: child.id }),
+                    });
+                    const data = await res.json();
+                    if (data.insight) fetchedInsight = data.insight;
+                  } catch (e) {}
+
                   // Get the freshest child data from Supabase if available
                   let freshChild = child;
                   if (parent?.email) {
@@ -1489,13 +1502,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       }
                     } catch {}
                   }
-                  downloadProgressReportImage(parent, freshChild);
+                  downloadProgressReportImage(parent, freshChild, fetchedInsight);
                 }}
                 className={`w-full p-4 rounded-xl border flex items-center justify-between text-base font-semibold hover:translate-x-1.5 transition-all text-left ${
                   isDark ? "bg-slate-950 border-slate-850 text-slate-300 hover:border-slate-700" : "bg-slate-50 border-slate-150 text-slate-800 hover:bg-slate-100"
                 }`}
               >
-                <span className="flex items-center gap-2">🖼️ Download {child?.name ? `${child.name}'s` : ""} Report</span>
+                <span className="flex items-center gap-2">🖼️ Download {child?.name ? `${child.name}'s` : ""} AI Smart Report</span>
                 <ChevronRight size={18} className="text-slate-400" />
               </button>
 

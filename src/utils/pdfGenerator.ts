@@ -588,7 +588,7 @@ export async function downloadCertificateImage(certName: string) {
 // Renders a beautifully styled HTML report card in a hidden off-screen container,
 // captures it with html2canvas at 2x resolution, then downloads as a PNG image.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function downloadProgressReportImage(parent: Parent, selectedChild: Child) {
+export async function downloadProgressReportImage(parent: Parent, selectedChild: Child, aiInsight?: any) {
   try {
     const [{ createRoot }, { ProgressReportImage }, html2canvasMod] = await Promise.all([
       import("react-dom/client"),
@@ -598,42 +598,38 @@ export async function downloadProgressReportImage(parent: Parent, selectedChild:
     const html2canvas = html2canvasMod.default;
     const React = (await import("react")).default;
 
-    // Fetch sessions only for the selected child
     let sessions: any[] = [];
-    try {
-      const res = await fetch(`/api/supabase/sessions/child/${selectedChild.id}`);
-      if (res.ok) {
+    if (selectedChild) {
+      try {
+        const res = await fetch(`/api/supabase/sessions/child/${selectedChild.id}`);
         const data = await res.json();
-        sessions = data.sessions || [];
+        if (data.ok && data.sessions) {
+          sessions = data.sessions;
+        }
+      } catch (err) {
+        console.error("Failed to fetch sessions for report", err);
       }
-    } catch {
-      sessions = [];
     }
 
-    // Fetch logo as base64 so html2canvas renders it reliably without CORS/loading issues
+    // Force fetch logo to base64
     let logoBase64 = "";
     try {
-      const resp = await fetch("/logo-3.png");
-      if (resp.ok) {
-        const blob = await resp.blob();
-        logoBase64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      }
+      const res = await fetch("/logo-3.png");
+      const blob = await res.blob();
+      logoBase64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
     } catch (e) {
-      console.warn("Failed to fetch logo for report", e);
+      console.warn("Could not load logo base64", e);
     }
 
-    // Create an off-screen container and render the report component into it
     const container = document.createElement("div");
-    container.style.position = "fixed";
+    container.style.position = "absolute";
     container.style.top = "-9999px";
     container.style.left = "-9999px";
-    container.style.zIndex = "-1";
     container.style.width = "800px";
-    container.style.fontFamily = "'Montserrat', 'Helvetica Neue', Arial, sans-serif";
     document.body.appendChild(container);
 
     const root = createRoot(container);
@@ -644,6 +640,7 @@ export async function downloadProgressReportImage(parent: Parent, selectedChild:
           child: selectedChild,
           sessions,
           logoBase64,
+          aiInsight,
         })
       );
       // Give the DOM time to paint fully, including fonts/images

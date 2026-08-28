@@ -29,6 +29,7 @@ interface ProgressReportImageProps {
   child: Child;
   sessions: any[];
   logoBase64?: string;
+  aiInsight?: any;
 }
 
 export const ProgressReportImage: React.FC<ProgressReportImageProps> = ({
@@ -36,6 +37,7 @@ export const ProgressReportImage: React.FC<ProgressReportImageProps> = ({
   child,
   sessions,
   logoBase64,
+  aiInsight,
 }) => {
   const liveDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -95,6 +97,7 @@ export const ProgressReportImage: React.FC<ProgressReportImageProps> = ({
         sessions={sessions}
         liveDate={liveDate}
         logoBase64={logoBase64}
+        aiInsight={aiInsight}
       />
     </div>
   );
@@ -107,9 +110,10 @@ interface ChildReportProps {
   sessions: any[];
   liveDate: string;
   logoBase64?: string;
+  aiInsight?: any;
 }
 
-function ChildReport({ child, parent, sessions, liveDate, logoBase64 }: ChildReportProps) {
+function ChildReport({ child, parent, sessions, liveDate, logoBase64, aiInsight }: ChildReportProps) {
   const studyStats = calculateStudyAnalytics(sessions);
   const completedCount = Object.keys(child.completed || {}).length;
   const activeAcademy = getActiveAcademyLabel(child);
@@ -202,6 +206,29 @@ function ChildReport({ child, parent, sessions, liveDate, logoBase64 }: ChildRep
 
         {/* Left main content */}
         <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* AI Teacher's Note */}
+          {aiInsight && (
+            <div style={{ marginBottom: 28, background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 16, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 20 }}>🤖</span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: '#6D28D9', textTransform: 'uppercase', letterSpacing: 1 }}>AI Teacher's Note</span>
+              </div>
+              <div style={{ fontSize: 13, color: '#4C1D95', lineHeight: 1.5, fontWeight: 600, marginBottom: 10 }}>
+                {aiInsight.summary}
+              </div>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div style={{ flex: 1, background: '#fff', borderRadius: 10, padding: 12, border: '1px solid #EDE9FE' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#10B981', textTransform: 'uppercase', marginBottom: 4 }}>Top Strength</div>
+                  <div style={{ fontSize: 11, color: '#065F46', lineHeight: 1.4, fontWeight: 600 }}>{aiInsight.strength}</div>
+                </div>
+                <div style={{ flex: 1, background: '#fff', borderRadius: 10, padding: 12, border: '1px solid #EDE9FE' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#F59E0B', textTransform: 'uppercase', marginBottom: 4 }}>Focus Area</div>
+                  <div style={{ fontSize: 11, color: '#92400E', lineHeight: 1.4, fontWeight: 600 }}>{aiInsight.focusArea}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Metadata grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px 24px', marginBottom: 28 }}>
