@@ -47,14 +47,17 @@ export default function ChildAppPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!parent) {
-      // Not logged in or no parent wrapper
+    // B2B students login directly — they have activeChild but no parent
+    const isB2BStudent = activeChild && (activeChild as any).isB2B;
+
+    if (!isB2BStudent && !parent) {
+      // Regular user not logged in — send to login
       router.push('/child/login');
       return;
     }
     if (!activeChild) {
-      // Logged in but no child selected
-      if (parent.isB2B) {
+      // Parent is logged in but no child selected
+      if (parent?.isB2B) {
         router.push('/child/login');
       } else {
         router.push('/dashboard');
@@ -65,15 +68,40 @@ export default function ChildAppPage() {
   }, [parent, activeChild, router]);
 
   const handleChildUpdate = (updatedChild: any) => {
+    setActiveChild(updatedChild);
+
+    // B2B student — sync progress directly to their own record
+    if ((updatedChild as any).isB2B) {
+      try {
+        fetch("/api/supabase/b2b/manage-student", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update_progress",
+            studentId: updatedChild.id,
+            xp: updatedChild.xp,
+            completed: updatedChild.completed,
+            completed_lessons: updatedChild.completedLessons,
+            stars: updatedChild.stars,
+            quiz_results: updatedChild.quizResults,
+            streak_count: updatedChild.streak,
+          })
+        });
+      } catch (e) {
+        console.error("Failed to sync B2B student progress:", e);
+      }
+      return;
+    }
+
+    // Regular parent-linked child
     if (!parent) return;
     const updatedChildren = (parent.children ?? []).map((c: any) =>
       (c.id ?? c.name) === (updatedChild.id ?? updatedChild.name) ? updatedChild : c
     );
     const updatedParent = { ...parent, children: updatedChildren };
     setParent(updatedParent);
-    setActiveChild(updatedChild);
 
-    // Persist child state (XP, rewards, etc) back to Supabase
+    // Persist child state back to Supabase
     if (parent.email) {
       try {
         fetch("/api/supabase/sync", {
@@ -92,8 +120,9 @@ export default function ChildAppPage() {
 
   const handleExit = () => {
     setActiveChild(null);
-    if (parent?.isB2B) {
-      logout('/child/login');
+    const wasB2B = activeChild && (activeChild as any).isB2B;
+    if (wasB2B || parent?.isB2B) {
+      router.push('/child/login');
     } else {
       router.push('/dashboard');
     }
