@@ -65,20 +65,22 @@ Based on this data, provide a JSON response with exactly these 4 keys:
 }
 Return ONLY valid JSON. No markdown formatting, no extra text.`;
 
-    // 4. Call Groq API (Meta Llama 3.1)
-    const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      return NextResponse.json({ error: "GROQ_API_KEY not configured in .env.local" }, { status: 500 });
+    // 4. Call OpenRouter API (Meta Llama 3.3)
+    const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+    if (!openRouterApiKey) {
+      return NextResponse.json({ error: "OPENROUTER_API_KEY not configured in .env.local" }, { status: 500 });
     }
 
-    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${groqApiKey}`,
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${openRouterApiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://app.clats.org", // Required by OpenRouter
+        "X-Title": "CLATS Progress AI" // Required by OpenRouter
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "meta-llama/llama-3.3-70b-instruct",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Analyze the childs data and provide the JSON." }
@@ -90,8 +92,8 @@ Return ONLY valid JSON. No markdown formatting, no extra text.`;
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("Groq API Error:", errText);
-      return NextResponse.json({ error: `Groq API Error: ${errText}` }, { status: 500 });
+      console.error("OpenRouter API Error:", errText);
+      return NextResponse.json({ error: `OpenRouter API Error: ${errText}` }, { status: 500 });
     }
 
     const aiData = await aiResponse.json();
