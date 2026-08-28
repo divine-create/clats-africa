@@ -35,28 +35,56 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Prepare data for the AI prompt
-    const completedCount = Object.keys(child.completed_lessons || {}).length;
+    // 3. Fetch deep session data
+    const { data: sessionsData } = await supabase
+      .from("learning_sessions")
+      .select("duration_seconds, created_at, modules_completed")
+      .eq("child_id", childId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+      
+    const recentSessions = sessionsData || [];
+    const totalMinutesRecent = Math.round(recentSessions.reduce((acc: any, s: any) => acc + (s.duration_seconds || 0), 0) / 60);
+
+    // 4. Prepare data for the AI prompt
+    const completedKeys = Object.keys(child.completed_lessons || {});
+    const recentCompleted = completedKeys.slice(-3).join(", ");
+    
     const quizResults = child.quiz_results || {};
     const quizKeys = Object.keys(quizResults);
-    
     let quizAverage = 0;
+    let strugglingTopics: string[] = [];
+    let strongTopics: string[] = [];
+
     if (quizKeys.length > 0) {
       quizAverage = Math.round(quizKeys.reduce((a: any, k: any) => a + (quizResults[k]?.score || 0), 0) / quizKeys.length);
+      quizKeys.forEach((k: any) => {
+        const q = quizResults[k];
+        if (q.score < 70 || q.attempts > 2) strugglingTopics.push(k);
+        else if (q.score >= 90) strongTopics.push(k);
+      });
     }
 
+    const companion = child.companion || "Chibi"; // Chibi is supportive, Kobe is analytical
+    const badges = child.badges ? child.badges.join(", ") : "None yet";
+
     const systemPrompt = `You are an expert child educator and AI assistant for the CLATS platform.
-Your job is to analyze a childs learning data and provide a personalized, encouraging progress report for their parent.
+Your job is to deeply analyze a childs learning data and provide a highly personalized, psychological, and encouraging progress report for their parent.
 
-Child Name: ${child.name}
-Age Group: ${child.age_group}
-Interests: ${child.interests?.join(", ") || "technology"}
-Lessons Completed: ${completedCount}
-Quiz Average: ${quizAverage}%
-Current XP: ${child.xp}
-Current Streak: ${child.streak_count} days
+Data points:
+- Child Name: ${child.name}
+- Age Group: ${child.age_group}
+- Interests: ${child.interests?.join(", ") || "technology"}
+- Learning Companion Chosen: ${companion} (${companion === "Kobe" ? "Prefers analytical/logical challenges" : "Prefers story-driven/supportive learning"})
+- Badges Earned: ${badges}
+- Current XP: ${child.xp} | Current Streak: ${child.streak_count} days
+- Recent Study Time: ${totalMinutesRecent} minutes across the last ${recentSessions.length} sessions
+- Last 3 Lessons Completed: ${recentCompleted || "None"}
+- Quiz Average: ${quizAverage}%
+- Strong Topics: ${strongTopics.join(", ") || "None"}
+- Struggling Topics: ${strugglingTopics.join(", ") || "None"}
 
-Based on this data, provide a JSON response with exactly these 4 keys:
+Based on this deep data, provide a JSON response with exactly these 4 keys:
 {
   "summary": "A 2-sentence positive summary of their overall progress.",
   "strength": "1 sentence highlighting what they are doing best.",
