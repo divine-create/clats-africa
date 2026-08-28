@@ -12,6 +12,7 @@ import { Heading, Txt, Chip } from "./Primitives";
 import { MascotImage } from "./Onboarding";
 import { SmartCityBuilder } from "./games/SmartCityBuilder";
 import { PhishingSwipe } from "./games/PhishingSwipe";
+import { TeachableMachine } from "./games/TeachableMachine";
 
 interface ChildGamesProps {
   child: Child;
@@ -73,7 +74,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
   // Track completed games locally per child
   const [completedGames, setCompletedGames] = useState<string[]>(() => {
     try {
-      const keys = ["pattern-detective", "ai-sorting", "smart-machine", "train-robot", "smart-city-builder"];
+      const keys = ["teachable-machine", "smart-city-builder", "phishing-swipe"];
       return keys.filter(k => localStorage.getItem(`clats_game_completed_${child.id}_${k}`) === "true");
     } catch {
       return [];
@@ -100,48 +101,15 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
   // Academies games lists
   const aiGames: Game[] = [
     {
-      id: "pattern-detective",
-      name: "Pattern Detective",
-      desc: "Identify patterns to help AI learn.",
-      difficulty: "Beginner",
-      xpAward: 50,
-      status: "Available",
-      supportsModule: "🤖 AI Foundations",
-      supportsLesson: "What is AI?",
-      icon: "🤖"
-    },
-    {
-      id: "ai-sorting",
-      name: "AI Sorting Challenge",
-      desc: "Help AI sort objects into the correct groups.",
-      difficulty: "Beginner",
-      xpAward: 50,
-      status: "Available",
-      supportsModule: "🤖 AI Foundations",
-      supportsLesson: "Smart Things Around Us",
-      icon: "📸"
-    },
-    {
-      id: "smart-machine",
-      name: "Smart Machine Match",
-      desc: "Match everyday AI tools with how they help people.",
-      difficulty: "Beginner",
-      xpAward: 75,
-      status: "Available",
-      supportsModule: "🤖 AI Foundations",
-      supportsLesson: "AI Around Us",
-      icon: "🧠"
-    },
-    {
-      id: "train-robot",
-      name: "Train the Robot",
-      desc: "Teach a robot to make better decisions using examples.",
+      id: "teachable-machine",
+      name: "Teachable Machine",
+      desc: "YOU are the AI trainer! Sort items to teach the AI, then watch it learn.",
       difficulty: "Intermediate",
       xpAward: 100,
       status: "Available",
       supportsModule: "🤖 AI Foundations",
-      supportsLesson: "Tech Adventure Quiz",
-      icon: "🎯"
+      supportsLesson: "How AI Learns",
+      icon: "🧠"
     },
     {
       id: "smart-city-builder",
@@ -222,11 +190,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
 
   // Pre-configured Badge requirements
   const badgesList = [
-    { id: "pattern-master", name: "Pattern Master", icon: "🏅", desc: "Unlock from Pattern Detective", unlocked: completedGames.includes("pattern-detective"), color: "#FFD166" },
-    { id: "ai-explorer", name: "AI Explorer", icon: "🚀", desc: "Unlock from AI Sorting Challenge", unlocked: completedGames.includes("ai-sorting"), color: "#2EC4B6" },
-    { id: "smart-thinker", name: "Smart Thinker", icon: "🧠", desc: "Unlock from Smart Machine Match", unlocked: completedGames.includes("smart-machine"), color: "#B8A0FF" },
-    { id: "future-builder", name: "Future Builder", icon: "🤖", desc: "Unlock from Train the Robot", unlocked: completedGames.includes("train-robot"), color: "#10B981" },
-    { id: "urban-innovator", name: "Urban Innovator", icon: "🏙️", desc: "Unlock from Smart City Builder", unlocked: completedGames.includes("smart-city-builder"), color: "#26c6da" }
+    { id: "ai-trainer", name: "AI Trainer", icon: "🧠", desc: "Unlock from Teachable Machine", unlocked: completedGames.includes("teachable-machine"), color: "#6366F1" },
+    { id: "urban-innovator", name: "Urban Innovator", icon: "🏙️", desc: "Unlock from Smart City Builder", unlocked: completedGames.includes("smart-city-builder"), color: "#26c6da" },
+    { id: "cyber-guardian", name: "Cyber Guardian", icon: "🛡️", desc: "Unlock from Phishing Swipe", unlocked: completedGames.includes("phishing-swipe"), color: "#F59E0B" },
   ];
 
   const badgesEarnedCount = badgesList.filter(b => b.unlocked).length;
@@ -1047,6 +1013,33 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
       {/* 6. GENUINE INTERACTIVE QUESTS MODAL SCREEN */}
       {activeGameModal && !isGameCompleted && (() => {
         const gameId = activeGameModal;
+        if (gameId === "teachable-machine") {
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(15, 23, 42, 0.8)",
+                backdropFilter: "blur(4px)",
+                zIndex: 10000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16
+              }}
+            >
+              <TeachableMachine
+                onBack={() => {
+                  sfx.playTap();
+                  setActiveGameModal(null);
+                }}
+              />
+            </div>
+          );
+        }
         if (gameId === "phishing-swipe") {
           return (
             <div
