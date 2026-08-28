@@ -78,7 +78,7 @@ Return ONLY valid JSON. No markdown formatting, no extra text.`;
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "qwen/qwen3.8-27b",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Analyze the childs data and provide the JSON." }
