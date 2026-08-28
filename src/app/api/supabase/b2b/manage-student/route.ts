@@ -96,8 +96,14 @@ export async function POST(req: NextRequest) {
 
     if (action === "update_progress") {
       if (xp !== undefined) updatePayload.xp = xp;
-      if (completed !== undefined) updatePayload.completed = completed;
-      if (completed_lessons !== undefined) updatePayload.completed_lessons = completed_lessons;
+      
+      // The frontend object uses `.completed`, but the DB column is `completed_lessons`.
+      if (completed !== undefined) {
+        updatePayload.completed_lessons = completed;
+      } else if (completed_lessons !== undefined) {
+        updatePayload.completed_lessons = completed_lessons;
+      }
+      
       if (stars !== undefined) updatePayload.stars = stars;
       if (quiz_results !== undefined) updatePayload.quiz_results = quiz_results;
       if (streak_count !== undefined) updatePayload.streak_count = streak_count;
