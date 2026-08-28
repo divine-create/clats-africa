@@ -106,7 +106,8 @@ export async function POST(req: NextRequest) {
       
       if (stars !== undefined) updatePayload.stars = stars;
       if (quiz_results !== undefined) updatePayload.quiz_results = quiz_results;
-      if (streak_count !== undefined) updatePayload.streak_count = streak_count;
+      // Note: streak_count, best_streak, badges, last_active_at do NOT exist in the clats_children schema.
+      // We only update the existing valid telemetry columns.
     } else {
       // General profile update
       if (name !== undefined) updatePayload.name = name.trim();
