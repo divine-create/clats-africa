@@ -389,7 +389,7 @@ function Footer({ liveDate, childName, logoBase64 }: { liveDate: string; childNa
         )}
         <div>
           <div style={{ fontWeight: 800, fontSize: 13, color: '#fff' }}>Building Tomorrow's Tech Minds Today!</div>
-          <div style={{ color: '#2EC4B6', fontSize: 11, fontWeight: 600 }}>admin@clats.org  |  www.clats.io</div>
+          <div style={{ color: '#2EC4B6', fontSize: 11, fontWeight: 600 }}>admin@clats.org  |  www.clats.org</div>
         </div>
       </div>
       <div style={{ textAlign: 'right' }}>
