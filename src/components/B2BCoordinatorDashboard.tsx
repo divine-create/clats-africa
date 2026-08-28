@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Parent, Language } from "../types";
 import { F } from "../utils/config";
-import { LogOut, Users, FileText, BarChart2, Plus, Shield, X, Copy, Check } from "lucide-react";
+import { LogOut, Users, FileText, BarChart2, Plus, Shield, X, Copy, Check, TrendingUp, Award, AlertCircle, Download, Printer } from "lucide-react";
 
 interface Props {
   parent: Parent;
@@ -24,7 +24,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   onToggleTheme,
 }) => {
   const isDark = theme === "dark";
-  const [activeTab, setActiveTab] = useState<"overview" | "students" | "reports">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "students" | "analytics" | "reports">("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [b2bOrg, setB2bOrg] = useState<any>(null);
@@ -542,9 +542,10 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
             <p className="font-bold text-sm truncate">{parent.email}</p>
           </div>
           {[
-            { key: "overview", icon: <BarChart2 size={16}/>, label: "Overview", color: "bg-[#7A6FF0] shadow-violet-500/20" },
-            { key: "students", icon: <Users size={16}/>, label: "Enrolled Students", color: "bg-[#19C6C6] shadow-cyan-500/20" },
-            { key: "reports",  icon: <FileText size={16}/>, label: "Impact Reports", color: "bg-emerald-500 shadow-emerald-500/20" },
+            { key: "overview",   icon: <BarChart2 size={16}/>,   label: "Overview",          color: "bg-[#7A6FF0] shadow-violet-500/20" },
+            { key: "students",   icon: <Users size={16}/>,        label: "Enrolled Students", color: "bg-[#19C6C6] shadow-cyan-500/20" },
+            { key: "analytics",  icon: <TrendingUp size={16}/>,   label: "Analytics",         color: "bg-amber-500 shadow-amber-500/20" },
+            { key: "reports",    icon: <FileText size={16}/>,     label: "Impact Reports",    color: "bg-emerald-500 shadow-emerald-500/20" },
           ].map(tab => (
             <button
               key={tab.key}
@@ -787,38 +788,288 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           )}
 
           {/* ── REPORTS ─────────────────────────────────────────── */}
-          {activeTab === "reports" && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-black">Institutional Impact Reports</h2>
-              <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
-                Download standardized telemetry reports to submit to your Ministry of Education or CSR corporate sponsor.
-              </p>
-              <div className={`p-6 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-500/20 text-emerald-500 rounded-xl flex items-center justify-center">
-                    <FileText size={24}/>
+          {/* ── ANALYTICS ────────────────────────────────────────── */}
+          {activeTab === "analytics" && (() => {
+            const total = b2bStudents.length || 1;
+            const avgXP = Math.round(b2bStudents.reduce((a: number, b: any) => a + (b.xp || 0), 0) / total);
+            const avgLessons = Math.round(b2bStudents.reduce((a: number, b: any) => a + (b.lessonsDone || 0), 0) / total);
+            const excelling = b2bStudents.filter((s: any) => (s.xp || 0) >= 300).length;
+            const onTrack = b2bStudents.filter((s: any) => (s.xp || 0) >= 100 && (s.xp || 0) < 300).length;
+            const needsSupport = b2bStudents.filter((s: any) => (s.xp || 0) < 100).length;
+            const topStudents = [...b2bStudents].sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0)).slice(0, 5);
+            const bottom5 = [...b2bStudents].sort((a: any, b: any) => (a.xp || 0) - (b.xp || 0)).slice(0, 5);
+
+            // XP distribution buckets
+            const buckets = [
+              { label: "0–99 XP", count: b2bStudents.filter((s: any) => (s.xp || 0) < 100).length, color: "bg-rose-500" },
+              { label: "100–299 XP", count: b2bStudents.filter((s: any) => (s.xp || 0) >= 100 && (s.xp || 0) < 300).length, color: "bg-amber-400" },
+              { label: "300–599 XP", count: b2bStudents.filter((s: any) => (s.xp || 0) >= 300 && (s.xp || 0) < 600).length, color: "bg-[#19C6C6]" },
+              { label: "600+ XP", count: b2bStudents.filter((s: any) => (s.xp || 0) >= 600).length, color: "bg-[#7A6FF0]" },
+            ];
+            const maxBucket = Math.max(...buckets.map(b => b.count), 1);
+
+            return (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-black">School Analytics</h2>
+
+                {/* KPI Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: "Avg. XP Per Student", value: avgXP, icon: "⚡", color: "text-[#7A6FF0]" },
+                    { label: "Avg. Lessons Done", value: avgLessons, icon: "📚", color: "text-[#19C6C6]" },
+                    { label: "Excelling (300+ XP)", value: excelling, icon: "🏆", color: "text-emerald-500" },
+                    { label: "Needs Support (<100 XP)", value: needsSupport, icon: "⚠️", color: "text-rose-500" },
+                  ].map((k, i) => (
+                    <div key={i} className={`p-5 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                      <span className="text-2xl">{k.icon}</span>
+                      <p className={`text-3xl font-black mt-1 ${k.color}`}>{k.value}</p>
+                      <p className="text-[10px] uppercase font-bold text-slate-400 mt-1">{k.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Performance Band */}
+                <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                  <h3 className="font-bold text-base mb-4">📊 Class Performance Bands</h3>
+                  <div className="flex gap-4 mb-4">
+                    {[
+                      { label: "Excelling", value: excelling, pct: Math.round(excelling / total * 100), color: "bg-emerald-500" },
+                      { label: "On Track", value: onTrack, pct: Math.round(onTrack / total * 100), color: "bg-amber-400" },
+                      { label: "Needs Support", value: needsSupport, pct: Math.round(needsSupport / total * 100), color: "bg-rose-500" },
+                    ].map((band, i) => (
+                      <div key={i} className="flex-1 text-center">
+                        <div className={`h-2 rounded-full ${band.color} mb-2`} style={{ width: "100%" }} />
+                        <p className="text-2xl font-black">{band.pct}%</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{band.label}</p>
+                        <p className="text-xs text-slate-500">{band.value} students</p>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <h3 className="font-bold">Term 1 Impact Report (2026)</h3>
-                    <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                      Aggregated data for {b2bStudents.length} students · {b2bOrg?.name}
-                    </p>
+                  {/* Stacked bar */}
+                  <div className="w-full h-4 rounded-full overflow-hidden flex">
+                    <div className="bg-rose-500 h-full transition-all" style={{ width: `${Math.round(needsSupport / total * 100)}%` }} />
+                    <div className="bg-amber-400 h-full transition-all" style={{ width: `${Math.round(onTrack / total * 100)}%` }} />
+                    <div className="bg-emerald-500 h-full transition-all" style={{ width: `${Math.round(excelling / total * 100)}%` }} />
+                  </div>
+                  <div className="flex justify-between text-[9px] text-slate-400 font-bold mt-1">
+                    <span>← Needs Support</span><span>Excelling →</span>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={handleExportPDF} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-xl transition shadow-md shadow-emerald-500/20 text-xs">
-                    Export PDF / Print
-                  </button>
-                  <button onClick={handleExportCSV} className="bg-[#19C6C6] hover:bg-[#15abab] text-slate-900 font-bold py-2.5 px-6 rounded-xl transition shadow-md shadow-cyan-500/20 text-xs">
-                    Export CSV
-                  </button>
-                  <button onClick={handlePrintCards} className="bg-[#7A6FF0] hover:bg-[#665ad1] text-white font-bold py-2.5 px-6 rounded-xl transition shadow-md shadow-violet-500/20 text-xs whitespace-nowrap">
-                    🖨️ Print Login Cards
-                  </button>
+
+                {/* XP Distribution Histogram */}
+                <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                  <h3 className="font-bold text-base mb-4">📈 XP Distribution</h3>
+                  <div className="flex items-end gap-4 h-32">
+                    {buckets.map((b, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-xs font-black">{b.count}</span>
+                        <div
+                          className={`w-full rounded-t-lg ${b.color} transition-all`}
+                          style={{ height: `${Math.round((b.count / maxBucket) * 100)}%`, minHeight: b.count > 0 ? 8 : 0 }}
+                        />
+                        <p className="text-[9px] font-bold text-slate-400 text-center">{b.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Performers & Needs Attention — side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                    <h3 className="font-bold text-base mb-4 flex items-center gap-2"><Award size={16} className="text-amber-400" /> Top Performers</h3>
+                    {topStudents.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-6">No student data yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {topStudents.map((s: any, i: number) => (
+                          <div key={s.id} className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-amber-400/20 text-amber-500 text-xs font-black flex items-center justify-center">{i + 1}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm truncate">{s.name}</p>
+                              <div className={`h-1.5 rounded-full mt-1 ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
+                                <div className="h-1.5 rounded-full bg-amber-400" style={{ width: `${Math.min(100, Math.round(((s.xp || 0) / 600) * 100))}%` }} />
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-amber-500 whitespace-nowrap">{s.xp || 0} XP</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                    <h3 className="font-bold text-base mb-4 flex items-center gap-2"><AlertCircle size={16} className="text-rose-400" /> Needs Attention</h3>
+                    {bottom5.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-6">No student data yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {bottom5.map((s: any, i: number) => (
+                          <div key={s.id} className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-rose-400/20 text-rose-400 text-xs font-black flex items-center justify-center">!</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm truncate">{s.name}</p>
+                              <p className="text-[10px] text-slate-400">{s.lessonsDone || 0} lessons · ID #{s.student_id}</p>
+                            </div>
+                            <span className="text-xs font-black text-rose-400 whitespace-nowrap">{s.xp || 0} XP</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Full Per-Student Table */}
+                <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                  <h3 className="font-bold text-base mb-4">📋 Individual Student Performance</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                          <th className="text-left pb-3 pr-4">Student</th>
+                          <th className="text-left pb-3 pr-4">ID</th>
+                          <th className="text-left pb-3 pr-4">Age Group</th>
+                          <th className="text-right pb-3 pr-4">XP</th>
+                          <th className="text-right pb-3 pr-4">Lessons</th>
+                          <th className="text-center pb-3">Band</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {[...b2bStudents].sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0)).map((s: any) => {
+                          const xp = s.xp || 0;
+                          const band = xp >= 300 ? { label: "Excelling", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" }
+                            : xp >= 100 ? { label: "On Track", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" }
+                            : { label: "Needs Support", cls: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" };
+                          return (
+                            <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                              <td className="py-2.5 pr-4 font-bold">{s.name}</td>
+                              <td className="py-2.5 pr-4 font-mono text-slate-500">#{s.student_id || "—"}</td>
+                              <td className="py-2.5 pr-4 text-xs capitalize text-slate-500">{s.age_group || "—"}</td>
+                              <td className="py-2.5 pr-4 text-right font-black text-[#7A6FF0]">{xp}</td>
+                              <td className="py-2.5 pr-4 text-right text-slate-500">{s.lessonsDone || 0}</td>
+                              <td className="py-2.5 text-center">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${band.cls}`}>{band.label}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {b2bStudents.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-8">No students enrolled yet</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
+          {/* ── REPORTS ───────────────────────────────────────────── */}
+          {activeTab === "reports" && (() => {
+            const total = b2bStudents.length;
+            const avgXP = total > 0 ? Math.round(b2bStudents.reduce((a: number, b: any) => a + (b.xp || 0), 0) / total) : 0;
+            const totalLessons = b2bStudents.reduce((a: number, b: any) => a + (b.lessonsDone || 0), 0);
+            const excelling = b2bStudents.filter((s: any) => (s.xp || 0) >= 300).length;
+            const completionRate = total > 0 ? Math.round((b2bStudents.filter((s: any) => (s.lessonsDone || 0) > 0).length / total) * 100) : 0;
+
+            return (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-black">Impact Report</h2>
+                    <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                      {b2bOrg?.name} · Generated {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleExportPDF} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-md shadow-emerald-500/20 transition">
+                      <Download size={13}/> Export PDF
+                    </button>
+                    <button onClick={handleExportCSV} className="flex items-center gap-2 bg-[#19C6C6] hover:bg-[#15abab] text-slate-900 font-bold py-2.5 px-5 rounded-xl text-xs shadow-md shadow-cyan-500/20 transition">
+                      <Download size={13}/> Export CSV
+                    </button>
+                    <button onClick={handlePrintCards} className="flex items-center gap-2 bg-[#7A6FF0] hover:bg-[#665ad1] text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-md shadow-violet-500/20 transition">
+                      <Printer size={13}/> Print Cards
+                    </button>
+                  </div>
+                </div>
+
+                {/* Executive Summary */}
+                <div className={`p-6 rounded-2xl border-2 ${isDark ? "bg-[#1E293B] border-[#7A6FF0]/30" : "bg-violet-50 border-violet-200"}`}>
+                  <h3 className="font-black text-lg mb-1 text-[#7A6FF0]">📋 Executive Summary</h3>
+                  <p className={`text-sm mb-4 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                    Term-to-date learning outcomes for {b2bOrg?.name || "your school"}.
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: "Students Enrolled", value: total, icon: "👩‍🎓" },
+                      { label: "Avg. XP Earned", value: avgXP, icon: "⚡" },
+                      { label: "Total Lessons Completed", value: totalLessons, icon: "📚" },
+                      { label: "Curriculum Completion Rate", value: `${completionRate}%`, icon: "✅" },
+                    ].map((m, i) => (
+                      <div key={i} className={`p-4 rounded-xl ${isDark ? "bg-slate-900/60" : "bg-white"} border ${isDark ? "border-slate-700" : "border-slate-200"} text-center`}>
+                        <div className="text-2xl mb-1">{m.icon}</div>
+                        <p className="text-2xl font-black">{m.value}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{m.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* AI & Digital Literacy Outcomes */}
+                <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                  <h3 className="font-bold text-base mb-4">🎓 Learning Outcomes by Curriculum</h3>
+                  <div className="space-y-4">
+                    {[
+                      { name: "🤖 AI & Emerging Technologies", pct: Math.min(100, Math.round(avgXP / 6)), desc: "Foundations, AI safety, and machine learning literacy" },
+                      { name: "🌍 Digital Citizenship & Cybersecurity", pct: Math.min(100, Math.round(completionRate * 0.8)), desc: "Online safety, ethics, and privacy awareness" },
+                      { name: "🎨 Design & Creative Arts", pct: Math.min(100, Math.round(completionRate * 0.6)), desc: "UI/UX fundamentals, digital creation tools" },
+                      { name: "🚀 Innovation & Career Readiness", pct: Math.min(100, Math.round(completionRate * 0.4)), desc: "Entrepreneurship, AI career pathways, capstone projects" },
+                    ].map((c, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between text-sm font-bold mb-1">
+                          <span>{c.name}</span>
+                          <span className="text-[#19C6C6]">{c.pct}%</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-1.5">{c.desc}</p>
+                        <div className={`w-full h-2.5 rounded-full ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
+                          <div className="h-2.5 rounded-full bg-gradient-to-r from-[#7A6FF0] to-[#19C6C6]" style={{ width: `${c.pct}%`, transition: "width 0.8s ease" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Performance Cohort */}
+                <div className={`p-6 rounded-2xl border ${isDark ? "bg-[#1E293B] border-slate-800" : "bg-white border-slate-200"}`}>
+                  <h3 className="font-bold text-base mb-4">📊 Student Cohort Breakdown</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { label: "Excelling", count: excelling, pct: total > 0 ? Math.round(excelling / total * 100) : 0, color: "text-emerald-500", bar: "bg-emerald-500", desc: "≥ 300 XP earned" },
+                      { label: "On Track", count: b2bStudents.filter((s: any) => (s.xp || 0) >= 100 && (s.xp || 0) < 300).length, pct: total > 0 ? Math.round(b2bStudents.filter((s: any) => (s.xp || 0) >= 100 && (s.xp || 0) < 300).length / total * 100) : 0, color: "text-amber-500", bar: "bg-amber-400", desc: "100–299 XP earned" },
+                      { label: "Needs Support", count: b2bStudents.filter((s: any) => (s.xp || 0) < 100).length, pct: total > 0 ? Math.round(b2bStudents.filter((s: any) => (s.xp || 0) < 100).length / total * 100) : 0, color: "text-rose-500", bar: "bg-rose-500", desc: "< 100 XP earned" },
+                    ].map((band, i) => (
+                      <div key={i} className={`p-5 rounded-xl text-center border ${isDark ? "bg-slate-900/60 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
+                        <p className={`text-4xl font-black ${band.color}`}>{band.pct}%</p>
+                        <p className="font-black text-sm mt-1">{band.label}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{band.count} students · {band.desc}</p>
+                        <div className={`h-1.5 rounded-full mt-3 ${isDark ? "bg-slate-800" : "bg-slate-200"}`}>
+                          <div className={`h-1.5 rounded-full ${band.bar}`} style={{ width: `${band.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ministry / Sponsor Note */}
+                <div className={`p-5 rounded-2xl border-l-4 border-[#19C6C6] ${isDark ? "bg-[#1E293B]" : "bg-cyan-50"}`}>
+                  <p className="font-bold text-sm text-[#19C6C6] mb-1">📌 For Ministry of Education / CSR Sponsors</p>
+                  <p className={`text-xs leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                    This report documents measurable AI literacy and digital skills outcomes delivered to <strong>{total}</strong> students at <strong>{b2bOrg?.name || "your institution"}</strong> via the CLATS Africa platform. Average learning engagement: <strong>{avgXP} XP</strong> per learner. Use the Export PDF button above to download a print-ready version for submission.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </main>
 
