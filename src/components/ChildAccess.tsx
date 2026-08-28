@@ -178,8 +178,8 @@ export const ChildLoginScreen: React.FC<ChildLoginScreenProps> = ({
         const child: Child = {
           id: data.student.id,
           name: data.student.name,
-          username: data.student.student_id || data.student.id,
-          ageGroup: data.student.ageGroup || "young",
+          username: data.student.studentId || data.student.id,
+          ageGroup: data.student.ageGroup || "young innovators",
           avatar: data.student.avatar || "👦🏾",
           pin: studentPin,
           interests: data.student.interests || [],
@@ -188,9 +188,11 @@ export const ChildLoginScreen: React.FC<ChildLoginScreenProps> = ({
           createdAt: data.student.createdAt || Date.now(),
           streak: data.student.streak || 0,
           xp: data.student.xp || 0,
-          stars: {},
-          quizResults: {},
+          stars: data.student.stars || {},
+          quizResults: data.student.quizResults || {},
           companion: data.student.companion || "kobe",
+          isB2B: true,
+          orgId: data.student.orgId,
         };
         onLoginSuccess(child);
       } else {
@@ -353,6 +355,7 @@ export const ChildLoginScreen: React.FC<ChildLoginScreenProps> = ({
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
+                  <ClatsAvatar avatarData={child.avatar} size={48} className="rounded-full shadow-sm" style={{ border: `2px solid ${isDark ? "#334155" : "#E2E8F0"}` }} />
                   <span style={{ fontFamily: F.display, fontSize: 15, fontWeight: 900, color: isDark ? "#FFF" : "#1E293B" }}>
                     {child.name}
                   </span>

@@ -41,13 +41,21 @@ export async function POST(req: NextRequest) {
 
     const childId = `b2b-${org_id}-${student_id}-${Date.now()}`;
 
+    // Normalize age_group to full app format
+    function normalizeAge(raw: string): string {
+      const v = (raw || "").toLowerCase();
+      if (v === "early explorers" || v === "early") return "early explorers";
+      if (v === "future builders" || v === "future") return "future builders";
+      return "young innovators";
+    }
+
     const { data: child, error } = await sb
       .from("clats_children")
       .insert({
         id: childId,
         parent_email: parent_email || `b2b-coord-${org_id}@clats.local`,
         name: name.trim(),
-        age_group: age_group || "young",
+        age_group: normalizeAge(age_group),
         avatar: avatar || ["👦🏾", "👧🏽", "🧑🏿", "👩🏾", "👦🏽", "👧🏾"][Math.floor(Math.random() * 6)],
         pin,
         org_id,

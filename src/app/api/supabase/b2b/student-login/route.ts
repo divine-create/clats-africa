@@ -8,6 +8,14 @@ const getSB = () => {
   return createClient(url, key, { auth: { persistSession: false } });
 };
 
+/** Normalize short age_group values to full app AgeGroup type */
+function normalizeAgeGroup(raw: string): "early explorers" | "young innovators" | "future builders" {
+  const v = (raw || "").toLowerCase();
+  if (v === "early explorers" || v === "early") return "early explorers";
+  if (v === "future builders" || v === "future") return "future builders";
+  return "young innovators"; // default
+}
+
 /**
  * POST /api/supabase/b2b/student-login
  * Authenticates a student using: schoolCode + studentId (4-digit) + pin
@@ -41,7 +49,11 @@ export async function POST(req: NextRequest) {
     const orgId = keyRow.org_id;
 
     // 2. Find the student scoped to the org + student_id + pin
-    const { data: student, error: stuErr } = await sb
+    // Try exact student_id match first, then with zero-padding
+    let student: any = null;
+    let stuErr: any = null;
+
+    const { data: s1, error: e1 } = await sb
       .from("clats_children")
       .select("*")
       .eq("org_id", orgId)
@@ -49,9 +61,24 @@ export async function POST(req: NextRequest) {
       .eq("pin", pin.trim())
       .maybeSingle();
 
+    if (e1) { stuErr = e1; } else { student = s1; }
+
+    // Also try without padding in case it was stored differently
+    if (!student && !stuErr) {
+      const { data: s2, error: e2 } = await sb
+        .from("clats_children")
+        .select("*")
+        .eq("org_id", orgId)
+        .eq("student_id", studentId.toString())
+        .eq("pin", pin.trim())
+        .maybeSingle();
+      if (e2) stuErr = e2;
+      else student = s2;
+    }
+
     if (stuErr) throw new Error(stuErr.message);
     if (!student) {
-      return NextResponse.json({ ok: false, msg: "Student not found. Check your ID and PIN." }, { status: 401 });
+      return NextResponse.json({ ok: false, msg: "Student not found. Check your Student ID and PIN." }, { status: 401 });
     }
 
     return NextResponse.json({
@@ -60,14 +87,18 @@ export async function POST(req: NextRequest) {
         id: student.id,
         name: student.name,
         studentId: student.student_id,
-        ageGroup: student.age_group,
+        ageGroup: normalizeAgeGroup(student.age_group),
         avatar: student.avatar,
         xp: student.xp || 0,
-        completedLessons: student.completed_lessons || {},
+        completed: student.completed || student.completed_lessons || {},
+        completedLessons: student.completed_lessons || student.completed || {},
         interests: student.interests || [],
         companion: student.companion || "kobe",
         parentEmail: student.parent_email,
         orgId: student.org_id,
+        stars: student.stars || {},
+        quizResults: student.quiz_results || {},
+        streak: student.streak_count || 0,
       }
     });
 
