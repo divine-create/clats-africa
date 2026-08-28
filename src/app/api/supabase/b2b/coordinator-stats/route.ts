@@ -46,7 +46,10 @@ export async function GET(req: NextRequest) {
     if (kidsErr) throw new Error(kidsErr.message);
 
     const students = (kids || []).map(k => {
-      const completedCount = k.completed_lessons ? Object.keys(k.completed_lessons).length : 0;
+      // The frontend uses `completed` (Record<string, boolean>) mostly, but some legacy logic might use `completed_lessons`. We merge them.
+      const completedMap = { ...(k.completed_lessons || {}), ...(k.completed || {}) };
+      const completedCount = Object.keys(completedMap).length;
+      
       let status = "Active";
       if (completedCount >= 10) status = "Excelling";
       else if (completedCount < 2) status = "Needs Support";

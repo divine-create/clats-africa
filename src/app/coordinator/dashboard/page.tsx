@@ -45,15 +45,34 @@ export default function CoordinatorDashboardPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!parent) {
+    // Check if there is a session stored in localStorage to prevent premature redirect
+    const sessStr = typeof window !== 'undefined' ? localStorage.getItem('clats_sess_v1') : null;
+    let hasSession = false;
+    let isB2BSession = false;
+
+    if (sessStr) {
+      try {
+        const sess = JSON.parse(sessStr);
+        if (sess?.email) {
+          hasSession = true;
+          isB2BSession = !!sess.isB2B;
+        }
+      } catch (e) {}
+    }
+
+    if (!parent && !hasSession) {
       router.push('/coordinator/login');
       return;
     }
-    if (!parent.isB2B) {
+
+    if (parent && !parent.isB2B) {
       router.push('/dashboard');
       return;
     }
-    setMounted(true);
+
+    if (parent && parent.isB2B) {
+      setMounted(true);
+    }
   }, [parent, router]);
 
   const handleLogout = () => {
