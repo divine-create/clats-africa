@@ -48,7 +48,23 @@ export async function POST(req: Request) {
 
     // 4. Prepare data for the AI prompt
     const completedKeys = Object.keys(child.completed_lessons || {});
-    const recentCompleted = completedKeys.slice(-3).join(", ");
+    let recentCompletedTitles: string[] = [];
+    
+    if (completedKeys.length > 0) {
+      // Fetch human-readable lesson titles from the database
+      const { data: lessons } = await supabase
+        .from("lessons")
+        .select("id, title, title_en")
+        .in("id", completedKeys.slice(-5));
+        
+      if (lessons && lessons.length > 0) {
+        recentCompletedTitles = lessons.map(l => l.title || l.title_en || l.id);
+      } else {
+        recentCompletedTitles = completedKeys.slice(-3); // fallback
+      }
+    }
+
+    const recentCompleted = recentCompletedTitles.join(", ");
     
     const quizResults = child.quiz_results || {};
     const quizKeys = Object.keys(quizResults);
@@ -58,10 +74,23 @@ export async function POST(req: Request) {
 
     if (quizKeys.length > 0) {
       quizAverage = Math.round(quizKeys.reduce((a: any, k: any) => a + (quizResults[k]?.score || 0), 0) / quizKeys.length);
+      
+      // Fetch human-readable quiz titles from the database
+      const { data: quizzes } = await supabase
+        .from("quizzes")
+        .select("id, title, title_en, module_id")
+        .in("id", quizKeys);
+        
+      const quizMap = new Map();
+      if (quizzes) {
+        quizzes.forEach(q => quizMap.set(q.id, q.title || q.title_en || q.module_id || q.id));
+      }
+
       quizKeys.forEach((k: any) => {
         const q = quizResults[k];
-        if (q.score < 70 || q.attempts > 2) strugglingTopics.push(k);
-        else if (q.score >= 90) strongTopics.push(k);
+        const topicName = quizMap.get(k) || k;
+        if (q.score < 70 || q.attempts > 2) strugglingTopics.push(topicName);
+        else if (q.score >= 90) strongTopics.push(topicName);
       });
     }
 
