@@ -111,6 +111,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [showPaywall, setShowPaywall] = useState<Child | null>(null);
 
+  // AI Insights State
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiInsight, setAiInsight] = useState<any | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("clats_rsvped_events");
@@ -213,6 +218,31 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const generateAiInsight = async () => {
+    if (!child) return;
+    setLoadingAi(true);
+    setShowAiModal(true);
+    setAiInsight(null);
+    try {
+      const res = await fetch("/api/ai/generate-insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ childId: child.id }),
+      });
+      const data = await res.json();
+      if (data.insight) {
+        setAiInsight(data.insight);
+      } else {
+        showToast(data.error || "Failed to generate AI insight");
+        setShowAiModal(false);
+      }
+    } catch (e) {
+      showToast("Network error generating AI insight");
+      setShowAiModal(false);
+    }
+    setLoadingAi(false);
   };
 
   const [activeTab, setActiveTab] = useState<"overview" | "refer">("overview");
@@ -1429,6 +1459,20 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               </button>
 
               <button
+                onClick={generateAiInsight}
+                className={`w-full p-4 rounded-xl border flex items-center justify-between text-base font-semibold hover:translate-x-1.5 transition-all text-left ${
+                  isDark 
+                    ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:border-indigo-500/50" 
+                    : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span>✨</span> Generate AI Progress Analysis
+                </span>
+                <ChevronRight size={18} className="text-indigo-400" />
+              </button>
+
+              <button
                 onClick={async () => {
                   if (!child) {
                     showToast("Please select a child first.");
@@ -1803,6 +1847,66 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                   <Calendar size={18} />
                   <span>Add to Calendar</span>
                 </button>
+              )}
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+      {showAiModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => !loadingAi && setShowAiModal(false)} />
+          <div className={`relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col ${isDark ? "bg-[#111827] border border-slate-800" : "bg-white"}`}>
+            
+            <div className={`p-6 border-b flex items-center justify-between ${isDark ? "border-slate-800 bg-indigo-500/10" : "border-indigo-100 bg-indigo-50"}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-inner ${isDark ? "bg-indigo-900/50" : "bg-white"}`}>✨</div>
+                <div>
+                  <h3 className={`font-black text-lg m-0 ${isDark ? "text-indigo-300" : "text-indigo-700"}`}>AI Progress Analysis</h3>
+                  <p className={`text-xs font-semibold m-0 ${isDark ? "text-indigo-400/60" : "text-indigo-500/70"}`}>Powered by Meta Llama 3</p>
+                </div>
+              </div>
+              {!loadingAi && (
+                <button onClick={() => setShowAiModal(false)} className={`p-2 rounded-full transition-colors ${isDark ? "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="p-6">
+              {loadingAi ? (
+                <div className="py-12 flex flex-col items-center justify-center space-y-6">
+                  <div className="relative w-16 h-16">
+                    <div className="absolute inset-0 border-4 border-indigo-200 dark:border-indigo-900 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">🤖</div>
+                  </div>
+                  <p className={`text-sm font-semibold animate-pulse ${isDark ? "text-slate-400" : "text-slate-500"}`}>Analyzing {child?.name}'s progress data...</p>
+                </div>
+              ) : aiInsight ? (
+                <div className="space-y-6">
+                  <div className={`p-4 rounded-xl ${isDark ? "bg-slate-900" : "bg-slate-50"}`}>
+                    <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Weekly Summary</h4>
+                    <p className={`text-sm leading-relaxed ${isDark ? "text-slate-200" : "text-slate-700"}`}>{aiInsight.summary}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className={`p-4 rounded-xl border ${isDark ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-200"}`}>
+                      <h4 className="text-xs uppercase tracking-wider font-bold text-green-500 mb-2">Top Strength 🌟</h4>
+                      <p className={`text-sm leading-relaxed ${isDark ? "text-green-200" : "text-green-800"}`}>{aiInsight.strength}</p>
+                    </div>
+                    <div className={`p-4 rounded-xl border ${isDark ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50 border-amber-200"}`}>
+                      <h4 className="text-xs uppercase tracking-wider font-bold text-amber-500 mb-2">Focus Area 🎯</h4>
+                      <p className={`text-sm leading-relaxed ${isDark ? "text-amber-200" : "text-amber-800"}`}>{aiInsight.focusArea}</p>
+                    </div>
+                  </div>
+                  <div className={`p-4 rounded-xl border ${isDark ? "bg-indigo-500/10 border-indigo-500/20" : "bg-indigo-50 border-indigo-200"}`}>
+                    <h4 className="text-xs uppercase tracking-wider font-bold text-indigo-500 mb-2">Action For Parents 💬</h4>
+                    <p className={`text-sm leading-relaxed font-semibold ${isDark ? "text-indigo-200" : "text-indigo-900"}`}>"{aiInsight.parentAction}"</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-red-500">Failed to load insight.</div>
               )}
             </div>
             

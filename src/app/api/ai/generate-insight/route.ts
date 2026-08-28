@@ -1,0 +1,124 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase admin client to update the child table
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY! || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export async function POST(req: Request) {
+  try {
+    const { childId } = await req.json();
+
+    if (!childId) {
+      return NextResponse.json({ error: "Child ID is required" }, { status: 400 });
+    }
+
+    // 1. Fetch the child data from Supabase
+    const { data: child, error } = await supabase
+      .from("clats_children")
+      .select("*")
+      .eq("id", childId)
+      .single();
+
+    if (error || !child) {
+      return NextResponse.json({ error: "Child not found" }, { status: 404 });
+    }
+
+    // 2. Check cache: If insight was generated less than 3 days ago, return it
+    if (child.ai_insight && child.ai_insight_generated_at) {
+      const generatedAt = new Date(child.ai_insight_generated_at);
+      const daysSince = (new Date().getTime() - generatedAt.getTime()) / (1000 * 3600 * 24);
+      
+      if (daysSince < 3) {
+        return NextResponse.json({ insight: child.ai_insight, cached: true });
+      }
+    }
+
+    // 3. Prepare data for the AI prompt
+    const completedCount = Object.keys(child.completed_lessons || {}).length;
+    const quizResults = child.quiz_results || {};
+    const quizKeys = Object.keys(quizResults);
+    
+    let quizAverage = 0;
+    if (quizKeys.length > 0) {
+      quizAverage = Math.round(quizKeys.reduce((a: any, k: any) => a + (quizResults[k]?.score || 0), 0) / quizKeys.length);
+    }
+
+    const systemPrompt = `You are an expert child educator and AI assistant for the CLATS platform.
+Your job is to analyze a childs learning data and provide a personalized, encouraging progress report for their parent.
+
+Child Name: ${child.name}
+Age Group: ${child.age_group}
+Interests: ${child.interests?.join(", ") || "technology"}
+Lessons Completed: ${completedCount}
+Quiz Average: ${quizAverage}%
+Current XP: ${child.xp}
+Current Streak: ${child.streak_count} days
+
+Based on this data, provide a JSON response with exactly these 4 keys:
+{
+  "summary": "A 2-sentence positive summary of their overall progress.",
+  "strength": "1 sentence highlighting what they are doing best.",
+  "focusArea": "1 sentence on what they should focus on next (be gentle).",
+  "parentAction": "A specific 1-sentence conversation starter or action for the parent to do with the child today."
+}
+Return ONLY valid JSON. No markdown formatting, no extra text.`;
+
+    // 4. Call Groq API (Meta Llama 3.1)
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (!groqApiKey) {
+      return NextResponse.json({ error: "GROQ_API_KEY not configured in .env.local" }, { status: 500 });
+    }
+
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${groqApiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Analyze the childs data and provide the JSON." }
+        ],
+        temperature: 0.7,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("Groq API Error:", errText);
+      return NextResponse.json({ error: "Failed to generate AI insight" }, { status: 500 });
+    }
+
+    const aiData = await aiResponse.json();
+    let insightJson;
+    try {
+      insightJson = JSON.parse(aiData.choices[0].message.content);
+    } catch (e) {
+      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
+    }
+
+    // 5. Save the insight back to the database
+    const { error: updateError } = await supabase
+      .from("clats_children")
+      .update({ 
+        ai_insight: insightJson,
+        ai_insight_generated_at: new Date().toISOString()
+      })
+      .eq("id", childId);
+
+    if (updateError) {
+      console.error("Failed to cache AI insight in DB:", updateError);
+    }
+
+    return NextResponse.json({ insight: insightJson, cached: false });
+
+  } catch (error: any) {
+    console.error("AI Route Error:", error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+  }
+}
