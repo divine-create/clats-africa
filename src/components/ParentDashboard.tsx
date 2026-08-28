@@ -1430,23 +1430,28 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               <button
                 onClick={async () => {
-                  if (parent && parent.email) {
-                    showToast("Generating your beautifully designed progress report...");
-                    const fresh = await pullParentFromSupabase(parent.email);
-                    if (fresh) {
-                      downloadProgressReportImage(fresh);
-                    } else {
-                      downloadProgressReportImage(parent);
-                    }
-                  } else {
-                    downloadProgressReportImage(parent);
+                  if (!child) {
+                    showToast("Please select a child first.");
+                    return;
                   }
+                  showToast(`Generating report for ${child.name}...`);
+                  // Get the freshest child data from Supabase if available
+                  let freshChild = child;
+                  if (parent?.email) {
+                    try {
+                      const fresh = await pullParentFromSupabase(parent.email);
+                      if (fresh) {
+                        freshChild = fresh.children?.find((c: any) => c.id === child.id) || child;
+                      }
+                    } catch {}
+                  }
+                  downloadProgressReportImage(parent, freshChild);
                 }}
                 className={`w-full p-4 rounded-xl border flex items-center justify-between text-base font-semibold hover:translate-x-1.5 transition-all text-left ${
                   isDark ? "bg-slate-950 border-slate-850 text-slate-300 hover:border-slate-700" : "bg-slate-50 border-slate-150 text-slate-800 hover:bg-slate-100"
                 }`}
               >
-                <span className="flex items-center gap-2">🖼️ Download Progress Report (Image)</span>
+                <span className="flex items-center gap-2">🖼️ Download {child?.name ? `${child.name}'s` : ""} Report</span>
                 <ChevronRight size={18} className="text-slate-400" />
               </button>
 

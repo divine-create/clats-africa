@@ -26,15 +26,17 @@ function getActiveAcademyLabel(child: Child): string {
 
 interface ProgressReportImageProps {
   parent: Parent;
-  childSessionsMap: Record<string, any[]>;
-  onReady?: () => void;
+  child: Child;
+  sessions: any[];
+  logoBase64?: string;
 }
 
 export const ProgressReportImage: React.FC<ProgressReportImageProps> = ({
   parent,
-  childSessionsMap,
+  child,
+  sessions,
+  logoBase64,
 }) => {
-  const children = parent.children || [];
   const liveDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -42,7 +44,7 @@ export const ProgressReportImage: React.FC<ProgressReportImageProps> = ({
   });
 
   // ── Empty state ────────────────────────────────────────────────────────────
-  if (children.length === 0) {
+  if (!child) {
     return (
       <div
         id="clats-report-capture"
@@ -84,19 +86,16 @@ export const ProgressReportImage: React.FC<ProgressReportImageProps> = ({
     );
   }
 
-  // ── Per-child pages ────────────────────────────────────────────────────────
+  // ── Single child report ──────────────────────────────────────────────────
   return (
     <div id="clats-report-capture" style={{ fontFamily: "'Montserrat', 'Helvetica Neue', Arial, sans-serif", width: 800 }}>
-      {children.map((child, index) => (
-        <ChildReport
-          key={child.id}
-          child={child}
-          parent={parent}
-          sessions={childSessionsMap[child.id] || []}
-          liveDate={liveDate}
-          isLast={index === children.length - 1}
-        />
-      ))}
+      <ChildReport
+        child={child}
+        parent={parent}
+        sessions={sessions}
+        liveDate={liveDate}
+        logoBase64={logoBase64}
+      />
     </div>
   );
 };
@@ -107,10 +106,10 @@ interface ChildReportProps {
   parent: Parent;
   sessions: any[];
   liveDate: string;
-  isLast: boolean;
+  logoBase64?: string;
 }
 
-function ChildReport({ child, parent, sessions, liveDate, isLast }: ChildReportProps) {
+function ChildReport({ child, parent, sessions, liveDate, logoBase64 }: ChildReportProps) {
   const studyStats = calculateStudyAnalytics(sessions);
   const completedCount = Object.keys(child.completed || {}).length;
   const activeAcademy = getActiveAcademyLabel(child);
@@ -165,7 +164,6 @@ function ChildReport({ child, parent, sessions, liveDate, isLast }: ChildReportP
       style={{
         backgroundColor: '#E3F5F6',
         padding: 48,
-        borderBottom: isLast ? 'none' : '6px dashed rgba(31,158,173,0.25)',
         position: 'relative',
       }}
     >
@@ -184,10 +182,14 @@ function ChildReport({ child, parent, sessions, liveDate, isLast }: ChildReportP
         </div>
         {/* Logo block */}
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-          <div style={{ background: '#13222B', borderRadius: 14, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 20 }}>🤖</span>
-            <span style={{ fontWeight: 900, fontSize: 18, color: '#2EC4B6', letterSpacing: 1 }}>CLATS</span>
-          </div>
+          {logoBase64 ? (
+            <img src={logoBase64} alt="CLATS Logo" style={{ height: 38 }} />
+          ) : (
+            <div style={{ background: '#13222B', borderRadius: 14, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🤖</span>
+              <span style={{ fontWeight: 900, fontSize: 18, color: '#2EC4B6', letterSpacing: 1 }}>CLATS</span>
+            </div>
+          )}
           <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>{liveDate}</div>
         </div>
       </div>
@@ -358,13 +360,13 @@ function ChildReport({ child, parent, sessions, liveDate, isLast }: ChildReportP
       </div>
 
       {/* Footer */}
-      <Footer liveDate={liveDate} childName={child.name} />
+      <Footer liveDate={liveDate} childName={child.name} logoBase64={logoBase64} />
     </div>
   );
 }
 
 // ── Shared footer ─────────────────────────────────────────────────────────────
-function Footer({ liveDate, childName }: { liveDate: string; childName?: string }) {
+function Footer({ liveDate, childName, logoBase64 }: { liveDate: string; childName?: string, logoBase64?: string }) {
   return (
     <div
       style={{
@@ -378,9 +380,13 @@ function Footer({ liveDate, childName }: { liveDate: string; childName?: string 
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ background: '#1F9EAD', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 22 }}>🤖</span>
-        </div>
+        {logoBase64 ? (
+          <img src={logoBase64} alt="Logo" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+        ) : (
+          <div style={{ background: '#1F9EAD', borderRadius: 10, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 22 }}>🤖</span>
+          </div>
+        )}
         <div>
           <div style={{ fontWeight: 800, fontSize: 13, color: '#fff' }}>Building Tomorrow's Tech Minds Today!</div>
           <div style={{ color: '#2EC4B6', fontSize: 11, fontWeight: 600 }}>admin@clats.org  |  www.clats.io</div>

@@ -588,7 +588,7 @@ export async function downloadCertificateImage(certName: string) {
 // Renders a beautifully styled HTML report card in a hidden off-screen container,
 // captures it with html2canvas at 2x resolution, then downloads as a PNG image.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function downloadProgressReportImage(parent: Parent) {
+export async function downloadProgressReportImage(parent: Parent, selectedChild: Child) {
   try {
     const [{ createRoot }, { ProgressReportImage }, html2canvasMod] = await Promise.all([
       import("react-dom/client"),
@@ -598,23 +598,33 @@ export async function downloadProgressReportImage(parent: Parent) {
     const html2canvas = html2canvasMod.default;
     const React = (await import("react")).default;
 
-    const children = parent.children || [];
+    // Fetch sessions only for the selected child
+    let sessions: any[] = [];
+    try {
+      const res = await fetch(`/api/supabase/sessions/child/${selectedChild.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        sessions = data.sessions || [];
+      }
+    } catch {
+      sessions = [];
+    }
 
-    // Fetch sessions for each child
-    const childSessionsMap: Record<string, any[]> = {};
-    await Promise.all(
-      children.map(async (child: Child) => {
-        try {
-          const res = await fetch(`/api/supabase/sessions/child/${child.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            childSessionsMap[child.id] = data.sessions || [];
-          }
-        } catch {
-          childSessionsMap[child.id] = [];
-        }
-      })
-    );
+    // Fetch logo as base64 so html2canvas renders it reliably without CORS/loading issues
+    let logoBase64 = "";
+    try {
+      const resp = await fetch("/logo-3.png");
+      if (resp.ok) {
+        const blob = await resp.blob();
+        logoBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to fetch logo for report", e);
+    }
 
     // Create an off-screen container and render the report component into it
     const container = document.createElement("div");
@@ -631,12 +641,13 @@ export async function downloadProgressReportImage(parent: Parent) {
       root.render(
         React.createElement(ProgressReportImage, {
           parent,
-          childSessionsMap,
-          onReady: resolve,
+          child: selectedChild,
+          sessions,
+          logoBase64,
         })
       );
-      // Give the DOM time to paint
-      setTimeout(resolve, 800);
+      // Give the DOM time to paint fully, including fonts/images
+      setTimeout(resolve, 1500);
     });
 
     const element = container.querySelector("#clats-report-capture") as HTMLElement;
@@ -657,8 +668,8 @@ export async function downloadProgressReportImage(parent: Parent) {
 
     const imgData = canvas.toDataURL("image/png");
     const link = document.createElement("a");
-    const safeName = parent.name.replace(/[^a-zA-Z0-9]/g, "_");
-    link.download = `CLATS_Progress_Report_${safeName}.png`;
+    const safeName = selectedChild.name.replace(/[^a-zA-Z0-9]/g, "_");
+    link.download = `CLATS_Report_${safeName}.png`;
     link.href = imgData;
     link.click();
 
@@ -666,8 +677,6 @@ export async function downloadProgressReportImage(parent: Parent) {
     document.body.removeChild(container);
   } catch (error) {
     console.error("Error generating progress report image:", error);
-    // Fallback to original PDF generator
-    const { downloadProgressReport } = await import("./pdfGenerator");
-    await downloadProgressReport(parent);
+    alert("Could not generate the image report. Please try again.");
   }
 }
