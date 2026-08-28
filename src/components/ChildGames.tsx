@@ -11,6 +11,7 @@ import { useLearningTimeTracker } from "../utils/timeTracker";
 import { Heading, Txt, Chip } from "./Primitives";
 import { MascotImage } from "./Onboarding";
 import { SmartCityBuilder } from "./games/SmartCityBuilder";
+import { PhishingSwipe } from "./games/PhishingSwipe";
 
 interface ChildGamesProps {
   child: Child;
@@ -156,6 +157,17 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
   ];
 
   const cyberGames: Game[] = [
+    {
+      id: "phishing-swipe",
+      name: "Phishing Swipe",
+      desc: "Spot the scams! Swipe left on viruses, right on safe messages.",
+      difficulty: "Intermediate",
+      xpAward: 100,
+      status: "Available",
+      supportsModule: "🔒 Digital Safety",
+      supportsLesson: "Phishing & Scams",
+      icon: "🎣"
+    },
     {
       id: "password-builder",
       name: "Password Builder",
@@ -1035,6 +1047,33 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
       {/* 6. GENUINE INTERACTIVE QUESTS MODAL SCREEN */}
       {activeGameModal && !isGameCompleted && (() => {
         const gameId = activeGameModal;
+        if (gameId === "phishing-swipe") {
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(15, 23, 42, 0.8)",
+                backdropFilter: "blur(4px)",
+                zIndex: 10000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16
+              }}
+            >
+              <PhishingSwipe
+                onBack={() => {
+                  sfx.playTap();
+                  setActiveGameModal(null);
+                }}
+              />
+            </div>
+          );
+        }
 
         if (gameId === "smart-city-builder") {
           return (
