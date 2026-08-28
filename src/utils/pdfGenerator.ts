@@ -583,4 +583,91 @@ export async function downloadCertificateImage(certName: string) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PROGRESS REPORT IMAGE GENERATOR
+// Renders a beautifully styled HTML report card in a hidden off-screen container,
+// captures it with html2canvas at 2x resolution, then downloads as a PNG image.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function downloadProgressReportImage(parent: Parent) {
+  try {
+    const [{ createRoot }, { ProgressReportImage }, html2canvasMod] = await Promise.all([
+      import("react-dom/client"),
+      import("../components/ProgressReportImage"),
+      import("html2canvas"),
+    ]);
+    const html2canvas = html2canvasMod.default;
+    const React = (await import("react")).default;
 
+    const children = parent.children || [];
+
+    // Fetch sessions for each child
+    const childSessionsMap: Record<string, any[]> = {};
+    await Promise.all(
+      children.map(async (child: Child) => {
+        try {
+          const res = await fetch(`/api/supabase/sessions/child/${child.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            childSessionsMap[child.id] = data.sessions || [];
+          }
+        } catch {
+          childSessionsMap[child.id] = [];
+        }
+      })
+    );
+
+    // Create an off-screen container and render the report component into it
+    const container = document.createElement("div");
+    container.style.position = "fixed";
+    container.style.top = "-9999px";
+    container.style.left = "-9999px";
+    container.style.zIndex = "-1";
+    container.style.width = "800px";
+    container.style.fontFamily = "'Montserrat', 'Helvetica Neue', Arial, sans-serif";
+    document.body.appendChild(container);
+
+    const root = createRoot(container);
+    await new Promise<void>((resolve) => {
+      root.render(
+        React.createElement(ProgressReportImage, {
+          parent,
+          childSessionsMap,
+          onReady: resolve,
+        })
+      );
+      // Give the DOM time to paint
+      setTimeout(resolve, 800);
+    });
+
+    const element = container.querySelector("#clats-report-capture") as HTMLElement;
+    if (!element) {
+      console.error("Report element not found");
+      root.unmount();
+      document.body.removeChild(container);
+      return;
+    }
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#E3F5F6",
+      windowWidth: 900,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    const safeName = parent.name.replace(/[^a-zA-Z0-9]/g, "_");
+    link.download = `CLATS_Progress_Report_${safeName}.png`;
+    link.href = imgData;
+    link.click();
+
+    root.unmount();
+    document.body.removeChild(container);
+  } catch (error) {
+    console.error("Error generating progress report image:", error);
+    // Fallback to original PDF generator
+    const { downloadProgressReport } = await import("./pdfGenerator");
+    await downloadProgressReport(parent);
+  }
+}

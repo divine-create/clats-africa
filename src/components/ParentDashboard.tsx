@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Parent, Child, Language } from "../types";
-import { downloadProgressReport } from "../utils/pdfGenerator";
+import { downloadProgressReportImage } from "../utils/pdfGenerator";
 import {
   C,
   F,
@@ -1431,22 +1431,22 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               <button
                 onClick={async () => {
                   if (parent && parent.email) {
-                    showToast("Retrieving latest learning progress from Cloud database...");
+                    showToast("Generating your beautifully designed progress report...");
                     const fresh = await pullParentFromSupabase(parent.email);
                     if (fresh) {
-                      downloadProgressReport(fresh);
+                      downloadProgressReportImage(fresh);
                     } else {
-                      downloadProgressReport(parent);
+                      downloadProgressReportImage(parent);
                     }
                   } else {
-                    downloadProgressReport(parent);
+                    downloadProgressReportImage(parent);
                   }
                 }}
                 className={`w-full p-4 rounded-xl border flex items-center justify-between text-base font-semibold hover:translate-x-1.5 transition-all text-left ${
                   isDark ? "bg-slate-950 border-slate-850 text-slate-300 hover:border-slate-700" : "bg-slate-50 border-slate-150 text-slate-800 hover:bg-slate-100"
                 }`}
               >
-                <span className="flex items-center gap-2">📊 Download PDF Progress Report</span>
+                <span className="flex items-center gap-2">🖼️ Download Progress Report (Image)</span>
                 <ChevronRight size={18} className="text-slate-400" />
               </button>
 
