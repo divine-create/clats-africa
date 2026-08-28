@@ -116,15 +116,69 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   const course = CURRICULUM[child.ageGroup] || CURRICULUM["young innovators"];
   const modules = course ? course.modules : [];
   
+  // Build pathway → modules map from the DB cache if available
+  const pathways: { id: string; title: string; modules: any[] }[] = (() => {
+    if (typeof window !== "undefined") {
+      const cache = (window as any).__supabaseCurriculumData;
+      if (cache && Array.isArray(cache.pathways) && Array.isArray(cache.modules)) {
+        const ageKey = child.ageGroup;
+        const mapKeyShort = ageKey === "early explorers" ? "early" : ageKey === "young innovators" ? "young" : "future";
+        const groupPathways = cache.pathways.filter((p: any) =>
+          p.age_group === mapKeyShort || p.age_group === ageKey
+        );
+        return groupPathways.map((p: any) => {
+          const pathwayModules = (cache.modules || []).filter((m: any) => m.pathway_id === p.id);
+          const allLessons = pathwayModules.flatMap((m: any) =>
+            (cache.lessons || []).filter((l: any) => l.module_id === m.id && l.status !== "draft")
+          );
+          return {
+            id: p.id,
+            title: typeof p.title === "string" ? p.title : (p.title?.en || "Curriculum"),
+            modules: pathwayModules,
+            lessons: allLessons
+          };
+        });
+      }
+    }
+    // Fallback: group modules by their academy prefix (t-a1, t-a2, etc.)
+    const academyMap: Record<string, { title: string; modules: any[] }> = {};
+    for (const mod of modules) {
+      // module id format: {prefix}-a{N}m{N}, extract academy key e.g. "t-a1"
+      const match = mod.id?.match(/^([a-z]-a\d+)/);
+      const acadKey = match ? match[1] : mod.id;
+      if (!academyMap[acadKey]) {
+        // Derive academy name from the first module's name
+        const modName: string = mod.name?.en || "";
+        const acadNames: Record<string, string> = {
+          "t-a1": "AI & Emerging Technologies", "t-a2": "Digital Citizenship & Cybersecurity",
+          "t-a3": "Design & Creation", "t-a4": "Adaptability & Lifelong Learning",
+          "j-a1": "AI & Emerging Technologies", "j-a2": "Digital Citizenship & Cybersecurity",
+          "j-a3": "Design & Creation", "j-a4": "Adaptability & Lifelong Learning",
+          "p-a1": "AI & Emerging Technologies", "p-a2": "Digital Citizenship & Cybersecurity",
+          "p-a3": "Design & Creation", "p-a4": "Innovation & Career Readiness",
+          "p-a5": "Adaptability & Lifelong Learning"
+        };
+        academyMap[acadKey] = { title: acadNames[acadKey] || modName, modules: [] };
+      }
+      academyMap[acadKey].modules.push(mod);
+    }
+    return Object.entries(academyMap).map(([id, val]) => ({
+      id,
+      title: val.title,
+      modules: val.modules,
+      lessons: val.modules.flatMap((m: any) => m.lessons || [])
+    }));
+  })();
+
   // Cast Quiz results for TS
   const quizResults = (child.quizResults || {}) as Record<string, any>;
   const hasQuizChampion = Object.values(quizResults).some((r: any) => r && r.score === r.totalQuestions && r.totalQuestions > 0);
 
   // Track AI module progress
   const aiModule = modules[0];
-  const completedAiLessonsCount = aiModule ? aiModule.lessons.filter(l => completed[l.id]).length : 0;
+  const completedAiLessonsCount = aiModule ? aiModule.lessons.filter((l: any) => completed[l.id]).length : 0;
   const totalAiLessonsCount = aiModule ? aiModule.lessons.length : 4;
-  const isAiModuleCompleted = aiModule && aiModule.lessons?.length > 0 ? aiModule.lessons.every(l => completed[l.id]) : false;
+  const isAiModuleCompleted = aiModule && aiModule.lessons?.length > 0 ? aiModule.lessons.every((l: any) => completed[l.id]) : false;
   const aiPct = Math.round((completedAiLessonsCount / totalAiLessonsCount) * 100);
 
   const isNewUser = currentXP === 0 && completedCount === 0;
@@ -202,29 +256,35 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   const earnedBadgesCount = badgesData.filter(b => b.unlocked).length;
 
-  // 6. Dynamic Certificates Map
-  const dynamicCertificates = modules.flatMap((mod: any) => 
-    (mod.lessons || []).map((l: any) => {
-      const title = l.title?.en || l.title || "Lesson";
-      return {
-        id: `cert-les-${l.id}`,
-        name: `${title} Certificate`,
-        desc: `Awarded for successfully completing the ${title}.`,
-        unlocked: !!completed[l.id],
-        requirement: `Complete the ${title} course`,
-        icon: "📜"
-      };
-    })
-  );
+  // 6. Certificates — one per curriculum pathway from the database
+  const dynamicCertificates = pathways.map((pathway: any) => {
+    const allLessons: any[] = pathway.lessons || [];
+    const totalLessons = allLessons.length;
+    const completedLessons = allLessons.filter((l: any) => !!completed[l.id]).length;
+    const isUnlocked = totalLessons > 0 && completedLessons === totalLessons;
+    const progressPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    return {
+      id: `cert-pathway-${pathway.id}`,
+      name: `${pathway.title} Certificate`,
+      desc: `Awarded for completing all lessons in the ${pathway.title} curriculum.`,
+      unlocked: isUnlocked,
+      requirement: `Complete all ${totalLessons} lessons in ${pathway.title}`,
+      progress: progressPct,
+      completedLessons,
+      totalLessons,
+      icon: "🎓"
+    };
+  });
 
   const certificatesData = [
     ...dynamicCertificates,
     {
-      id: "ai-explorer-level",
+      id: "master-explorer",
       name: "Master Explorer Certificate",
       desc: "Acquired a high learning level and earned substantial XP milestones.",
       unlocked: currentXP >= 500,
       requirement: "Earn 500+ XP",
+      progress: Math.min(100, Math.round((currentXP / 500) * 100)),
       icon: "🌟"
     }
   ];
@@ -970,22 +1030,26 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                             ⭐ View & Download Certificate
                           </button>
                         ) : (
-                          <div 
-                            style={{
-                              padding: "9px 12px",
-                              borderRadius: 14,
-                              background: isDark ? "#0f172a" : "#e2e8f0",
-                              color: isDark ? "#475569" : "#64748b",
-                              fontSize: 12,
-                              fontWeight: 800,
-                              textAlign: "center",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 6
-                            }}
-                          >
-                            <Lock size={12} /> Coming Soon (Modules Incomplete)
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {/* Progress bar */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: isDark ? "#64748b" : "#94a3b8" }}>
+                                <Lock size={9} style={{ display: "inline", marginRight: 3 }} />
+                                IN PROGRESS
+                              </span>
+                              <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? "#94a3b8" : "#64748b" }}>
+                                {(cert as any).completedLessons ?? 0}/{(cert as any).totalLessons ?? "?"} lessons
+                              </span>
+                            </div>
+                            <div style={{ background: isDark ? "#1e293b" : "#e2e8f0", borderRadius: 99, height: 6, overflow: "hidden" }}>
+                              <div style={{
+                                height: "100%",
+                                borderRadius: 99,
+                                background: "linear-gradient(90deg, #2EC4B6, #B8A0FF)",
+                                width: `${(cert as any).progress ?? 0}%`,
+                                transition: "width 0.4s ease"
+                              }} />
+                            </div>
                           </div>
                         )}
                       </div>
