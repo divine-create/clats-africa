@@ -83,9 +83,22 @@ export async function POST(req: Request) {
         .select("id, title, title_en, module_id")
         .in("id", quizKeys);
         
+      // Some quiz IDs are actually lesson IDs, so let's also fetch lessons for the quiz keys
+      const { data: quizLessons } = await supabase
+        .from("lessons")
+        .select("id, title, title_en")
+        .in("id", quizKeys);
+        
       const quizMap = new Map();
       if (quizzes) {
         quizzes.forEach(q => quizMap.set(q.id, q.title || q.title_en || q.module_id || q.id));
+      }
+      if (quizLessons) {
+        quizLessons.forEach(l => {
+          if (!quizMap.has(l.id)) {
+             quizMap.set(l.id, l.title || l.title_en || l.id);
+          }
+        });
       }
 
       quizKeys.forEach((k: any) => {
