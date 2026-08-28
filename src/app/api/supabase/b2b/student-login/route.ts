@@ -99,6 +99,9 @@ export async function POST(req: NextRequest) {
         stars: student.stars || {},
         quizResults: student.quiz_results || {},
         streak: student.streak_count || 0,
+        best_streak: student.best_streak || 0,
+        last_active_at: student.last_active_at || null,
+        badges: student.badges || [],
       }
     });
 

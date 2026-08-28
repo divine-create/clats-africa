@@ -86,7 +86,11 @@ export async function POST(req: NextRequest) {
   if (!sb) return NextResponse.json({ ok: false, msg: "Supabase not configured." }, { status: 503 });
 
   try {
-    const { action, studentId, xp, completed, completed_lessons, stars, quiz_results, streak_count, name, pin, ageGroup, avatar } = await req.json();
+    const { 
+      action, studentId, xp, completed, completed_lessons, stars, 
+      quiz_results, streak_count, best_streak, last_active_at, badges,
+      name, pin, ageGroup, avatar 
+    } = await req.json();
 
     if (!studentId) {
       return NextResponse.json({ ok: false, msg: "studentId is required." }, { status: 400 });
@@ -106,8 +110,10 @@ export async function POST(req: NextRequest) {
       
       if (stars !== undefined) updatePayload.stars = stars;
       if (quiz_results !== undefined) updatePayload.quiz_results = quiz_results;
-      // Note: streak_count, best_streak, badges, last_active_at do NOT exist in the clats_children schema.
-      // We only update the existing valid telemetry columns.
+      if (streak_count !== undefined) updatePayload.streak_count = streak_count;
+      if (best_streak !== undefined) updatePayload.best_streak = best_streak;
+      if (last_active_at !== undefined) updatePayload.last_active_at = last_active_at;
+      if (badges !== undefined) updatePayload.badges = badges;
     } else {
       // General profile update
       if (name !== undefined) updatePayload.name = name.trim();

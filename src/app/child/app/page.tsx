@@ -85,6 +85,9 @@ export default function ChildAppPage() {
             stars: updatedChild.stars,
             quiz_results: updatedChild.quizResults,
             streak_count: updatedChild.streak,
+            best_streak: updatedChild.best_streak,
+            last_active_at: updatedChild.last_active_at,
+            badges: updatedChild.badges,
           })
         });
       } catch (e) {
