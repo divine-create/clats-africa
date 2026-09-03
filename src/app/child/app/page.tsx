@@ -47,24 +47,22 @@ export default function ChildAppPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // B2B students login directly — they have activeChild but no parent
-    const isB2BStudent = activeChild && (activeChild as any).isB2B;
-
-    if (!isB2BStudent && !parent) {
-      // Regular user not logged in — send to login
+    if (activeChild) {
+      // A child is logged in -- this covers a parent picking a child from their
+      // dashboard, a B2B student, and a child logging in directly with their own
+      // username + PIN on a device where no parent session exists. ChildApp
+      // itself accepts `parent: Parent | null`, so no parent is required here.
+      setMounted(true);
+      return;
+    }
+    if (parent && !parent.isB2B) {
+      // Parent is logged in but hasn't selected a child yet.
+      router.push('/dashboard');
+    } else {
+      // No child selected, and either no parent session or a B2B parent who
+      // still needs to pick a student.
       router.push('/child/login');
-      return;
     }
-    if (!activeChild) {
-      // Parent is logged in but no child selected
-      if (parent?.isB2B) {
-        router.push('/child/login');
-      } else {
-        router.push('/dashboard');
-      }
-      return;
-    }
-    setMounted(true);
   }, [parent, activeChild, router]);
 
   const handleChildUpdate = (updatedChild: any) => {
@@ -124,7 +122,10 @@ export default function ChildAppPage() {
   const handleExit = () => {
     setActiveChild(null);
     const wasB2B = activeChild && (activeChild as any).isB2B;
-    if (wasB2B || parent?.isB2B) {
+    // A directly-logged-in child (no parent session on this device) has nowhere
+    // to go in the parent dashboard -- send them back to child login, same as a
+    // B2B student, rather than bouncing through /dashboard to /auth/login.
+    if (wasB2B || parent?.isB2B || !parent) {
       router.push('/child/login');
     } else {
       router.push('/dashboard');
