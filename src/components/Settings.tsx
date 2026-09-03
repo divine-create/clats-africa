@@ -64,6 +64,8 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
   const [companion, setCompanion] = useState<"kobe" | "chibi">("kobe");
   const [limitMins, setLimitMins] = useState(30);
   const [err, setErr] = useState("");
+  const [saving, setSaving] = useState(false);
+  const pendingChildRef = React.useRef<any>(null);
 
   const ageGroups = [
     { key: "early explorers" as const, label: "Early Explorers", sub: "Ages 2 - 5", color: C.amber, icon: "🌱" },
@@ -166,38 +168,50 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         S.setSettings(allSettings);
       }
 
-      const newChild: any = {
-        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Date.now().toString().slice(-12),
-        name: name.trim(),
-        username: username.trim().toLowerCase().replace(/\s+/g, '_'),
-        ageGroup,
-        pin,
-        interests,
-        completed: {},
-        xp: 0,
-        stars: {},
-        createdAt: Date.now(),
-        companion: companion || "kobe"
-      };
+      // Keep the same child object (and id) across a retry after a failed sync,
+      // so retrying doesn't push a second local copy with a different random id.
+      if (!pendingChildRef.current) {
+        pendingChildRef.current = {
+          id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Date.now().toString().slice(-12),
+          name: name.trim(),
+          username: username.trim().toLowerCase().replace(/\s+/g, '_'),
+          ageGroup,
+          pin,
+          interests,
+          completed: {},
+          xp: 0,
+          stars: {},
+          createdAt: Date.now(),
+          companion: companion || "kobe"
+        };
+
+        // 1. Update local storage parent data first to ensure instant UI response
+        if (safeEmail) {
+          try {
+            const parents = S.getParents();
+            if (!parents[safeEmail]) {
+              parents[safeEmail] = { email: safeEmail, name: "Parent", children: [] };
+            }
+            if (!parents[safeEmail].children) parents[safeEmail].children = [];
+            parents[safeEmail].children.push(pendingChildRef.current);
+            S.setParents(parents);
+          } catch (e) {
+            console.error("Failed to update local parents cache:", e);
+          }
+        }
+      }
+      const newChild: any = pendingChildRef.current;
 
       // Sync child directly to Supabase
       if (safeEmail) {
-        // 1. Update local storage parent data first to ensure instant UI response
+        // 2. Sync to backend database -- verify the write actually landed instead of
+        // assuming it did. Previously this response was never checked, so if the
+        // cloud write was rejected (e.g. schema drift, missing parent row) the parent
+        // would still see "enrolled!" while the child only existed on this device,
+        // and login from any other device would fail with no explanation.
+        setSaving(true);
         try {
-          const parents = S.getParents();
-          if (!parents[safeEmail]) {
-            parents[safeEmail] = { email: safeEmail, name: "Parent", children: [] };
-          }
-          if (!parents[safeEmail].children) parents[safeEmail].children = [];
-          parents[safeEmail].children.push(newChild);
-          S.setParents(parents);
-        } catch (e) {
-          console.error("Failed to update local parents cache:", e);
-        }
-
-        // 2. Sync to backend database
-        try {
-          await fetch("/api/supabase/sync", {
+          const res = await fetch("/api/supabase/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -205,9 +219,25 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
               children: [newChild]
             })
           });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) {
+            setSaving(false);
+            setErr(
+              (data && (data.msg || data.error)) ||
+              "Could not save this profile to the cloud. Please check your connection and try again -- otherwise this child won't be able to log in from another device."
+            );
+            return;
+          }
         } catch (e) {
-          console.error("Failed to sync new child to Supabase:", e);
+          // Genuinely offline (fetch never reached the server): keep the app's
+          // documented offline-tolerant behavior, but let the parent know this
+          // profile hasn't synced yet so cross-device login won't work until it does.
+          console.warn("Failed to sync new child to Supabase (offline?):", e);
+          setSaving(false);
+          setErr("You appear to be offline. This profile was saved on this device but won't be available on other devices until you're back online.");
+          return;
         }
+        setSaving(false);
       }
 
       onDone(name.trim(), newChild);
@@ -612,12 +642,36 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
             </Btn>
           )}
           {step > 0 && (
-            <Btn variant="ghost" onClick={() => { setStep((s) => s === 2 ? 0 : s - 1); setErr(""); }} style={{ color: text, background: innerBg, borderColor: border }}>
+            <Btn
+              variant="ghost"
+              onClick={() => {
+                // If a pending child was already written to the local cache (a prior
+                // "Complete Enrollment" attempt that failed to sync), drop it -- the
+                // parent is about to edit details, so the next attempt should create
+                // a fresh entry rather than leaving this stale one behind too.
+                if (pendingChildRef.current) {
+                  try {
+                    const safeEmail = (parentEmail || "").toLowerCase().trim();
+                    const parents = S.getParents();
+                    if (safeEmail && parents[safeEmail]?.children) {
+                      parents[safeEmail].children = parents[safeEmail].children.filter(
+                        (c: any) => c.id !== pendingChildRef.current.id
+                      );
+                      S.setParents(parents);
+                    }
+                  } catch (e) {}
+                  pendingChildRef.current = null;
+                }
+                setStep((s) => s === 2 ? 0 : s - 1);
+                setErr("");
+              }}
+              style={{ color: text, background: innerBg, borderColor: border }}
+            >
               Back
             </Btn>
           )}
-          <Btn full variant="yellow" size="lg" onClick={handleNext}>
-            {step === 3 ? "Next steps" : step === 4 ? "Complete Enrollment" : "Continue"}
+          <Btn full variant="yellow" size="lg" onClick={handleNext} disabled={saving}>
+            {saving ? "Saving to cloud..." : step === 3 ? "Next steps" : step === 4 ? "Complete Enrollment" : "Continue"}
           </Btn>
         </div>
       </div>

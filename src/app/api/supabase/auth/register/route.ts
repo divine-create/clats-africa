@@ -58,10 +58,43 @@ export async function POST(req: NextRequest) {
       partner_id: partner_code || null,
     };
 
-    const { error: insertError } = await sb.from("clats_parents").upsert(parentPayload, { onConflict: "email" });
-    
+    // Upsert into clats_parents, tolerating schema drift (a column the live table
+    // doesn't have yet) by dropping the offending field and retrying, the same way
+    // /api/supabase/sync does for clats_children. Any other error is a real failure
+    // and must be surfaced -- silently swallowing it here previously let the client
+    // believe signup succeeded when no row was ever written, which then showed a
+    // false "Your account was deleted" popup on the very next background sync.
+    let payloadToInsert: any = { ...parentPayload };
+    let insertError: any = null;
+    let retryCount = 0;
+
+    while (retryCount < 5) {
+      const { error } = await sb.from("clats_parents").upsert(payloadToInsert, { onConflict: "email" });
+      if (!error) {
+        insertError = null;
+        break;
+      }
+      insertError = error;
+
+      if (error.message && error.message.includes("Could not find the")) {
+        const match = error.message.match(/'([^']+)' column/);
+        if (match && match[1] && match[1] in payloadToInsert) {
+          console.warn(`Column '${match[1]}' missing in clats_parents. Retrying without it...`);
+          delete payloadToInsert[match[1]];
+          retryCount++;
+          continue;
+        }
+      }
+
+      break; // Unknown/unrecoverable error, give up
+    }
+
     if (insertError) {
-      console.warn("Failed to upsert into clats_parents:", insertError);
+      console.error("Failed to create parent in clats_parents:", insertError);
+      return NextResponse.json(
+        { ok: false, msg: `Could not create your account: ${insertError.message}` },
+        { status: 500 }
+      );
     }
 
     try {
