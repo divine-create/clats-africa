@@ -606,15 +606,28 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
             <div
               style={{
                 marginTop: 22,
-                padding: "12px 14px",
+                padding: "16px 18px",
                 background: innerBg,
-                borderRadius: 10,
-                border: "1.5px solid " + border,
+                borderRadius: 12,
+                border: "1.5px solid " + borderCol,
                 textAlign: "left"
               }}
             >
-              <Txt size={12} color={text} style={{ lineHeight: 1.65 }}>
-                ✨ <strong>Parent Note:</strong> {name} can now access their dashboard from the main login screen. Give them their individual PIN to sign in!
+              <Txt size={11} color={textMuted} style={{ display: "block", textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 700, marginBottom: 10 }}>
+                🔑 Login Details for {name}
+              </Txt>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Txt size={12} color={textMuted}>Username</Txt>
+                  <Txt size={15} color={text} style={{ fontFamily: F.mono, fontWeight: 800, letterSpacing: "0.03em" }}>{username.trim().toLowerCase().replace(/\s+/g, '_')}</Txt>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Txt size={12} color={textMuted}>PIN</Txt>
+                  <Txt size={15} color={text} style={{ fontFamily: F.mono, fontWeight: 800, letterSpacing: "0.2em" }}>{pin}</Txt>
+                </div>
+              </div>
+              <Txt size={11} color={textMuted} style={{ display: "block", marginTop: 12, lineHeight: 1.6, fontStyle: "italic" }}>
+                Give {name} both of these to sign in from the main login screen -- the username alone or PIN alone will not work. You can look this up again anytime from this profile card on your dashboard.
               </Txt>
             </div>
           </Card>

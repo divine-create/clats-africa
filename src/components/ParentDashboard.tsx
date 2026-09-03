@@ -110,6 +110,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [rsvpedEvents, setRsvpedEvents] = useState<string[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [showPaywall, setShowPaywall] = useState<Child | null>(null);
+  const [revealedLoginId, setRevealedLoginId] = useState<string | null>(null);
 
   // AI Insights State
   const [showAiModal, setShowAiModal] = useState(false);
@@ -880,6 +881,34 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         <span className="text-slate-400">XP Earned:</span>
                         <span className="font-bold text-[#2EC4B6]">{cXp} XP</span>
                       </div>
+                    </div>
+
+                    {/* Login Details -- lets a parent look up what this child needs to type
+                        to sign in from another device, since it's only ever shown once
+                        (at enrollment) otherwise. */}
+                    <div
+                      className={`mt-3 pt-3 border-t text-xs ${isDark ? "border-slate-800" : "border-slate-100"}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => setRevealedLoginId(revealedLoginId === c.id ? null : c.id)}
+                        className="w-full flex justify-between items-center text-slate-400 hover:text-[#2EC4B6] font-semibold transition-colors"
+                      >
+                        <span>🔑 Login Details</span>
+                        <span className="text-[10px]">{revealedLoginId === c.id ? "Hide ▲" : "Show ▼"}</span>
+                      </button>
+                      {revealedLoginId === c.id && (
+                        <div className="mt-2 space-y-1.5 font-mono">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400 font-sans">Username</span>
+                            <span className="font-bold tracking-wide">{c.username || c.name.toLowerCase().replace(/\s+/g, "_")}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400 font-sans">PIN</span>
+                            <span className="font-bold tracking-widest">{c.pin}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* View Action CTA */}
