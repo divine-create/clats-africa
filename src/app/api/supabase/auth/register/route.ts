@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       tutorial_completed: false,
       timezone: timezone || "UTC",
       provider: "email",
-      last_login_at: Date.now(),
+      last_login_at: new Date().toISOString(),
       login_device: device || "Unknown",
       login_browser: browser || "Unknown",
       user_id: authData.user?.id || "",
@@ -67,8 +67,13 @@ export async function POST(req: NextRequest) {
     let payloadToInsert: any = { ...parentPayload };
     let insertError: any = null;
     let retryCount = 0;
+    // Each retry strips exactly one missing column, so the loop can never need
+    // more retries than there are optional columns to strip -- a fixed cap here
+    // (previously 5) can be too low if the live table has drifted further than
+    // that, silently failing the whole signup on the one column past the cap.
+    const maxRetries = Object.keys(payloadToInsert).length;
 
-    while (retryCount < 5) {
+    while (retryCount < maxRetries) {
       const { error } = await sb.from("clats_parents").upsert(payloadToInsert, { onConflict: "email" });
       if (!error) {
         insertError = null;

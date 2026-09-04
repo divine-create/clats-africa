@@ -49,7 +49,7 @@ export interface Parent {
   avatar_url?: string;
   provider?: string;
   timezone?: string;
-  last_login_at?: number | null;
+  last_login_at?: string | null;
   login_device?: string;
   login_browser?: string;
   login_location?: string;

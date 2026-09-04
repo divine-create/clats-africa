@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     // Update last login (non-critical, don't fail login if columns are missing)
     try {
       await sb.from("clats_parents").update({
-        last_login_at: Date.now(),
+        last_login_at: new Date().toISOString(),
       }).eq("email", parent.email);
     } catch (e) {
       console.warn("Failed to update last_login_at:", e);
