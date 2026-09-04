@@ -647,6 +647,15 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           theme={theme}
           onBack={() => setActiveTab("home")}
           onSelectLesson={(l) => {
+            // SagaMap only hands back the lesson, not its module -- without also
+            // setting selModule here, it's left null/stale, so the "Continue to
+            // Next Lesson" button's selModule.lessons lookup silently fails to
+            // find the current lesson and never advances selLesson. The button's
+            // own step-machine reset still runs though, so the same lesson just
+            // replays from the start instead of moving forward.
+            const course = CURRICULUM[child.ageGroup || "early explorers"];
+            const mod = course?.modules?.find((m) => m.lessons.some((les) => les.id === l.id));
+            if (mod) setSelModule(mod);
             setSelLesson(l);
             setActiveTab("chat");
           }}
