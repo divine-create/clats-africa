@@ -1017,7 +1017,8 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         </div>
                       );
                     }
-                  })}
+                  })
+                  })()}
                 </div>
               </div>
 
@@ -1184,7 +1185,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         );
                       }
                     })
-                  })()
                   )}
 
                   {/* Horizontal node grids to pack the other lessons */}
