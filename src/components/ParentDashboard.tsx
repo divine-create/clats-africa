@@ -964,11 +964,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
                 {/* VISUAL ROADMAP LISTING */}
                 <div id="tour-pathway-progress" className="space-y-4 relative before:absolute before:top-4 before:bottom-4 before:left-7 before:w-1 before:bg-slate-400/20">
-                  {course?.modules.map((mod, idx) => {
-                    const isCompleted = mod.lessons.length > 0 && mod.lessons.every(l => completedLessonIds.includes(l.id));
-                    const prevCompleted = idx === 0 || course.modules[idx - 1].lessons.every(l => completedLessonIds.includes(l.id));
-                    const isActive = !isCompleted && prevCompleted;
-                    const moduleName = mod.name[lang as keyof typeof mod.name] || mod.name.en;
+                  {(() => {
+                    const activeModuleIndex = course?.modules.findIndex(mod => mod.lessons.length > 0 && !mod.lessons.every(l => completedLessonIds.includes(l.id)));
+                    const finalActiveModuleIndex = activeModuleIndex === undefined || activeModuleIndex === -1 ? -1 : activeModuleIndex;
+                    return course?.modules.map((mod, idx) => {
+                      const hasLessons = mod.lessons.length > 0;
+                      const isCompleted = hasLessons && mod.lessons.every(l => completedLessonIds.includes(l.id));
+                      const isActive = idx === finalActiveModuleIndex;
+                      const moduleName = mod.name[lang as keyof typeof mod.name] || mod.name.en;
 
                     if (isActive) {
                       return (
@@ -1181,6 +1184,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                         );
                       }
                     })
+                  })()
                   )}
 
                   {/* Horizontal node grids to pack the other lessons */}
