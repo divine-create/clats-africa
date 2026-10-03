@@ -1,0 +1,1 @@
+import { createAvatar } from '@dicebear/core'; import { avataaars } from '@dicebear/collection'; const avatar = createAvatar(avataaars, { seed: 'Felix', skinColor: ['e8beac'] }); console.log(avatar.toString().substring(0, 100));

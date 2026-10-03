@@ -154,7 +154,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   };
 
   const AGE_LABEL_STR = (ag: string) => (ag === "early explorers" ? "Early Explorers" : ag === "young innovators" ? "Young Innovators" : "Future Builders");
-  const AGE_AGES_STR = (ag: string) => (ag === "early explorers" ? "2-5" : ag === "young innovators" ? "6-12" : "13-18");
+  const AGE_AGES_STR = (ag: string) => (ag === "early explorers" ? "6-10" : ag === "young innovators" ? "11-13" : "14-18");
 
   const quiz = lesson?.quiz && lesson.quiz.length > 0 ? lesson.quiz[0] : null;
 

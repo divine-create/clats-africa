@@ -43,7 +43,7 @@ type TabType =
   | "releases"
   | "partners";
 
-type AgeGroupType = "early" | "young" | "future"; // 2-5, 6-12, 13-18
+type AgeGroupType = "early" | "young" | "future"; // 6-10, 11-13, 14-18
 
 interface AdminDashboardProps {
   initialTab?: string;
@@ -2619,7 +2619,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <div>
                     <h3 className={`text-sm font-black m-0 ${textPrimary}`}>
-                      Active Children Portfolios: {selectedAgeGroup === "early" ? "Ages 2-5" : selectedAgeGroup === "young" ? "Ages 6-12" : "Ages 13-18"}
+                      Active Children Portfolios: {selectedAgeGroup === "early" ? "Ages 6-10" : selectedAgeGroup === "young" ? "Ages 11-13" : "Ages 14-18"}
                     </h3>
                     <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
                       Click child record to adjust XP balances, add milestone credentials, or override statuses.
@@ -3427,7 +3427,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     🏆 Gamified Rewards, Stickers & Certification Templates
                   </h3>
                   <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
-                    Unlock triggers & compliance settings for the {selectedAgeGroup === "early" ? "Ages 2-5" : selectedAgeGroup === "young" ? "Ages 6-12" : "Ages 13-18"} pool.
+                    Unlock triggers & compliance settings for the {selectedAgeGroup === "early" ? "Ages 6-10" : selectedAgeGroup === "young" ? "Ages 11-13" : "Ages 14-18"} pool.
                   </p>
                 </div>
                 <button

@@ -1,0 +1,362 @@
+﻿A1_Module 1: Lesson 1
+AI & Emerging Technology Learning Pathway
+Module 1: AI Foundations
+Lesson 1: History of Technology
+Lesson Video: https://youtu.be/zY3gPr60pXg
+QUIZ
+Quiz: 3 questions | Total Reward: +10 XP
+Question 1
+Why did humans develop technology?
+A. To solve problems and make tasks easier ✅
+B. To make everything complicated
+C. To replace all human activities
+D. To create toys only
+Correct answer: A. To solve problems and make tasks easier
+
+
+Question 2
+Which of these is an example of technology that came before modern computers?
+A. The wheel ✅
+B. A smartphone
+C. A tablet
+D. An AI robot
+Correct answer: A. The wheel
+
+
+Question 3
+What has happened to technology over time?
+A. Technology has changed and developed as humans found new ways to solve problems. ✅
+B. Technology has stayed exactly the same.
+C. Technology disappeared after the wheel was invented.
+D. Technology only became useful after smartphones were created.
+Correct answer: A. Technology has changed and developed as humans found new ways to solve problems.
+Quiz Completion Message
+🎉 Great job, Young Innovator!
+You explored how technology has changed throughout history and how humans have created new tools to solve problems.
+⭐ +10 XP
+
+
+A1_Module 1: Lesson 2
+AI & Smart Technology Learning Pathway
+Module 1: AI Foundations
+Lesson 2: History of AI
+Lesson Video: https://youtu.be/8lHHWINqhYg
+QUIZ
+Quiz: 3 questions | Total Reward: +10 XP
+Question 1
+When did people begin seriously exploring the idea of machines that could think or behave intelligently?
+A. Long before today's AI systems existed ✅
+B. Only after smartphones were invented
+C. Only in the last five years
+D. After social media was created
+Correct answer: A. Long before today's AI systems existed
+________________
+
+
+Question 2
+What happened as researchers continued working on Artificial Intelligence?
+A. They developed new ways for computers to perform tasks that can require human-like intelligence. ✅
+B. Computers stopped being useful.
+C. Machines became human.
+D. Technology stopped developing.
+Correct answer: A. They developed new ways for computers to perform tasks that can require human-like intelligence.
+________________
+
+
+Question 3
+Which statement best describes the history of Artificial Intelligence?
+A. AI developed gradually as researchers explored new ideas and technologies. ✅
+B. AI was created completely in one day.
+C. AI started with smartphones.
+D. AI has never changed since it was first created.
+Correct answer: A. AI developed gradually as researchers explored new ideas and technologies.
+Quiz Completion Message
+🎉 Great job, Young Innovator!
+You explored the history of Artificial Intelligence and discovered that the idea of intelligent machines has been developing for many years.
+AI has changed and grown as researchers have developed new ideas and technologies.
+⭐ +10 XP
+A1_Module 1: Lesson 3
+AI & Smart Technology Learning Pathway
+Module 1: Technology Around Me
+Lesson 3: What is AI?
+Lesson Video: https://youtu.be/fwDCpfmExPU
+
+
+QUIZ
+Quiz: 3 questions | Total Reward: +10 XP
+Question 1
+What does Artificial Intelligence (AI) mean?
+A. Technology that enables computers or machines to perform tasks that can require human-like intelligence. ✅
+B. A type of human brain
+C. A machine that can do absolutely everything a human can do
+D. A computer game
+Correct answer: A. Technology that enables computers or machines to perform tasks that can require human-like intelligence.
+________________
+
+
+Question 2
+Which of these is an example of something Artificial Intelligence can help a computer or machine do?
+A. Recognize patterns or understand information. ✅
+B. Grow like a plant
+C. Eat food for energy
+D. Become a human being
+Correct answer: A. Recognize patterns or understand information.
+________________
+
+
+Question 3
+Which statement about Artificial Intelligence is TRUE?
+A. Artificial Intelligence is created by people to help machines perform certain tasks. ✅
+B. Artificial Intelligence is a human being.
+C. Artificial Intelligence can do everything humans can do.
+D. Artificial Intelligence never makes mistakes.
+Correct answer: A. Artificial Intelligence is created by people to help machines perform certain tasks.
+Quiz Completion Message
+🎉 Great job, Young Innovator!
+You now understand what Artificial Intelligence is and how it can help computers and machines perform certain tasks.
+Remember: AI is technology created by people to help machines work with information and perform tasks that can require human-like intelligence.
+⭐ +10 XP
+
+
+
+
+A1_Module 1: Lesson 4
+AI & Smart Technology Learning Pathway
+Module 1: Technology Around Me
+Lesson 4: AI Vs Humans
+Lesson Video: https://youtu.be/FqmKj8ovW9w
+
+
+
+
+QUIZ
+Quiz: 3 questions | Total Reward: +10 XP
+Question 1
+What is one important difference between humans and Artificial Intelligence?
+A. Humans can think, feel, and make decisions using their experiences, while AI processes information using technology. ✅
+B. AI is a human with a computer inside it.
+C. Humans can only follow instructions, while AI can do everything.
+D. There is no difference between humans and AI.
+Correct answer: A. Humans can think, feel, and make decisions using their experiences, while AI processes information using technology.
+________________
+
+
+Question 2
+Which of these is something humans can do that Artificial Intelligence does not experience in the same way?
+A. Feel emotions and have personal experiences. ✅
+B. Process information.
+C. Recognize patterns.
+D. Perform tasks using information.
+Correct answer: A. Feel emotions and have personal experiences.
+________________
+
+
+Question 3
+Which statement about Artificial Intelligence and humans is TRUE?
+A. AI can be very useful, but it does not think and experience the world exactly like a human. ✅
+B. AI is exactly the same as a human brain.
+C. AI has human feelings and personal experiences.
+D. AI can always make better decisions than humans.
+Correct answer: A. AI can be very useful, but it does not think and experience the world exactly like a human.
+Quiz Completion Message
+🎉 Great job, Young Innovator!
+You explored the differences between Artificial Intelligence and humans!
+Remember: AI can perform many useful tasks, but humans have feelings, experiences, creativity, and ways of understanding the world that AI does not experience in the same way.
+⭐ +10 XP
+A1_Module 1: Lesson 5
+AI & Smart Technology Learning Pathway
+Module 1: Technology Around Me
+Lesson 5: Smart Machines
+Lesson Video: https://youtu.be/D1H0gtY25Ak
+
+
+
+
+QUIZ
+Quiz: 3 questions | Total Reward: +10 XP
+Question 1
+What is a machine?
+A. A device or system designed to help perform a task. ✅
+B. A living thing that grows and eats food.
+C. A person who controls a computer.
+D. A type of animal.
+Correct answer: A. A device or system designed to help perform a task.
+________________
+
+
+Question 2
+What makes some machines “smart”?
+A. They can use information from their surroundings or instructions to perform tasks or respond in useful ways. ✅
+B. They can feel emotions like humans.
+C. They can grow and learn exactly like people.
+D. They are always bigger than other machines.
+Correct answer: A. They can use information from their surroundings or instructions to perform tasks or respond in useful ways.
+________________
+
+
+Question 3
+Which of these is an example of a smart machine?
+A. A robot that can sense its surroundings and respond to them. ✅
+B. A wooden chair.
+C. A paper notebook.
+D. A pencil.
+Correct answer: A. A robot that can sense its surroundings and respond to them.
+Quiz Completion Message
+🎉 Great job, Young Innovator!
+You discovered what machines are and what can make some machines smart.
+Remember: smart machines can use information and instructions to perform tasks or respond to what is happening around them.
+⭐ +10 XP
+A1_Module 1: Lesson 6
+AI & Smart Technology Learning Pathway
+Module 1: Technology Around Me
+Lesson 6: AI Around Us
+Lesson Video: https://youtu.be/J7uQwVG1T9A
+
+
+
+
+QUIZ
+3 questions | Total Reward: +10 XP
+Question 1
+Which of these is an example of technology you might use in everyday life?
+A. A smartphone ✅
+B. A tree
+C. A stone
+D. A flower
+Correct answer: A. A smartphone
+________________
+
+
+Question 2
+Why do people create and use technology?
+A. To help solve problems and make tasks easier. ✅
+B. To make everyday tasks harder.
+C. To replace everything in nature.
+D. To make people stop learning.
+Correct answer: A. To help solve problems and make tasks easier.
+________________
+
+
+Question 3
+Which statement best describes technology around us?
+A. Technology can be found in many places and can help people learn, communicate, work, and complete everyday tasks. ✅
+B. Technology is only found inside computers.
+C. Technology is only used by scientists.
+D. Technology can only be used for entertainment.
+Correct answer: A. Technology can be found in many places and can help people learn, communicate, work, and complete everyday tasks.
+🎉 Quiz Completion Message
+Great job, Future Innovator!
+You discovered that technology is all around you and can help people in many different ways.
+Keep looking around, you may be surprised by how much technology you use every day!
+⭐ +10 XP
+A1_Module 1: Lesson 7
+AI & Smart Technology Learning Pathway
+Module 1: Technology Around Me
+Lesson 7: Benefits of AI
+Lesson Video: https://youtu.be/EpmC6sADI6U
+
+
+
+
+QUIZ
+3 questions | Total Reward: +10 XP
+Question 1
+How can Artificial Intelligence help people learn? 📚
+A. It can provide tools that help people find information, practise skills, and learn. ✅
+B. It can do all the learning for them.
+C. It can stop people from asking questions.
+D. It can replace teachers completely.
+Correct answer: A. It can provide tools that help people find information, practise skills, and learn.
+________________
+
+
+Question 2
+How can Artificial Intelligence help people with everyday tasks? 🤖
+A. It can help people complete certain tasks more quickly or efficiently. ✅
+B. It can do everything without any human involvement.
+C. It makes every task more difficult.
+D. It can only be used for playing games.
+Correct answer: A. It can help people complete certain tasks more quickly or efficiently.
+________________
+
+
+Question 3
+Which statement best describes a benefit of Artificial Intelligence?
+A. Artificial Intelligence can help people solve problems, work with information, and perform useful tasks. ✅
+B. Artificial Intelligence can solve every problem perfectly.
+C. Artificial Intelligence never needs people.
+D. Artificial Intelligence can replace human thinking completely.
+Correct answer: A. Artificial Intelligence can help people solve problems, work with information, and perform useful tasks.
+🎉 Quiz Completion Message
+Great job, Future Innovator!
+You discovered some of the ways Artificial Intelligence can benefit people—from helping us learn and work with information to supporting us with useful tasks.
+Remember: Artificial Intelligence is a tool that can help people, but humans still have an important role to play.
+⭐ +10 XP
+
+
+A1_Module 1: Lesson 8
+AI & Smart Technology Learning Pathway
+Module 1: Technology Around Me
+Lesson 8: Risks of AI
+Lesson Video: https://youtu.be/jSnAGc_ni1E
+
+
+MODULE 1 CHALLENGE
+5 Questions | Total Reward: +20 XP
+Question 1
+What is Artificial Intelligence?
+A. Technology that enables computers or machines to perform tasks that can require human-like intelligence. ✅
+B. A type of human brain.
+C. A machine that can do everything a human can do.
+D. A type of computer game.
+Correct answer: A
+________________
+
+
+Question 2
+Which statement best explains the difference between humans and Artificial Intelligence?
+A. Humans have feelings and personal experiences, while Artificial Intelligence processes information using technology. ✅
+B. Artificial Intelligence has exactly the same experiences as humans.
+C. Humans can only follow instructions, while AI can do everything.
+D. There is no difference between humans and AI.
+Correct answer: A
+________________
+
+
+Question 3
+What can make a machine a “smart machine”?
+A. Its ability to use information or instructions to perform tasks or respond in useful ways. ✅
+B. Its size.
+C. Its colour.
+D. The material it is made from.
+Correct answer: A
+________________
+
+
+Question 4
+Which is a benefit of Artificial Intelligence?
+A. It can help people learn, solve problems, work with information, and perform useful tasks. ✅
+B. It can solve every problem perfectly.
+C. It means people no longer need to make decisions.
+D. It can replace humans completely.
+Correct answer: A
+________________
+
+
+Question 5
+Why should we think carefully about the risks of Artificial Intelligence?
+A. AI can make mistakes or be misused, so people need to use it responsibly and carefully. ✅
+B. AI is always dangerous.
+C. AI can never make mistakes.
+D. AI should never be used for anything.
+Correct answer: A
+________________
+
+
+🏆 Module Challenge Completion Message
+🎉 Amazing, Future Innovator!
+You completed the Module 1 Challenge!
+You explored the history of technology and Artificial Intelligence, learned what AI is, compared AI with humans, discovered smart machines, and explored both the benefits and risks of AI.
+Most importantly, you learned that technology can be powerful and useful, but it should be understood and used responsibly.
+⭐ +20 XP
+🚀 Module 1 Complete!

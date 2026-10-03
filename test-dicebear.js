@@ -1,0 +1,1 @@
+const { createAvatar } = require('@dicebear/core'); const { avataaars } = require('@dicebear/avataaars'); const avatar = createAvatar(avataaars, { seed: 'Felix', skinColor: ['e8beac'] }); console.log(avatar.toString());

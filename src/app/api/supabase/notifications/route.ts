@@ -7,20 +7,20 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function GET(req: NextRequest) {
   try {
-    const parentId = req.nextUrl.searchParams.get("parent_id");
-    if (!parentId) {
-      return NextResponse.json({ error: "Missing parent_id" }, { status: 400 });
+    const parentEmail = req.nextUrl.searchParams.get("parent_email");
+    if (!parentEmail) {
+      return NextResponse.json({ error: "Missing parent_email" }, { status: 400 });
     }
 
     const { data, error } = await supabase
       .from("notifications")
       .select("*")
-      .eq("parent_id", parentId)
+      .eq("parent_email", parentEmail.toLowerCase().trim())
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) throw error;
-    
+
     return NextResponse.json({ data, ok: true }, { status: 200 });
   } catch (error: any) {
     console.error("Error fetching notifications:", error);
@@ -30,13 +30,13 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { notification_id, parent_id, mark_all } = await req.json();
+    const { notification_id, parent_email, mark_all } = await req.json();
 
-    if (mark_all && parent_id) {
+    if (mark_all && parent_email) {
       const { error } = await supabase
         .from("notifications")
         .update({ is_read: true })
-        .eq("parent_id", parent_id)
+        .eq("parent_email", parent_email.toLowerCase().trim())
         .eq("is_read", false);
       if (error) throw error;
       return NextResponse.json({ ok: true }, { status: 200 });
@@ -60,9 +60,9 @@ export async function PATCH(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { parent_id, child_id, type, title, message, icon, badge_color } = await req.json();
+    const { parent_email, child_id, type, title, message, icon, badge_color } = await req.json();
 
-    if (!parent_id || !title || !message) {
+    if (!parent_email || !title || !message) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       .from("notifications")
       .insert([
         {
-          parent_id,
+          parent_email: parent_email.toLowerCase().trim(),
           child_id,
           type,
           title,

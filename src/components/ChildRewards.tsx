@@ -653,7 +653,7 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
           {/* MAIN SPACE (col-span-8) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }} className="xl:col-span-8">
             
-            {/* STICKER SHEETS FOR TINY AGES 2-5 */}
+            {/* STICKER SHEETS FOR TINY AGES 6-10 */}
             {child.ageGroup === "early explorers" && (
               <div 
                 style={{

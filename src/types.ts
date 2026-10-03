@@ -54,6 +54,7 @@ export interface Parent {
   login_browser?: string;
   login_location?: string;
   isB2B?: boolean;
+  referral_code?: string;
 }
 
 export type Localized<T> = {

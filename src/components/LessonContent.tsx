@@ -113,7 +113,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     };
   }, []);
 
-  // Story Slideshow state for Ages 2-5 or lessons with story elements
+  // Story Slideshow state for Ages 6-10 or lessons with story elements
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   // Inclusive Accessibility States
@@ -872,7 +872,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 </div>
               </>
             ) : (
-              // Story-first Interactive Card Slideshow (Required for Ages 2-5, and as dynamic text renderer)
+              // Story-first Interactive Card Slideshow (Required for Ages 6-10, and as dynamic text renderer)
               <div
                 className="playful-card"
                 style={{

@@ -356,29 +356,6 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           const resData = await transRes.json();
           console.log("[SYNC] Synced progress atomically via transaction:", resData);
 
-          // Trigger database notification for parent dashboard
-          try {
-            if (isPass) {
-              await fetch("/api/supabase/notifications", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  parent_id: parent.id,
-                  child_id: child.id,
-                  type: quizResult ? "quiz_completed" : "lesson_completed",
-                  title: quizResult ? "Quiz Result 🎯" : "Lesson Completed! 🎉",
-                  message: quizResult 
-                    ? `${child.name} scored ${quizResult.score}% on their latest quiz!`
-                    : `${child.name} successfully finished a lesson.`,
-                  icon: quizResult && quizResult.score >= 80 ? "⭐" : (quizResult ? "💡" : "🏅"),
-                  badge_color: quizResult ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"
-                })
-              });
-            }
-          } catch (e) {
-            console.warn("[SYNC] Failed to push notification:", e);
-          }
-
           if (resData.streak_count !== undefined) {
             finalStreak = resData.streak_count;
           }
@@ -388,6 +365,33 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         }
       } catch (e) {
         console.warn("[SYNC] Fallback to client-side caching due to transient database error:", e);
+      }
+
+      // Trigger database notification for parent dashboard. This is
+      // deliberately independent of the /progress/transaction call above --
+      // that route doesn't exist in this app (every call to it 404s), so
+      // nesting the notification inside `if (transRes.ok)` meant it could
+      // never fire at all.
+      if (isPass) {
+        try {
+          await fetch("/api/supabase/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              parent_email: parent.email,
+              child_id: child.id,
+              type: quizResult ? "quiz_completed" : "lesson_completed",
+              title: quizResult ? "Quiz Result 🎯" : "Lesson Completed! 🎉",
+              message: quizResult
+                ? `${child.name} scored ${quizResult.score}% on their latest quiz!`
+                : `${child.name} successfully finished a lesson.`,
+              icon: quizResult && quizResult.score >= 80 ? "⭐" : (quizResult ? "💡" : "🏅"),
+              badge_color: quizResult ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"
+            })
+          });
+        } catch (e) {
+          console.warn("[SYNC] Failed to push notification:", e);
+        }
       }
     }
 

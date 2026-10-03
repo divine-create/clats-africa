@@ -309,26 +309,28 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
         </div>
       )}
 
-      {/* 🌟 THE COMING SOON ACADEMIES */}
+      {/* 🌟 THE COMING SOON ACADEMIES -- no lessons published yet, so these are
+          not enterable. A child can only subscribe to be notified at launch. */}
       <div>
         <Txt size={14} className="text-theme-sensitive font-extrabold block mb-4 tracking-wide uppercase">
-          🌟 COMING SOON - PREVIEW AVAILABLE
+          🌟 COMING SOON
         </Txt>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
           {previewPathways.map((item) => {
+            const isNotified = !!notifiedPathways[item.title];
             return (
               <Card
                 key={item.id}
-                className="rounded-3xl p-6 flex flex-col justify-between gap-5 opacity-[0.96] hover:opacity-100 hover:-translate-y-1 transition-all duration-200 group border-[#2EC4B6]/20 hover:border-[#2EC4B6]/55 border-2 shadow-sm"
+                className="rounded-3xl p-6 flex flex-col justify-between gap-5 opacity-[0.96] hover:opacity-100 transition-all duration-200 group border-[#2EC4B6]/20 border-2 shadow-sm"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3.5">
-                    <div className={`p-3 rounded-2xl transition duration-200 ${isDark ? "bg-slate-900 text-[#2EC4B6]" : "bg-slate-50 text-slate-700 group-hover:bg-emerald-50"}`}>
+                    <div className={`p-3 rounded-2xl transition duration-200 ${isDark ? "bg-slate-900 text-[#2EC4B6]" : "bg-slate-50 text-slate-700"}`}>
                       {item.icon}
                     </div>
                     <span className={`font-mono text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${isDark ? "bg-slate-900 border border-slate-800 text-slate-400" : "bg-slate-50 border border-slate-200 text-slate-500"}`}>
-                      🌟 PREVIEW CURRICULUM
+                      🌟 COMING SOON
                     </span>
                   </div>
                   <Heading size={18} className={`font-black mb-2 ${isDark ? "text-slate-100" : "text-slate-900"}`} style={{ fontWeight: 800 }}>
@@ -340,15 +342,25 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
                 </div>
 
                 <button
-                  onClick={() => {
-                    sfx.playTap();
-                    onEnterAIPathway(item.id);
-                  }}
-                  className={`w-full py-3 px-5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer bg-slate-900 text-[#2EC4B6] border-2 border-[#2EC4B6]/30 hover:border-[#2EC4B6] shadow-sm hover:shadow-md active:translate-y-0.5`}
-                  style={{ cursor: "pointer" }}
+                  onClick={() => handleNotifyMe(item.title)}
+                  disabled={isNotified}
+                  className={`w-full py-3 px-5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all duration-150 flex items-center justify-center gap-1.5 border-2 shadow-sm active:translate-y-0.5 ${
+                    isNotified
+                      ? "bg-[#2EC4B6]/10 text-[#2EC4B6] border-[#2EC4B6]/30 cursor-default"
+                      : "bg-slate-900 text-[#2EC4B6] border-[#2EC4B6]/30 hover:border-[#2EC4B6] hover:shadow-md cursor-pointer"
+                  }`}
                 >
-                  <Compass className="w-4 h-4 text-[#2EC4B6]" />
-                  <span>Preview Academy & Modules</span>
+                  {isNotified ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Notification Set!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-4 h-4 text-[#2EC4B6]" />
+                      <span>Notify Me at Launch</span>
+                    </>
+                  )}
                 </button>
               </Card>
             );

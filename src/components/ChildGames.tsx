@@ -13,6 +13,7 @@ import { MascotImage } from "./Onboarding";
 import { SmartCityBuilder } from "./games/SmartCityBuilder";
 import { PhishingSwipe } from "./games/PhishingSwipe";
 import { TeachableMachine } from "./games/TeachableMachine";
+import { DeepfakeDetective } from "./games/DeepfakeDetective";
 
 interface ChildGamesProps {
   child: Child;

@@ -213,7 +213,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
   const activeFocus = findCurrentFocus();
 
-  // STICKER SHEETS FOR TINY AGES 2-5
+  // STICKER SHEETS FOR TINY AGES 6-10
   const adventureStickers = [
     { id: "koala", emoji: "🐨", name: "Playful Koala", desc: "Unlock by beginning your adventure!", unlocked: true, color: "from-amber-400 to-yellow-500" },
     { id: "whale", emoji: "🐳", name: "Ocean Explorer", desc: "Earned by completing 1+ lessons!", unlocked: completedCount >= 1, color: "from-teal-400 to-emerald-500" },
@@ -224,7 +224,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   ];
   const earnedStickersCount = adventureStickers.filter(s => s.unlocked).length;
 
-  // BADGES FOR AGES 6-12
+  // BADGES FOR AGES 11-13
   const badgesData = [
     { id: "first-completed", name: "First Lesson Completed", desc: "Complete your first lesson and set sail.", unlocked: completedCount >= 1, icon: "🏅", color: "text-[#2EC4B6] border-[#2EC4B6]" },
     { id: "quiz-champ", name: "Quiz Champion", desc: "Score 100% on any futuristic lesson quiz.", unlocked: perfectQuizzes > 0, icon: "🏆", color: "text-[#FFD166] border-[#FFD166]" },
