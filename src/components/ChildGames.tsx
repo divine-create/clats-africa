@@ -15,6 +15,7 @@ import { PhishingSwipe } from "./games/PhishingSwipe";
 import { TeachableMachine } from "./games/TeachableMachine";
 import { DeepfakeDetective } from "./games/DeepfakeDetective";
 import WonderWoods from "./games/WonderWoods";
+import TheSignalLab from "./games/TheSignalLab";
 
 interface ChildGamesProps {
   child: Child;
@@ -112,6 +113,17 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
       supportsModule: "🤖 AI Foundations",
       supportsLesson: "Pattern Recognition",
       icon: "🌳"
+    },
+    {
+      id: "the-signal-lab",
+      name: "The Signal Lab",
+      desc: "Junior Analyst required! Analyze datasets and isolate anomalies. Perfect for ages 11-13.",
+      difficulty: "Advanced",
+      xpAward: 250,
+      status: "Available",
+      supportsModule: "🤖 AI Foundations",
+      supportsLesson: "Data Classification",
+      icon: "🛰️"
     },
     {
       id: "teachable-machine",
@@ -1046,6 +1058,34 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
               }}
             >
               <WonderWoods
+                onExit={() => {
+                  sfx.playTap();
+                  setActiveGameModal(null);
+                }}
+              />
+            </div>
+          );
+        }
+
+        if (gameId === "the-signal-lab") {
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(9, 14, 23, 0.95)",
+                backdropFilter: "blur(4px)",
+                zIndex: 10000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16
+              }}
+            >
+              <TheSignalLab
                 onExit={() => {
                   sfx.playTap();
                   setActiveGameModal(null);
