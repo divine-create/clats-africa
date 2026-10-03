@@ -14,6 +14,7 @@ import { SmartCityBuilder } from "./games/SmartCityBuilder";
 import { PhishingSwipe } from "./games/PhishingSwipe";
 import { TeachableMachine } from "./games/TeachableMachine";
 import { DeepfakeDetective } from "./games/DeepfakeDetective";
+import WonderWoods from "./games/WonderWoods";
 
 interface ChildGamesProps {
   child: Child;
@@ -101,6 +102,17 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
 
   // Academies games lists
   const aiGames: Game[] = [
+    {
+      id: "wonder-woods",
+      name: "Pattern Quest",
+      desc: "Restore the magical Pattern Engine in this beautiful adventure! Perfect for ages 6-10.",
+      difficulty: "Beginner",
+      xpAward: 200,
+      status: "Available",
+      supportsModule: "🤖 AI Foundations",
+      supportsLesson: "Pattern Recognition",
+      icon: "🌳"
+    },
     {
       id: "teachable-machine",
       name: "Teachable Machine",
@@ -1014,6 +1026,35 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
       {/* 6. GENUINE INTERACTIVE QUESTS MODAL SCREEN */}
       {activeGameModal && !isGameCompleted && (() => {
         const gameId = activeGameModal;
+        
+        if (gameId === "wonder-woods") {
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(15, 23, 42, 0.95)",
+                backdropFilter: "blur(4px)",
+                zIndex: 10000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16
+              }}
+            >
+              <WonderWoods
+                onExit={() => {
+                  sfx.playTap();
+                  setActiveGameModal(null);
+                }}
+              />
+            </div>
+          );
+        }
+
         if (gameId === "teachable-machine") {
           return (
             <div
