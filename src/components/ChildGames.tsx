@@ -16,6 +16,7 @@ import { TeachableMachine } from "./games/TeachableMachine";
 import { DeepfakeDetective } from "./games/DeepfakeDetective";
 import WonderWoods from "./games/WonderWoods";
 import TheSignalLab from "./games/TheSignalLab";
+import TheIntelligenceLab from "./games/TheIntelligenceLab";
 
 interface ChildGamesProps {
   child: Child;
@@ -124,6 +125,17 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
       supportsModule: "🤖 AI Foundations",
       supportsLesson: "Data Classification",
       icon: "🛰️"
+    },
+    {
+      id: "the-intelligence-lab",
+      name: "The Intelligence Lab",
+      desc: "Apprentice Data Engineer required. Train models, evaluate data, and detect AI bias. Perfect for ages 14-18.",
+      difficulty: "Advanced",
+      xpAward: 300,
+      status: "Available",
+      supportsModule: "🤖 AI Foundations",
+      supportsLesson: "Machine Learning & Bias",
+      icon: "🌐"
     },
     {
       id: "teachable-machine",
@@ -1086,6 +1098,34 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
               }}
             >
               <TheSignalLab
+                onExit={() => {
+                  sfx.playTap();
+                  setActiveGameModal(null);
+                }}
+              />
+            </div>
+          );
+        }
+
+        if (gameId === "the-intelligence-lab") {
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(9, 9, 11, 0.95)",
+                backdropFilter: "blur(4px)",
+                zIndex: 10000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16
+              }}
+            >
+              <TheIntelligenceLab
                 onExit={() => {
                   sfx.playTap();
                   setActiveGameModal(null);
