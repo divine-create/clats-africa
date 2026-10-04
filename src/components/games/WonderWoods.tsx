@@ -237,19 +237,19 @@ export default function WonderWoods({ onExit }: { onExit?: () => void }) {
               return (
                 <motion.div
                   key={level.id}
-                  className="absolute"
+                  className="absolute cursor-pointer z-10"
                   style={{ left: `${level.x}%`, top: `${level.y}%`, transform: 'translate(-50%, -50%)' }}
                   whileHover={isPlayable ? { scale: 1.1 } : {}}
                   whileTap={isPlayable ? { scale: 0.95 } : {}}
+                  onClick={() => {
+                    if (isPlayable) {
+                      sfx.play("pop");
+                      setCurrentLevel(level.id);
+                      setActiveScreen("level");
+                    }
+                  }}
                 >
-                  <button 
-                    onClick={() => {
-                      if (isPlayable) {
-                        sfx.play("pop");
-                        setCurrentLevel(level.id);
-                        setActiveScreen("level");
-                      }
-                    }}
+                  <div 
                     className={`relative group flex flex-col items-center ${isPlayable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50 grayscale'}`}
                   >
                     <div 
@@ -265,7 +265,7 @@ export default function WonderWoods({ onExit }: { onExit?: () => void }) {
                     <span className="mt-3 bg-slate-800/80 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap border border-slate-700">
                       {level.name}
                     </span>
-                  </button>
+                  </div>
                 </motion.div>
               );
             })}
