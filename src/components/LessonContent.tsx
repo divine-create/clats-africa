@@ -10,7 +10,8 @@ import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
 import confetti from "canvas-confetti";
-import { Play, Pause, Settings, Gauge, Maximize, Minimize } from "lucide-react";
+import { Play, Pause, Settings, Gauge, Maximize, Minimize, HelpCircle, Sparkles, Mic, Volume2 } from "lucide-react";
+import { KobeLessonSidekick } from "./KobeLessonSidekick";
 
 interface LessonContentProps {
   child: Child;
@@ -92,6 +93,13 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showControls, setShowControls] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Kobe In-Lesson Voice Sidekick & Socratic Hint State
+  const [sidekickOpen, setSidekickOpen] = useState(false);
+  const [sidekickHintPrompt, setSidekickHintPrompt] = useState<string | null>(null);
+  const [reflectionDone, setReflectionDone] = useState(false);
+  const [reflectionBonusAwarded, setReflectionBonusAwarded] = useState(false);
+  const [reflectionResponse, setReflectionResponse] = useState<string | null>(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1093,9 +1101,43 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 ))}
               </div>
 
-              <Heading size={21 * getFontSizeMultiplier()} color={getTextColor()} style={{ lineHeight: 1.4, marginBottom: 24, textAlign: "left" }}>
-                {activeQuiz[currentQuizIndex].q}
-              </Heading>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
+                <Heading size={21 * getFontSizeMultiplier()} color={getTextColor()} style={{ lineHeight: 1.4, textAlign: "left", flex: 1, margin: 0 }}>
+                  {activeQuiz[currentQuizIndex].q}
+                </Heading>
+                <button
+                  onClick={() => {
+                    sfx.playTap();
+                    const currentQ = activeQuiz[currentQuizIndex];
+                    const optsText = Array.isArray(currentQ.opts)
+                      ? currentQ.opts.join(", ")
+                      : (currentQ.opts as any)?.en?.join?.(", ") || "";
+                    setSidekickHintPrompt(
+                      `I am answering this quiz question in "${lesson?.title?.en || "our lesson"}": "${currentQ.q}". The choices are: ${optsText}. Can you give me a gentle, encouraging Socratic hint without spoiling the answer?`
+                    );
+                    setSidekickOpen(true);
+                  }}
+                  style={{
+                    background: colorMode === "night" ? "rgba(245,158,11,0.22)" : "#fef3c7",
+                    border: "1.5px solid #f59e0b",
+                    borderRadius: 16,
+                    padding: "7px 12px",
+                    color: "#b45309",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexShrink: 0
+                  }}
+                  className="hover:scale-105 active:scale-95"
+                  title="Ask Kobe for a helpful hint"
+                >
+                  <HelpCircle size={14} color="#f59e0b" />
+                  <span>Ask Kobe for a Hint</span>
+                </button>
+              </div>
 
               {/* Multiple Choice Options */}
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1311,6 +1353,87 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* 60-Second Post-Lesson Voice Reflection Debrief with Kobe */}
+                <div
+                  style={{
+                    background: reflectionDone
+                      ? "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(46,196,182,0.1))"
+                      : "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(251,191,36,0.06))",
+                    border: `2px solid ${reflectionDone ? "#10b981" : "#f59e0b"}`,
+                    borderRadius: 22,
+                    padding: "18px 20px",
+                    textAlign: "left",
+                    marginTop: 16
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <KobeAvatar size={40} character={companion} ageGroup={child.ageGroup} expression={reflectionDone ? "celebrating" : "happy"} />
+                      <div>
+                        <Txt size={12} weight={900} color={reflectionDone ? "#059669" : "#d97706"} style={{ textTransform: "uppercase", display: "block" }}>
+                          🎙️ Kobe's 60-Second Reflection
+                        </Txt>
+                        <Txt size={14.5} weight={800} color="#0f172a">
+                          {reflectionDone ? "Superstar Reflection Recorded!" : "What was the coolest thing you learned today?"}
+                        </Txt>
+                      </div>
+                    </div>
+                    {reflectionBonusAwarded && (
+                      <Chip color="#10b981" bg="#ecfdf5">+10 BONUS XP</Chip>
+                    )}
+                  </div>
+
+                  {!reflectionDone ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                      <Txt size={12.5} color="#475569">
+                        Tap a reflection below to share with Kobe and claim bonus XP:
+                      </Txt>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {[
+                          "🤖 Computers follow clear step-by-step instructions!",
+                          "💡 The real-world jollof rice analogy made sense!",
+                          "🛡️ How to protect my password and stay safe online!",
+                          "✨ I can't wait to build my own games and AI!"
+                        ].map((refChoice, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              sfx.playLevelUp();
+                              confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
+                              setReflectionDone(true);
+                              setReflectionResponse(refChoice);
+                              setReflectionBonusAwarded(true);
+                              setEarnedXpState((prev) => prev + 10);
+                              companionVoice.speakTTS(`Wonderful reflection, ${child.name}! You are a true technology champion!`, companion, child.ageGroup, lang);
+                            }}
+                            style={{
+                              background: "#ffffff",
+                              border: "1.5px solid #cbd5e1",
+                              borderRadius: 14,
+                              padding: "8px 12px",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: "#1e293b",
+                              cursor: "pointer",
+                              textAlign: "left"
+                            }}
+                            className="hover:scale-105 active:scale-95"
+                          >
+                            {refChoice}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 8, background: "#ecfdf5", border: "1px solid #10b981", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                      <Sparkles size={16} color="#059669" />
+                      <Txt size={13} weight={700} color="#065f46">
+                        "{reflectionResponse}" — Great reflection, {child.name}! +10 Bonus XP awarded.
+                      </Txt>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1446,6 +1569,33 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
 
       </div>
+
+      {/* KOBE IN-LESSON FLOATING COMPANION & VOICE SIDEKICK */}
+      <KobeLessonSidekick
+        child={child}
+        lesson={lesson}
+        lang={lang}
+        theme={colorMode === "night" ? "dark" : "light"}
+        onPauseMedia={() => {
+          setIsVideoPlaying(false);
+          if (ytPlayerRef.current?.pauseVideo) {
+            ytPlayerRef.current.pauseVideo();
+          }
+        }}
+        onResumeMedia={() => {
+          setIsVideoPlaying(true);
+          if (ytPlayerRef.current?.playVideo) {
+            ytPlayerRef.current.playVideo();
+          }
+        }}
+        currentQuizQuestion={learningStep === "quiz" ? activeQuiz[currentQuizIndex] : null}
+        isOpenExternal={sidekickOpen}
+        onCloseExternal={() => {
+          setSidekickOpen(false);
+          setSidekickHintPrompt(null);
+        }}
+        triggerHintPrompt={sidekickHintPrompt}
+      />
     </div>
   );
 };

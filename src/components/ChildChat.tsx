@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Volume2, Square, Sparkles, Globe, Play, Pause, Sun, Moon } from "lucide-react";
+import { Mic, MicOff, Volume2, Square, Sparkles, Globe, Play, Pause, Sun, Moon, Radio, MessageSquare, RotateCcw } from "lucide-react";
 import { Child, Lesson, Language } from "../types";
 import { C, F, T, AGE_META } from "../utils/config";
 import { Txt, Heading, Label, Chip, Btn } from "./Primitives";
@@ -121,6 +121,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   const [typedMessage, setTypedMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatViewMode, setChatViewMode] = useState<"stream" | "walkie">("stream");
   
   // Multilingual & Voice State (N-ATLAS Sovereign Integration)
   const [chatLang, setChatLang] = useState<Language>(lang);
@@ -397,8 +398,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         }
       ]);
 
-      // If user sent a voice question, automatically speak back the first sentence
-      if (audioBase64) {
+      // If user sent a voice question or in Walkie-Talkie mode, automatically speak back
+      if (audioBase64 || chatViewMode === "walkie") {
         speakMessage(replyMsgId, raw.text, chatLang);
       }
     } catch (e) {
@@ -502,9 +503,41 @@ export const ChildChat: React.FC<ChildChatProps> = ({
               )}
             </button>
 
-            <Chip color="#ffffff" bg={isDark ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.2)"}>
-              Voice AI Tutor
-            </Chip>
+            {/* Mode Switcher: Stream vs Live Walkie-Talkie */}
+            <button
+              onClick={() => {
+                sfx.playTap();
+                setChatViewMode((prev) => (prev === "stream" ? "walkie" : "stream"));
+              }}
+              style={{
+                background: isDark ? "rgba(16,185,129,0.28)" : "rgba(255,255,255,0.28)",
+                border: "1px solid rgba(255,255,255,0.35)",
+                borderRadius: 20,
+                padding: "6px 13px",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backdropFilter: "blur(6px)"
+              }}
+              title="Switch between Voice Walkie-Talkie and Chat Stream"
+            >
+              {chatViewMode === "stream" ? (
+                <>
+                  <Radio size={14} color="#34d399" />
+                  <span>Walkie-Talkie</span>
+                </>
+              ) : (
+                <>
+                  <MessageSquare size={14} color="#38bdf8" />
+                  <span>Chat Stream</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -523,9 +556,274 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         </div>
       </div>
 
-      {/* Chat Content Stream */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 120px" }}>
+      {/* Walkie-Talkie Mode or Chat Stream Mode */}
+      {chatViewMode === "walkie" ? (
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "24px 20px 40px",
+            textAlign: "center",
+            maxWidth: 520,
+            margin: "0 auto",
+            width: "100%",
+            boxSizing: "border-box"
+          }}
+        >
+          {/* Sovereign Voice Language Selector */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: t.langBarBg,
+              padding: "8px 16px",
+              borderRadius: 24,
+              border: `1.5px solid ${t.langBarBorder}`,
+              boxShadow: t.cardShadow,
+              flexWrap: "wrap",
+              justifyContent: "center"
+            }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 800, color: t.textSecondary }}>Voice:</span>
+            {[
+              { code: "en", label: "English 🇬🇧" },
+              { code: "yo", label: "Yorùbá 🇳🇬" },
+              { code: "ha", label: "Hausa 🇳🇬" },
+              { code: "ig", label: "Igbo 🇳🇬" }
+            ].map((opt) => (
+              <button
+                key={opt.code}
+                onClick={() => {
+                  sfx.playTap();
+                  setChatLang(opt.code as Language);
+                }}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: 16,
+                  border: chatLang === opt.code ? `2px solid ${borderCol}` : `1px solid ${t.langInactiveBorder}`,
+                  background: chatLang === opt.code ? borderCol + "25" : t.langInactiveBg,
+                  color: chatLang === opt.code ? borderCol : t.langInactiveText,
+                  fontWeight: chatLang === opt.code ? 800 : 600,
+                  fontSize: 11.5,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Hero Companion Mascot with Multi-Ring Aura */}
+          <div style={{ position: "relative", marginTop: 24, marginBottom: 12 }}>
+            <div
+              style={{
+                width: 140,
+                height: 140,
+                borderRadius: "50%",
+                background: isRecording
+                  ? "radial-gradient(circle, rgba(239,68,68,0.3) 0%, transparent 70%)"
+                  : speakingMsgId
+                  ? "radial-gradient(circle, rgba(16,185,129,0.35) 0%, transparent 70%)"
+                  : isTyping
+                  ? "radial-gradient(circle, rgba(245,158,11,0.3) 0%, transparent 70%)"
+                  : `radial-gradient(circle, ${borderCol}25 0%, transparent 70%)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                animation: isRecording || speakingMsgId ? "pulse 1.5s infinite" : "none",
+                transition: "all 0.3s ease"
+              }}
+            >
+              <KobeAvatar
+                size={96}
+                character={child.companion || "kobe"}
+                ageGroup={child.ageGroup}
+                expression={speakingMsgId ? "celebrating" : isTyping ? "thinking" : "happy"}
+              />
+            </div>
+          </div>
+
+          {/* Animated Frequency Waves */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, height: 26, marginBottom: 12 }}>
+            {[12, 22, 28, 16, 26, 14, 24].map((h, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 5,
+                  height: speakingMsgId || isRecording ? `${h}px` : "6px",
+                  borderRadius: 3,
+                  background: isRecording ? "#ef4444" : speakingMsgId ? "#10b981" : isDark ? "#475569" : "#cbd5e1",
+                  transition: "height 0.2s ease, background-color 0.2s ease"
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Status Badge */}
+          <div style={{ marginBottom: 16 }}>
+            <div
+              style={{
+                display: "inline-block",
+                padding: "6px 18px",
+                borderRadius: 20,
+                background: isRecording
+                  ? "#fee2e2"
+                  : speakingMsgId
+                  ? "#ecfdf5"
+                  : isTyping
+                  ? "#fef3c7"
+                  : isDark ? "#1e293b" : "#f1f5f9",
+                color: isRecording
+                  ? "#b91c1c"
+                  : speakingMsgId
+                  ? "#065f46"
+                  : isTyping
+                  ? "#92400e"
+                  : t.textSecondary,
+                fontSize: 13,
+                fontWeight: 800,
+                border: `1.5px solid ${
+                  isRecording ? "#ef4444" : speakingMsgId ? "#10b981" : isTyping ? "#f59e0b" : t.cardBorder
+                }`
+              }}
+            >
+              {isRecording
+                ? `🔴 Listening (${recordingSeconds}s)... Speak now in ${chatLang.toUpperCase()}!`
+                : isTyping
+                ? `🟡 Kobe is thinking with N-ATLAS...`
+                : speakingMsgId
+                ? `🟢 Kobe is speaking in ${chatLang.toUpperCase()} (YarnGPT)`
+                : `🎙️ Press & Hold (or Tap) to Talk with ${compName}`}
+            </div>
+          </div>
+
+          {/* Latest Dialogue Transcript Card */}
+          <div
+            style={{
+              width: "100%",
+              background: t.cardBg,
+              border: `1.5px solid ${t.cardBorder}`,
+              borderRadius: 22,
+              padding: "16px 18px",
+              marginBottom: 20,
+              boxShadow: t.cardShadow,
+              textAlign: "left",
+              minHeight: 85
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 900, color: borderCol, textTransform: "uppercase", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>💬 Latest Exchange</span>
+              {messages.length > 0 && messages[messages.length - 1].role === "assistant" && (
+                <button
+                  onClick={() => {
+                    const lastMsg = messages[messages.length - 1];
+                    speakMessage(lastMsg.id, lastMsg.content, chatLang);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: borderCol,
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4
+                  }}
+                >
+                  <RotateCcw size={12} /> Replay Voice
+                </button>
+              )}
+            </div>
+            <div style={{ fontSize: 13.5, color: t.textPrimary, lineHeight: 1.5, fontWeight: 600 }}>
+              {messages.length > 0
+                ? messages[messages.length - 1].content
+                : `Tap the Walkie-Talkie button below to ask ${compName} anything!`}
+            </div>
+          </div>
+
+          {/* Big Tactile Walkie-Talkie Button */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <button
+              onMouseDown={startRecording}
+              onMouseUp={() => stopRecording(false)}
+              onTouchStart={startRecording}
+              onTouchEnd={() => stopRecording(false)}
+              onClick={() => {
+                if (isRecording) {
+                  stopRecording(false);
+                } else if (!isTyping) {
+                  startRecording();
+                }
+              }}
+              disabled={isTyping}
+              style={{
+                width: 90,
+                height: 90,
+                borderRadius: "50%",
+                background: isRecording
+                  ? "linear-gradient(135deg, #ef4444, #dc2626)"
+                  : `linear-gradient(135deg, #10b981, #059669)`,
+                border: `4px solid ${isRecording ? "#fca5a5" : "#6ee7b7"}`,
+                color: "#ffffff",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: isTyping ? "not-allowed" : "pointer",
+                boxShadow: isRecording
+                  ? "0 0 28px rgba(239,68,68,0.6)"
+                  : "0 8px 28px rgba(16,185,129,0.45)",
+                transform: isRecording ? "scale(1.08)" : "scale(1)",
+                transition: "all 0.15s ease"
+              }}
+              className="hover:scale-105 active:scale-95"
+            >
+              <Mic size={36} />
+            </button>
+            <div style={{ fontSize: 12, fontWeight: 800, color: t.textMuted }}>
+              {isRecording ? "Release to Send Voice Note" : "Hold or Tap to Talk"}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Chat Content Stream */
+        <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 140px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Connected Lesson Indicator */}
+            {lesson && (
+              <div
+                style={{
+                  background: isDark ? "rgba(46,196,182,0.15)" : "#f0fdfa",
+                  border: `1.5px solid ${borderCol}`,
+                  borderRadius: 16,
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>📚</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: borderCol, textTransform: "uppercase" }}>
+                      Connected Lesson Focus
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: t.textPrimary }}>
+                      {lesson.title[chatLang] || lesson.title.en}
+                    </div>
+                  </div>
+                </div>
+                <Chip color={borderCol} bg={borderCol + "22"}>Active Focus</Chip>
+              </div>
+            )}
+
             {/* 1. N-ATLAS Multilingual Sovereign Selector Bar */}
             <div
               style={{
@@ -705,17 +1003,66 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                 left: 0,
                 right: 0,
                 background: t.footerBg,
-                padding: "12px 16px 22px",
+                padding: "8px 16px 20px",
                 borderTop: `1.5px solid ${t.footerBorder}`,
                 boxShadow: isDark ? "0 -4px 20px rgba(0,0,0,0.35)" : "0 -4px 16px rgba(0,0,0,0.04)",
                 display: "flex",
-                gap: 10,
-                alignItems: "center",
+                flexDirection: "column",
+                gap: 8,
                 zIndex: 10,
                 transition: "all 0.2s ease"
               }}
             >
-              {isRecording ? (
+              {/* Interactive Quick Action Prompt Chips */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  overflowX: "auto",
+                  paddingBottom: 2,
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {(lesson ? [
+                  { label: "📖 Explain lesson", prompt: `Explain the key concepts of our lesson: "${lesson.title[chatLang] || lesson.title.en}" simply in ${chatLang}!` },
+                  { label: "🍲 Jollof analogy!", prompt: "Explain this lesson's concept using a fun Nigerian analogy (like cooking jollof rice or puff-puff)!" },
+                  { label: "🎯 Quiz challenge!", prompt: `Ask me 1 fun question to test my understanding of "${lesson.title.en}"!` },
+                  { label: "❓ Why it matters", prompt: "Why is learning this technology important for an African child's future?" }
+                ] : [
+                  { label: "🤖 How AI thinks", prompt: "How do computers and AI actually think? Explain simply!" },
+                  { label: "🍲 Jollof algorithm!", prompt: "Explain what an algorithm is with a Nigerian food analogy!" },
+                  { label: "🔐 Online Safety", prompt: "What is the #1 most important rule for staying safe on the internet?" },
+                  { label: "🎯 Tech Quiz!", prompt: "Give me a quick 1-question technology quiz!" }
+                ]).map((chip, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      sfx.playTap();
+                      send(chip.prompt);
+                    }}
+                    disabled={isTyping}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: 16,
+                      border: `1.5px solid ${isDark ? "#334155" : "#cbd5e1"}`,
+                      background: isDark ? "#0f172a" : "#f1f5f9",
+                      color: t.textPrimary,
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      cursor: isTyping ? "not-allowed" : "pointer",
+                      flexShrink: 0,
+                      transition: "all 0.15s ease"
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Row */}
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                {isRecording ? (
                 /* LIVE RECORDING STATE */
                 <div
                   style={{
@@ -838,9 +1185,11 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                   </Btn>
                 </>
               )}
+              </div>
             </div>
           </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

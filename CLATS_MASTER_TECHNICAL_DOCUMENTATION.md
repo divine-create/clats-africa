@@ -3,7 +3,7 @@
 
 **Target Initiative**: National AI Innovation Challenge (NAIC 2026) / National Centre for AI & Robotics (NCAIR)  
 **Document Classification**: Comprehensive Technical Architecture & Integration Evidence  
-**Live Application URL**: [https://clats-africa.vercel.app](https://clats-africa.vercel.app)  
+**Live Application URL**: [https://app.clats.org](https://app.clats.org)  
 **Repository**: [https://github.com/divine-create/clats-africa.git](https://github.com/divine-create/clats-africa.git)  
 **Document Version**: 2.4.0 (Production Verified)  
 
@@ -118,7 +118,7 @@ The AI architecture strictly adheres to Nigeria's **National AI Innovation Chall
 ## 5. EVIDENCE ITEM C: N-ATLAS Server-Side Integration Code Sample
 
 ### 5.1. Integration Summary
-- **Endpoint**: `POST /api/chat` ([`src/app/api/chat/route.ts`](file:///C:/Users/HomePC/Downloads/clats-nextjs/src/app/api/chat/route.ts))
+- **Endpoint**: `POST /api/chat` ([`src/app/api/chat/route.ts`])
 - **Environment Secret**: `NATLAS_API_KEY` (injected via secure serverless runtime environment)
 - **Target Model**: `NCAIR1/N-ATLaS` (National Centre for AI and Robotics — 8B Foundation Model)
 - **Sanitization Status**: 100% Sanitized — Live keys, private URLs, and secrets redacted.
@@ -282,8 +282,6 @@ export async function POST(req: NextRequest) {
 
 ---
 
-## 7. Submission Verification & Sign-off
 
-- **Source Code Verification**: Extracted directly from production commit `b929e8a` of the CLATS repository.
-- **Evidence Designation**: Item C — N-ATLAS Server-Side Integration Code Sample.
-- **Verified by**: Lead AI Software Engineer, CLATS Africa Engineering Team.
+
+

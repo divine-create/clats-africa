@@ -342,16 +342,16 @@ class CompanionVoice {
   }
 
   // Play explicit synthesized voice
-  playSynthesizedVoice(text: string, character: "kobe" | "chibi", ageGroup: string) {
+  playSynthesizedVoice(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
     if (this.activeAudio) {
       this.activeAudio.pause();
       this.activeAudio = null;
     }
-    this.speakTTS(text, character, ageGroup);
+    this.speakTTS(text, character, ageGroup, language);
   }
 
   // Sovereign YarnGPT speech synthesizer matching companion personality
-  async speakTTS(text: string, character: "kobe" | "chibi", ageGroup: string) {
+  async speakTTS(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
     try {
       if (this.activeAudio) {
         this.activeAudio.pause();
@@ -363,7 +363,7 @@ class CompanionVoice {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text,
-          language: "en",
+          language,
           character
         })
       });
