@@ -52,6 +52,100 @@ const S_RESOLVE = () => {
   }
 };
 
+interface DraggableFloatingProps {
+  initialBottom?: number;
+  initialRight?: number;
+  zIndex?: number;
+  children: React.ReactNode;
+  onClick?: () => void;
+  title?: string;
+}
+
+const DraggableFloating: React.FC<DraggableFloatingProps> = ({
+  initialBottom,
+  initialRight,
+  children,
+  onClick,
+  title,
+  zIndex = 999
+}) => {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = React.useRef<{
+    startX: number;
+    startY: number;
+    elemX: number;
+    elemY: number;
+    hasMoved: boolean;
+  }>({ startX: 0, startY: 0, elemX: 0, elemY: 0, hasMoved: false });
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const elem = e.currentTarget;
+    const rect = elem.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      elemX: rect.left,
+      elemY: rect.top,
+      hasMoved: false
+    };
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - dragRef.current.startX;
+      const dy = moveEvent.clientY - dragRef.current.startY;
+      if (Math.hypot(dx, dy) > 5) {
+        dragRef.current.hasMoved = true;
+        setIsDragging(true);
+      }
+
+      if (dragRef.current.hasMoved) {
+        const maxX = window.innerWidth - rect.width - 8;
+        const maxY = window.innerHeight - rect.height - 8;
+        const newX = Math.max(8, Math.min(maxX, dragRef.current.elemX + dx));
+        const newY = Math.max(8, Math.min(maxY, dragRef.current.elemY + dy));
+        setPos({ x: newX, y: newY });
+      }
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+      setIsDragging(false);
+
+      if (!dragRef.current.hasMoved && onClick) {
+        onClick();
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+  };
+
+  return (
+    <div
+      onPointerDown={handlePointerDown}
+      title={title}
+      style={{
+        position: "fixed",
+        left: pos ? pos.x : undefined,
+        top: pos ? pos.y : undefined,
+        bottom: pos ? undefined : initialBottom,
+        right: pos ? undefined : initialRight,
+        zIndex,
+        touchAction: "none",
+        userSelect: "none",
+        cursor: isDragging ? "grabbing" : "grab",
+        transition: isDragging ? "none" : "transform 0.15s ease"
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 export const ChildApp: React.FC<ChildAppProps> = ({
   child,
   parent,
@@ -477,58 +571,63 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
   return (
     <div className="tropical-bg" style={{ minHeight: "100vh", paddingBottom: 88, position: "relative", overflowX: "hidden" }}>
-      {/* 🌴 Bright Tropical Adventure Backdrop Ornaments */}
+      {/* 🌴 Draggable Companion Voice Reader & Theme Toggles */}
       {!isEarly && (
-        <button
-          id="voice-narration-toggle"
+        <DraggableFloating
+          initialBottom={95}
+          initialRight={20}
           onClick={handleToggleNarration}
-          style={{
-            position: "fixed",
-            bottom: 110,
-            right: 24,
-            top: "auto",
-            left: "auto",
-            background: isDark ? "#1e293b" : "#ffffff",
-            border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
-            borderRadius: "50px",
-            padding: "6px 14px",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            cursor: "pointer",
-            zIndex: 999,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            transition: "all 0.2s"
-          }}
-          title="Toggle companion voice reader"
+          title="Drag anywhere or tap to toggle companion voice reader"
         >
-          <span style={{ fontSize: 20 }}>{narrationOn ? "🔊" : "🔇"}</span>
-          <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? "#cbd5e1" : "#1e293b" }}>
-            READER: {narrationOn ? "ON" : "OFF"}
-          </span>
-        </button>
+          <div
+            id="voice-narration-toggle"
+            style={{
+              background: isDark ? "#1e293b" : "#ffffff",
+              border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
+              borderRadius: "50px",
+              padding: "6px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: "0 6px 16px rgba(0,0,0,0.2)",
+              pointerEvents: "none"
+            }}
+          >
+            <span style={{ fontSize: 18 }}>{narrationOn ? "🔊" : "🔇"}</span>
+            <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? "#cbd5e1" : "#1e293b" }}>
+              READER: {narrationOn ? "ON" : "OFF"}
+            </span>
+          </div>
+        </DraggableFloating>
       )}
-      <div
-        onClick={onToggleTheme}
-        title="Toggle Theme style"
-        style={{
-          position: "fixed",
-          bottom: 160,
-          right: 24,
-          top: "auto",
-          left: "auto",
-          fontSize: 48,
-          cursor: onToggleTheme ? "pointer" : "default",
-          zIndex: 999,
-          userSelect: "none",
-          transition: "transform 0.2s",
-          filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
-        }}
-        onMouseEnter={(e) => { if (onToggleTheme) e.currentTarget.style.transform = "scale(1.15) rotate(15deg)"; }}
-        onMouseLeave={(e) => { if (onToggleTheme) e.currentTarget.style.transform = ""; }}
-      >
-        {isDark ? "🌙" : "☀️"}
-      </div>
+
+      {onToggleTheme && (
+        <DraggableFloating
+          initialBottom={145}
+          initialRight={20}
+          onClick={onToggleTheme}
+          title="Drag anywhere or tap to toggle Day/Night theme"
+        >
+          <div
+            style={{
+              fontSize: 28,
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              background: isDark ? "rgba(30,41,59,0.9)" : "rgba(255,255,255,0.9)",
+              border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
+              boxShadow: "0 6px 16px rgba(0,0,0,0.18)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+              backdropFilter: "blur(4px)"
+            }}
+          >
+            {isDark ? "🌙" : "☀️"}
+          </div>
+        </DraggableFloating>
+      )}
       <div className="cloud-slow" style={{ position: "absolute", top: 22, left: "10%", fontSize: 44, pointerEvents: "none", opacity: 0.5, zIndex: 0 }}>☁️</div>
       <div className="cloud-fast" style={{ position: "absolute", top: 110, right: "15%", fontSize: 48, pointerEvents: "none", opacity: 0.4, zIndex: 0 }}>☁️</div>
       <div className="cloud-slow" style={{ position: "absolute", top: "35%", left: "5%", fontSize: 32, pointerEvents: "none", opacity: 0.45, zIndex: 0 }}>☁️</div>
