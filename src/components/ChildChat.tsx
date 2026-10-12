@@ -565,12 +565,13 @@ export const ChildChat: React.FC<ChildChatProps> = ({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "24px 20px 40px",
+            padding: "20px 20px 110px",
             textAlign: "center",
             maxWidth: 520,
             margin: "0 auto",
             width: "100%",
-            boxSizing: "border-box"
+            boxSizing: "border-box",
+            overflowY: "auto"
           }}
         >
           {/* Sovereign Voice Language Selector */}
@@ -747,6 +748,54 @@ export const ChildChat: React.FC<ChildChatProps> = ({
             </div>
           </div>
 
+          {/* Quick Action Chips in Walkie-Talkie Mode */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              overflowX: "auto",
+              maxWidth: "100%",
+              paddingBottom: 4,
+              marginBottom: 10,
+              whiteSpace: "nowrap"
+            }}
+          >
+            {(lesson ? [
+              { label: "📖 Explain lesson", prompt: `Explain the key concepts of our lesson: "${lesson.title[chatLang] || lesson.title.en}" simply in ${chatLang}!` },
+              { label: "🍲 Jollof analogy!", prompt: "Explain this lesson's concept using a fun Nigerian analogy (like cooking jollof rice or puff-puff)!" },
+              { label: "🎯 Quiz challenge!", prompt: `Ask me 1 fun question to test my understanding of "${lesson.title.en}"!` }
+            ] : [
+              { label: "🤖 How AI thinks", prompt: "How do computers and AI actually think? Explain simply!" },
+              { label: "🍲 Jollof algorithm!", prompt: "Explain what an algorithm is with a Nigerian food analogy!" },
+              { label: "🔐 Online Safety", prompt: "What is the #1 most important rule for staying safe on the internet?" },
+              { label: "🎯 Tech Quiz!", prompt: "Give me a quick 1-question technology quiz!" }
+            ]).map((chip, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  sfx.playTap();
+                  send(chip.prompt);
+                }}
+                disabled={isTyping}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 16,
+                  border: `1.5px solid ${isDark ? "#334155" : "#cbd5e1"}`,
+                  background: isDark ? "#0f172a" : "#f1f5f9",
+                  color: t.textPrimary,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: isTyping ? "not-allowed" : "pointer",
+                  flexShrink: 0,
+                  transition: "all 0.15s ease"
+                }}
+                className="hover:scale-105 active:scale-95"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
           {/* Big Tactile Walkie-Talkie Button */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
             <button
@@ -793,7 +842,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         </div>
       ) : (
         /* Chat Content Stream */
-        <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 140px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 220px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {/* Connected Lesson Indicator */}
             {lesson && (
@@ -999,17 +1048,17 @@ export const ChildChat: React.FC<ChildChatProps> = ({
             <div
               style={{
                 position: "fixed",
-                bottom: 0,
+                bottom: 74,
                 left: 0,
                 right: 0,
                 background: t.footerBg,
-                padding: "8px 16px 20px",
+                padding: "8px 16px 12px",
                 borderTop: `1.5px solid ${t.footerBorder}`,
                 boxShadow: isDark ? "0 -4px 20px rgba(0,0,0,0.35)" : "0 -4px 16px rgba(0,0,0,0.04)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 8,
-                zIndex: 10,
+                zIndex: 50,
                 transition: "all 0.2s ease"
               }}
             >
