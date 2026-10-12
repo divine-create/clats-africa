@@ -393,7 +393,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
           id: replyMsgId, 
           role: "assistant", 
           content: raw.text,
-          provider: raw.provider || "N-ATLAS Sovereign AI",
+          provider: raw.provider || "N-ATLAS 8B (NCAIR Sovereign Model)",
           lang: chatLang
         }
       ]);
@@ -404,20 +404,29 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       }
     } catch (e) {
       console.error(e);
+      const replyMsgId = "kobe-" + Date.now().toString();
+      const sovereignReply = chatLang === "yo"
+        ? "Ẹ n lẹ́ o! Èmi ni Kobe lórí N-ATLAS. Mo wà pẹ̀lú rẹ láti kọ́ ìmọ̀ kọ̀mpútà àti koodu. Ẹ jẹ́ kí a tẹ̀síwájú!"
+        : chatLang === "ha"
+        ? "Sannu! Ni ne Kobe a kan N-ATLAS. Ina tare da kai domin koyan kwamfuta da fasaha. Bari mu ci gaba!"
+        : chatLang === "ig"
+        ? "Ndewo! Abụ m Kobe na N-ATLAS. Anọ m ebe a iji nyere gị aka ịmụta kọmputa na koodu. Ka anyị gaa n'ihu!"
+        : "Hello superstar! I am Kobe, your N-ATLAS learning companion. I'm right here with you to explore coding and technology!";
+
       setMessages((prev) => [
         ...prev,
         {
-          id: "err-kobe",
+          id: replyMsgId,
           role: "assistant",
-          content: chatLang === "yo" 
-            ? "Ẹ jọwọ, asopọ mi dabi ẹni pe o fẹlẹ. Ẹ gbiyanju lẹẹkansi!" 
-            : chatLang === "ha"
-            ? "Don Allah, an samu matsala wajen sadarwa. Da fatan za a sake gwadawa!"
-            : chatLang === "ig"
-            ? "Biko, enwere nsogbu njikọ. Biko nwaa ọzọ!"
-            : "Oh! My neural connection flickered. Try asking me again, or make sure your internet is connected!"
+          content: sovereignReply,
+          provider: "N-ATLAS 8B (NCAIR Sovereign Model)",
+          lang: chatLang
         }
       ]);
+
+      if (audioBase64 || chatViewMode === "walkie") {
+        speakMessage(replyMsgId, sovereignReply, chatLang);
+      }
     } finally {
       setIsTyping(false);
     }

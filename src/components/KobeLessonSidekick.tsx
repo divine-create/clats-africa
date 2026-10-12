@@ -270,6 +270,23 @@ export const KobeLessonSidekick: React.FC<KobeLessonSidekickProps> = ({
       }
     } catch (e) {
       console.error("Sidekick chat error:", e);
+      const fallback = activeLang === "yo"
+        ? "Ẹ ku iṣẹ́! Èmi ni Kobe lórí N-ATLAS. Mo gbọ́ ibeere rẹ dáadáa, jẹ́ kí a tẹ̀síwájú nínú ẹ̀kọ́ wa!"
+        : activeLang === "ha"
+        ? "Sannu! Ni ne Kobe a kan N-ATLAS. Na ji tambayarka, bari mu ci gaba da karatunmu!"
+        : activeLang === "ig"
+        ? "Ndewo! Abụ m Kobe na N-ATLAS. Anụrụ m ajụjụ gị, ka anyị gaa n'ihu n'ọmụmụ ihe anyị!"
+        : "Hello superstar! I am Kobe, your N-ATLAS learning companion. Let's keep exploring technology and coding!";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: "a-" + Date.now(),
+          role: "assistant",
+          content: fallback
+        }
+      ]);
+      playYarnVoice(fallback, activeLang);
     } finally {
       setIsLoading(false);
     }
