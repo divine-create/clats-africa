@@ -670,6 +670,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           onLessonComplete={handleLessonComplete}
           lang={lang}
           onClose={() => setActiveTab("home")}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
         />
       )}
 

@@ -4,19 +4,22 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Volume2, Square, Sparkles, Globe, Play, Pause } from "lucide-react";
+import { Mic, MicOff, Volume2, Square, Sparkles, Globe, Play, Pause, Sun, Moon } from "lucide-react";
 import { Child, Lesson, Language } from "../types";
-import { C, F, T, AGE_META, XP_PER_LESSON, XP_PER_CORRECT } from "../utils/config";
-import { Card, Txt, Heading, Label, Chip, Btn } from "./Primitives";
+import { C, F, T, AGE_META } from "../utils/config";
+import { Txt, Heading, Label, Chip, Btn } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx } from "../utils/audio";
+import { useApp } from "../context/AppContext";
 
 interface ChildChatProps {
   child: Child;
-  lesson: Lesson | null;
-  onLessonComplete: (lessonId: string, starsEarned: number, xpEarned: number) => void;
+  lesson?: Lesson | null;
+  onLessonComplete?: (lessonId: string, starsEarned: number, xpEarned: number) => void;
   lang: Language;
   onClose: () => void;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
 }
 
 interface ChatMessage {
@@ -35,13 +38,86 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   lesson,
   onLessonComplete,
   lang,
-  onClose
+  onClose,
+  theme: themeProp,
+  onToggleTheme
 }) => {
   const meta = AGE_META[child.ageGroup] || { color: C.teal, soft: C.tealGhost, kobeStyle: "" };
   const borderCol = meta.color;
   const compName = child.companion === "chibi" ? "Chibi" : "Kobe";
 
-  const [activeTab, setActiveTab] = useState<"lesson" | "chat">("lesson");
+  // Global Context & Local Theme Resolution
+  const { theme: ctxTheme, setTheme: setCtxTheme } = (() => {
+    try {
+      return useApp();
+    } catch {
+      return { theme: "light" as "light" | "dark", setTheme: () => {} };
+    }
+  })();
+
+  const [localTheme, setLocalTheme] = useState<"light" | "dark">(() => {
+    if (themeProp) return themeProp;
+    if (ctxTheme) return ctxTheme;
+    if (typeof localStorage !== "undefined") {
+      const saved = localStorage.getItem("clats_theme") as "light" | "dark";
+      if (saved) return saved;
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    if (themeProp) {
+      setLocalTheme(themeProp);
+    } else if (ctxTheme) {
+      setLocalTheme(ctxTheme);
+    }
+  }, [themeProp, ctxTheme]);
+
+  const isDark = localTheme === "dark";
+
+  const handleToggleTheme = () => {
+    const nextTheme = isDark ? "light" : "dark";
+    setLocalTheme(nextTheme);
+    if (onToggleTheme) {
+      onToggleTheme();
+    } else if (setCtxTheme) {
+      setCtxTheme(nextTheme);
+    }
+    sfx.playTap();
+  };
+
+  // Dynamic Light & Dark Mode Color Tokens
+  const t = {
+    pageBg: isDark ? "#0f172a" : "#f8fafc",
+    cardBg: isDark ? "#1e293b" : "#ffffff",
+    cardBorder: isDark ? "#334155" : "#e2e8f0",
+    inputBg: isDark ? "#0f172a" : "#ffffff",
+    inputBorder: isDark ? "#334155" : "#cbd5e1",
+    tabBg: isDark ? "#1e293b" : "#ffffff",
+    tabBorder: isDark ? "#334155" : "#e2e8f0",
+    tabInactive: isDark ? "#94a3b8" : "#64748b",
+    footerBg: isDark ? "#1e293b" : "#ffffff",
+    footerBorder: isDark ? "#334155" : "#e2e8f0",
+    textPrimary: isDark ? "#f8fafc" : "#0f172a",
+    textSecondary: isDark ? "#cbd5e1" : "#475569",
+    textMuted: isDark ? "#94a3b8" : "#64748b",
+    assistantBubbleBg: isDark ? "#1e293b" : "#ffffff",
+    assistantBubbleBorder: isDark ? "#334155" : "#e2e8f0",
+    assistantText: isDark ? "#f1f5f9" : "#1e293b",
+    langBarBg: isDark ? "#1e293b" : "#ffffff",
+    langBarBorder: isDark ? "#334155" : "#e2e8f0",
+    langInactiveBg: isDark ? "#0f172a" : "#f1f5f9",
+    langInactiveBorder: isDark ? "#334155" : "#cbd5e1",
+    langInactiveText: isDark ? "#cbd5e1" : "#475569",
+    optDefaultBg: isDark ? "#0f172a" : "#f8fafc",
+    optDefaultBorder: isDark ? "#334155" : "#e2e8f0",
+    optDefaultText: isDark ? "#e2e8f0" : "#334155",
+    optBadgeDefaultBg: isDark ? "#334155" : "#e2e8f0",
+    optBadgeDefaultText: isDark ? "#94a3b8" : "#64748b",
+    cardShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.04)",
+    bubbleShadow: isDark ? "0 2px 8px rgba(0,0,0,0.25)" : "0 1px 4px rgba(0,0,0,0.04)"
+  };
+
   const [typedMessage, setTypedMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -56,12 +132,6 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Quiz state
-  const [chosenAnswer, setChosenAnswer] = useState<string | null>(null);
-  const [revealAnswer, setRevealAnswer] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [quizDone, setQuizDone] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -247,12 +317,6 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       provider: "N-ATLAS Multilingual Engine",
       lang: chatLang
     }]);
-    
-    // Reset Quiz
-    setChosenAnswer(null);
-    setRevealAnswer(false);
-    setAttempts(0);
-    setQuizDone(false);
   }, [lesson, chatLang]);
 
   useEffect(() => {
@@ -358,240 +422,110 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     }
   };
 
-  const handleAnswerSelect = (optVal: string) => {
-    if (quizDone) return;
-    setChosenAnswer(optVal);
-    setRevealAnswer(true);
-    setAttempts((prev) => prev + 1);
-
-    const quiz = lesson?.quiz && lesson.quiz.length > 0 ? lesson.quiz[0] : null;
-    if (quiz) {
-      const optionsArray = quiz.opts[lang] || quiz.opts.en || [];
-      const correctText = optionsArray[quiz.ans];
-      if (optVal === correctText) {
-        sfx.playCoin();
-        setQuizDone(true);
-        // stars calculation: 3 if 1st try, 2 if 2nd, 1 rest
-        const earnedStars = Math.max(1, 3 - attempts);
-        const earnedXP = XP_PER_LESSON + (attempts === 0 ? XP_PER_CORRECT : 0);
-        onLessonComplete(lesson.id, earnedStars, earnedXP);
-      } else {
-        sfx.playBuzzer();
-      }
-    }
-  };
-
   const AGE_LABEL_STR = (ag: string) => (ag === "early explorers" ? "Early Explorers" : ag === "young innovators" ? "Young Innovators" : "Future Builders");
   const AGE_AGES_STR = (ag: string) => (ag === "early explorers" ? "6-10" : ag === "young innovators" ? "11-13" : "14-18");
-
-  const quiz = lesson?.quiz && lesson.quiz.length > 0 ? lesson.quiz[0] : null;
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: C.snow,
+        background: t.pageBg,
+        color: t.textPrimary,
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
+        transition: "background-color 0.25s ease, color 0.25s ease"
       }}
     >
       {/* Header Panel */}
       <div
         style={{
-          background: `linear-gradient(135deg, ${borderCol}, ${borderCol}CC)`,
-          padding: "18px 18px 24px",
-          borderRadius: "0 0 22px 22px",
-          position: "relative"
+          background: isDark
+            ? `linear-gradient(135deg, ${borderCol}CC, #0f172a)`
+            : `linear-gradient(135deg, ${borderCol}, ${borderCol}CC)`,
+          padding: "16px 18px 22px",
+          borderRadius: "0 0 24px 24px",
+          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.35)" : "0 4px 16px rgba(0,0,0,0.06)",
+          position: "relative",
+          transition: "all 0.25s ease"
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button
             onClick={onClose}
             style={{
-              background: "rgba(255,255,255,0.18)",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 14px",
-              color: C.white,
+              background: isDark ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.22)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              borderRadius: 10,
+              padding: "7px 14px",
+              color: "#ffffff",
               fontFamily: F.body,
               fontSize: 12.5,
-              fontWeight: 600,
-              cursor: "pointer"
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.2s ease"
             }}
           >
-            ← Close
+            ← Back
           </button>
-          <Chip color={C.white} bg="rgba(255,255,255,0.15)">
-            Lesson View
-          </Chip>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Seamless Light/Dark Mode Switcher */}
+            <button
+              onClick={handleToggleTheme}
+              style={{
+                background: isDark ? "rgba(15,23,42,0.65)" : "rgba(255,255,255,0.25)",
+                border: "1px solid rgba(255,255,255,0.25)",
+                borderRadius: 20,
+                padding: "6px 12px",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backdropFilter: "blur(6px)"
+              }}
+              title={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+            >
+              {isDark ? (
+                <>
+                  <Moon size={14} color="#FACC15" />
+                  <span>Night</span>
+                </>
+              ) : (
+                <>
+                  <Sun size={14} color="#FACC15" />
+                  <span>Day</span>
+                </>
+              )}
+            </button>
+
+            <Chip color="#ffffff" bg={isDark ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.2)"}>
+              Voice AI Tutor
+            </Chip>
+          </div>
         </div>
 
-        {lesson && (
-          <div style={{ marginTop: 14 }}>
-            <Txt size={11} color="rgba(255,255,255,0.7)" style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Active Module Lesson · {lesson.code}
-            </Txt>
-            <Heading size={18} color={C.white} style={{ marginTop: 2 }}>
-              {lesson.title[lang] || lesson.title.en}
+        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 12 }}>
+          <KobeAvatar size={42} ageGroup={child.ageGroup} character={child.companion || "kobe"} />
+          <div>
+            <Heading size={19} color="#ffffff">
+              {compName} AI Learning Companion
             </Heading>
+            <Txt size={12.5} color="rgba(255,255,255,0.9)">
+              {lesson 
+                ? `Ready to discuss: "${lesson.title[chatLang] || lesson.title.en}"`
+                : "Ask me anything in English, Yorùbá, Hausa, or Igbo!"}
+            </Txt>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Tabs list (Study Lesson vs Chat Kobe) */}
-      <div style={{ display: "flex", borderBottom: "1.5px solid " + C.mist, background: C.white }}>
-        <button
-          onClick={() => setActiveTab("lesson")}
-          style={{
-            flex: 1,
-            padding: "14px 0",
-            border: "none",
-            borderBottom: "3px solid " + (activeTab === "lesson" ? borderCol : "transparent"),
-            color: activeTab === "lesson" ? borderCol : C.stone,
-            fontFamily: F.body,
-            fontSize: 13.5,
-            fontWeight: 700,
-            cursor: "pointer",
-            background: "transparent",
-            transition: "all 0.15s"
-          }}
-        >
-          📖 Core Lesson & Quiz
-        </button>
-        <button
-          onClick={() => setActiveTab("chat")}
-          style={{
-            flex: 1,
-            padding: "14px 0",
-            border: "none",
-            borderBottom: "3px solid " + (activeTab === "chat" ? borderCol : "transparent"),
-            color: activeTab === "chat" ? borderCol : C.stone,
-            fontFamily: F.body,
-            fontSize: 13.5,
-            fontWeight: 700,
-            cursor: "pointer",
-            background: "transparent",
-            transition: "all 0.15s"
-          }}
-        >
-          🤖 Chat with Kobe
-        </button>
-      </div>
-
-      {/* Content Stream */}
+      {/* Chat Content Stream */}
       <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 120px" }}>
-        {activeTab === "lesson" && lesson && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Card>
-              <Label style={{ marginBottom: 6 }}>Lesson Overview</Label>
-              <Txt size={14} color={C.charcoal} style={{ lineHeight: 1.7, display: "block" }}>
-                {lesson.story ? (lesson.story[lang] || lesson.story.en) : ""}
-              </Txt>
-            </Card>
-
-            {quiz && (() => {
-              const optionsArray = quiz.opts[lang] || quiz.opts.en || [];
-              const correctText = optionsArray[quiz.ans];
-              return (
-                <Card style={{ border: "1px solid " + C.mist }}>
-                  <Label color={borderCol} style={{ marginBottom: 8 }}>
-                    Lesson Quiz Challenge
-                  </Label>
-                  <Txt size={14} weight={700} style={{ display: "block", marginBottom: 14 }}>
-                    {quiz.q[lang] || quiz.q.en}
-                  </Txt>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {optionsArray.map((optText, optIdx) => {
-                      const isSelected = chosenAnswer === optText;
-                      const isCorrect = optIdx === quiz.ans;
-                      
-                      let bg = C.snow;
-                      let border = "1px solid " + C.mist;
-                      let fontW = 500;
-
-                      if (revealAnswer && isSelected) {
-                        if (isCorrect) {
-                          bg = C.green + "0D";
-                          border = "2px solid " + C.green;
-                        } else {
-                          bg = C.red + "0D";
-                          border = "2px solid " + C.red;
-                        }
-                        fontW = 700;
-                      }
-
-                      return (
-                        <button
-                          key={optIdx}
-                          onClick={() => handleAnswerSelect(optText)}
-                          disabled={quizDone}
-                          style={{
-                            background: bg,
-                            border: border,
-                            borderRadius: 11,
-                            padding: "12px 14px",
-                            textAlign: "left",
-                            cursor: quizDone ? "default" : "pointer",
-                            transition: "all 0.15s",
-                            width: "100%"
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div
-                              style={{
-                                width: 22,
-                                height: 22,
-                                borderRadius: "50%",
-                                background: isSelected ? borderCol : C.mist,
-                                color: isSelected ? C.white : C.slate,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 11,
-                                fontWeight: 700
-                              }}
-                            >
-                              {String.fromCharCode(65 + optIdx)}
-                            </div>
-                            <Txt size={13.5} weight={fontW} color={C.slate} style={{ flex: 1 }}>
-                              {optText}
-                            </Txt>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {revealAnswer && (
-                    <div
-                      style={{
-                        marginTop: 18,
-                        padding: "12px 14px",
-                        background: chosenAnswer === correctText ? C.green + "0D" : C.red + "0D",
-                        borderRadius: 10,
-                        border: "1px solid " + (chosenAnswer === correctText ? C.green : C.red) + "25"
-                      }}
-                    >
-                      <Txt size={13} weight={700} color={chosenAnswer === correctText ? C.green : C.red}>
-                        {chosenAnswer === correctText ? T[lang].correct : T[lang].incorrect}
-                      </Txt>
-                      <br />
-                      <Txt size={12} color={C.slate} style={{ display: "block", marginTop: 4, lineHeight: 1.6 }}>
-                        {chosenAnswer === correctText
-                          ? `Wonderful! You correctly solved this logic! You earned high rating points. Tap the tab above to chat with me if you want to explore more.`
-                          : `💡 Hint: Re-read the lesson storyboard above to find the correct answer!`}
-                      </Txt>
-                    </div>
-                  )}
-                </Card>
-              );
-            })()}
-          </div>
-        )}
-
-        {activeTab === "chat" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {/* 1. N-ATLAS Multilingual Sovereign Selector Bar */}
             <div
               style={{
@@ -600,15 +534,16 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                 justifyContent: "space-between",
                 flexWrap: "wrap",
                 gap: 8,
-                background: C.white,
-                padding: "8px 12px",
-                borderRadius: 14,
-                border: "1px solid " + C.mist,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+                background: t.langBarBg,
+                padding: "10px 14px",
+                borderRadius: 16,
+                border: `1.5px solid ${t.langBarBorder}`,
+                boxShadow: t.cardShadow,
+                transition: "all 0.2s ease"
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.slate }}>🌍 Language:</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: t.textSecondary }}>🌍 Language:</span>
                 {(
                   [
                     { code: "en", label: "English 🇬🇧" },
@@ -626,11 +561,11 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                         setChatLang(langOpt.code as Language);
                       }}
                       style={{
-                        padding: "4px 10px",
+                        padding: "5px 12px",
                         borderRadius: 20,
-                        border: isActive ? `2px solid ${borderCol}` : "1px solid " + C.mist,
-                        background: isActive ? borderCol + "15" : C.snow,
-                        color: isActive ? borderCol : C.slate,
+                        border: isActive ? `2px solid ${borderCol}` : `1px solid ${t.langInactiveBorder}`,
+                        background: isActive ? borderCol + "22" : t.langInactiveBg,
+                        color: isActive ? borderCol : t.langInactiveText,
                         fontWeight: isActive ? 800 : 600,
                         fontSize: 11.5,
                         cursor: "pointer",
@@ -644,8 +579,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Sparkles size={12} color="#10B981" />
-                <span style={{ fontSize: 10, fontWeight: 800, color: "#10B981", letterSpacing: 0.4, textTransform: "uppercase" }}>
+                <Sparkles size={13} color="#10B981" />
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: "#10B981", letterSpacing: 0.5, textTransform: "uppercase" }}>
                   N-ATLAS Sovereign AI
                 </span>
               </div>
@@ -680,28 +615,29 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                     {isKobe && <KobeAvatar size={34} ageGroup={child.ageGroup} character={child.companion || "kobe"} />}
                     <div
                       style={{
-                        background: isKobe ? C.white : borderCol,
-                        color: isKobe ? C.charcoal : C.white,
-                        border: isKobe ? "1px solid " + C.mist : "none",
-                        borderRadius: isKobe ? "0 14px 14px 14px" : "14px 14px 0 14px",
-                        padding: "10px 14px",
+                        background: isKobe ? t.assistantBubbleBg : borderCol,
+                        color: isKobe ? t.assistantText : "#ffffff",
+                        border: isKobe ? `1.5px solid ${t.assistantBubbleBorder}` : "none",
+                        borderRadius: isKobe ? "0 16px 16px 16px" : "16px 16px 0 16px",
+                        padding: "12px 15px",
                         maxWidth: "80%",
-                        boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
+                        boxShadow: t.bubbleShadow,
+                        transition: "all 0.2s ease"
                       }}
                     >
                       {isKobe && (
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 12 }}>
                           <Label color={borderCol} style={{ fontSize: 10.5, fontWeight: 800 }}>
                             {compName} • {m.provider || "N-ATLAS"}
                           </Label>
                           <button
                             onClick={() => speakMessage(m.id, m.content, m.lang || chatLang)}
                             style={{
-                              background: isSpeakingThis ? borderCol : borderCol + "15",
-                              color: isSpeakingThis ? C.white : borderCol,
-                              border: "none",
+                              background: isSpeakingThis ? borderCol : (isDark ? "rgba(34,211,238,0.18)" : "rgba(34,211,238,0.1)"),
+                              color: isSpeakingThis ? "#ffffff" : (isDark ? "#38bdf8" : borderCol),
+                              border: isSpeakingThis ? "none" : `1px solid ${borderCol}40`,
                               borderRadius: 14,
-                              padding: "3px 8px",
+                              padding: "3px 9px",
                               fontSize: 10.5,
                               fontWeight: 700,
                               display: "flex",
@@ -710,7 +646,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                               cursor: "pointer",
                               transition: "all 0.2s"
                             }}
-                            title="Listen to response"
+                            title="Listen to response in YarnGPT voice"
                           >
                             <Volume2 size={12} />
                             {isSpeakingThis ? (isSynthesizing ? "Connecting..." : "Playing...") : "Listen"}
@@ -724,12 +660,16 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                           <audio 
                             src={m.audioUrl} 
                             controls 
-                            style={{ height: 32, width: 220, filter: "contrast(85%)" }} 
+                            style={{ 
+                              height: 32, 
+                              width: 220, 
+                              filter: isDark ? "invert(88%) hue-rotate(180deg)" : "contrast(90%)" 
+                            }} 
                           />
                         </div>
                       )}
 
-                      <Txt size={13} style={{ lineHeight: 1.6, display: "block" }}>
+                      <Txt size={13.5} color={isKobe ? t.assistantText : "#ffffff"} style={{ lineHeight: 1.6, display: "block" }}>
                         {m.content}
                       </Txt>
                     </div>
@@ -742,13 +682,14 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                   <KobeAvatar size={34} ageGroup={child.ageGroup} character={child.companion || "kobe"} pulse />
                   <div
                     style={{
-                      background: C.white,
-                      border: "1px solid " + C.mist,
+                      background: t.cardBg,
+                      border: `1.5px solid ${t.cardBorder}`,
                       borderRadius: "0 14px 14px 14px",
-                      padding: "8px 12px"
+                      padding: "10px 14px",
+                      boxShadow: t.bubbleShadow
                     }}
                   >
-                    <Txt size={12} color={C.stone}>
+                    <Txt size={12} color={t.textSecondary}>
                       {compName} is processing on N-ATLAS...
                     </Txt>
                   </div>
@@ -763,13 +704,15 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                 bottom: 0,
                 left: 0,
                 right: 0,
-                background: C.white,
-                padding: "12px 14px 22px",
-                borderTop: "1.5px solid " + C.mist,
+                background: t.footerBg,
+                padding: "12px 16px 22px",
+                borderTop: `1.5px solid ${t.footerBorder}`,
+                boxShadow: isDark ? "0 -4px 20px rgba(0,0,0,0.35)" : "0 -4px 16px rgba(0,0,0,0.04)",
                 display: "flex",
-                gap: 8,
+                gap: 10,
                 alignItems: "center",
-                zIndex: 10
+                zIndex: 10,
+                transition: "all 0.2s ease"
               }}
             >
               {isRecording ? (
@@ -780,7 +723,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    background: "#FEE2E2",
+                    background: isDark ? "rgba(239,68,68,0.22)" : "#FEE2E2",
                     border: "1.5px solid #EF4444",
                     borderRadius: 14,
                     padding: "8px 14px"
@@ -796,7 +739,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                         animation: "pulse 1s infinite"
                       }}
                     />
-                    <Txt size={13} weight={800} color="#B91C1C">
+                    <Txt size={13} weight={800} color={isDark ? "#fca5a5" : "#B91C1C"}>
                       Recording ({recordingSeconds}s)... Speak now in {chatLang.toUpperCase()}
                     </Txt>
                   </div>
@@ -805,13 +748,13 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                     <button
                       onClick={() => stopRecording(true)}
                       style={{
-                        background: "rgba(0,0,0,0.06)",
+                        background: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)",
                         border: "none",
                         borderRadius: 10,
                         padding: "6px 10px",
                         fontSize: 12,
                         fontWeight: 700,
-                        color: "#7F1D1D",
+                        color: isDark ? "#fca5a5" : "#7F1D1D",
                         cursor: "pointer"
                       }}
                     >
@@ -826,7 +769,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                         padding: "6px 14px",
                         fontSize: 12,
                         fontWeight: 800,
-                        color: C.white,
+                        color: "#ffffff",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -844,7 +787,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                     onClick={startRecording}
                     disabled={isTyping}
                     style={{
-                      background: "#10B98115",
+                      background: isDark ? "rgba(16,185,129,0.2)" : "#10B98115",
                       border: "1.5px solid #10B981",
                       borderRadius: 12,
                       width: 44,
@@ -878,13 +821,15 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                     }
                     style={{
                       flex: 1,
-                      background: C.snow,
-                      border: "1px solid " + C.mist,
+                      background: t.inputBg,
+                      border: `1.5px solid ${t.inputBorder}`,
+                      color: t.textPrimary,
                       borderRadius: 12,
                       padding: "10px 14px",
                       fontSize: 13.5,
                       outline: "none",
-                      fontFamily: F.body
+                      fontFamily: F.body,
+                      transition: "all 0.2s ease"
                     }}
                   />
 
@@ -895,33 +840,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
               )}
             </div>
           </div>
-        )}
       </div>
-
-      {activeTab === "lesson" && quizDone && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: "rgba(255,255,255,0.96)",
-            backdropFilter: "blur(6px)",
-            padding: "14px 16px 22px",
-            borderTop: "1px solid " + C.mist,
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 10
-          }}
-        >
-          <Btn variant="yellow" size="lg" style={{ minWidth: 200 }} onClick={() => {
-            sfx.playLevelUp();
-            onClose();
-          }}>
-            Finish & Continue
-          </Btn>
-        </div>
-      )}
     </div>
   );
 };
