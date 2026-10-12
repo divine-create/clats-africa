@@ -22,6 +22,7 @@ import { ChildProgressScreen } from "./ChildProgress";
 import { LessonContent } from "./LessonContent";
 import { ChildGames } from "./ChildGames";
 import { ChildRewards } from "./ChildRewards";
+import { ChildChat } from "./ChildChat";
 import { CURRICULUM } from "../data/curriculum";
 import { PaywallModal } from "./PaywallModal";
 
@@ -35,7 +36,7 @@ interface ChildAppProps {
   onToggleTheme?: () => void;
 }
 
-type TabType = "home" | "map" | "progress" | "chat" | "games" | "rewards";
+type TabType = "home" | "map" | "progress" | "chat" | "lesson" | "games" | "rewards";
 
 const AGE_META_RESOLVE = (ag: string) => {
   if (ag === "early explorers") return { color: C.amber, soft: C.yellowSoft };
@@ -626,7 +627,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
                 if (!child.completed?.[les.id]) {
                   setSelModule(mod);
                   setSelLesson(les);
-                  setActiveTab("chat");
+                  setActiveTab("lesson");
                   return;
                 }
               }
@@ -635,7 +636,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             if (course.modules[0] && course.modules[0].lessons[0]) {
               setSelModule(course.modules[0]);
               setSelLesson(course.modules[0].lessons[0]);
-              setActiveTab("chat");
+              setActiveTab("lesson");
             }
           }}
           lang={lang}
@@ -651,24 +652,29 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           theme={theme}
           onBack={() => setActiveTab("home")}
           onSelectLesson={(l) => {
-            // SagaMap only hands back the lesson, not its module -- without also
-            // setting selModule here, it's left null/stale, so the "Continue to
-            // Next Lesson" button's selModule.lessons lookup silently fails to
-            // find the current lesson and never advances selLesson. The button's
-            // own step-machine reset still runs though, so the same lesson just
-            // replays from the start instead of moving forward.
             const course = CURRICULUM[child.ageGroup || "early explorers"];
             const mod = course?.modules?.find((m) => m.lessons.some((les) => les.id === l.id));
             if (mod) setSelModule(mod);
             setSelLesson(l);
-            setActiveTab("chat");
+            setActiveTab("lesson");
           }}
           onShowPaywall={() => setShowHandoff(true)}
         />
       )}
 
-      {/* Active Lesson Quiz & Chat Portal */}
-      {activeTab === "chat" && (() => {
+      {/* Kobe Multilingual Voice AI Tutor */}
+      {activeTab === "chat" && (
+        <ChildChat
+          child={child}
+          lesson={selLesson}
+          onLessonComplete={handleLessonComplete}
+          lang={lang}
+          onClose={() => setActiveTab("home")}
+        />
+      )}
+
+      {/* Active Lesson Interactive Learning Video & Quiz Portal */}
+      {activeTab === "lesson" && (() => {
         const isLastLesson = selModule && selLesson && selModule.lessons.findIndex((l) => l.id === selLesson.id) === selModule.lessons.length - 1;
         const course = CURRICULUM[child.ageGroup || "early explorers"];
         let nextModule = null;
@@ -749,7 +755,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       )}
 
       {/* Primary child navigation dock (Always present unless inside Active Lesson screen for focus) */}
-      {activeTab !== "chat" && (
+      {activeTab !== "lesson" && (
         <div
           style={{
             position: "fixed",
@@ -766,6 +772,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         >
           {[
             { id: "home" as const, label: "Learn", icon: "🗺️" },
+            { id: "chat" as const, label: "AI Tutor", icon: "🤖" },
             { id: "games" as const, label: "Games", icon: "🎮" },
             { id: "rewards" as const, label: "Rewards", icon: "🏆" },
             { id: "progress" as const, label: "Profile", icon: "📊" }
