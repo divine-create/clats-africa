@@ -54,10 +54,7 @@ const MeadowLevel = ({ onComplete, onBack }: { onComplete: () => void; onBack: (
     sfx.play("pop");
   }, []);
 
-  const handleDrop = (e: React.DragEvent, targetSlotId: number) => {
-    e.preventDefault();
-    const draggedShapeId = e.dataTransfer.getData("shapeId") as ShapeId;
-    
+  const fillSlotWithShape = (draggedShapeId: ShapeId, targetSlotId: number) => {
     setSequence((prev) => {
       const newSeq = prev.map(s => {
         if (s.id === targetSlotId && s.isMissing) {
@@ -90,6 +87,23 @@ const MeadowLevel = ({ onComplete, onBack }: { onComplete: () => void; onBack: (
     });
   };
 
+  const handleDrop = (e: React.DragEvent, targetSlotId: number) => {
+    e.preventDefault();
+    const draggedShapeId = e.dataTransfer.getData("shapeId") as ShapeId;
+    if (draggedShapeId) {
+      fillSlotWithShape(draggedShapeId, targetSlotId);
+    }
+  };
+
+  const handleOptionClick = (opt: ShapeId) => {
+    if (isSuccess) return;
+    const missingSlot = sequence.find(s => s.isMissing && !s.filledWith) || sequence.find(s => s.isMissing);
+    if (missingSlot) {
+      sfx.play("pop");
+      fillSlotWithShape(opt, missingSlot.id);
+    }
+  };
+
   const getShapeStyle = (id: ShapeId | null) => {
     if (!id) return {};
     if (id === "red-circle") return { backgroundColor: "#EF4444", borderRadius: "50%", width: 60, height: 60 };
@@ -111,7 +125,9 @@ const MeadowLevel = ({ onComplete, onBack }: { onComplete: () => void; onBack: (
 
       <div className="absolute top-10 flex flex-col items-center">
         <h2 className="text-3xl font-black text-green-800 drop-shadow-sm" style={{ fontFamily: F.display }}>Pattern Meadow</h2>
-        <p className="text-green-700 font-bold bg-white/50 px-4 py-1 rounded-full mt-2">Fix the broken bridge to cross!</p>
+        <p className="text-green-700 font-bold bg-white/70 px-4 py-1.5 rounded-full mt-2 text-sm shadow-sm">
+          💡 Tap or drag a shape to complete the pattern and fix the bridge!
+        </p>
       </div>
 
       <AnimatePresence>
@@ -131,7 +147,7 @@ const MeadowLevel = ({ onComplete, onBack }: { onComplete: () => void; onBack: (
       </AnimatePresence>
 
       {/* The Bridge (Sequence) */}
-      <div className="flex gap-4 mb-20 p-8 bg-white/30 backdrop-blur-sm rounded-3xl border-4 border-white/40 shadow-lg mt-20">
+      <div className="flex gap-4 mb-16 p-8 bg-white/30 backdrop-blur-sm rounded-3xl border-4 border-white/40 shadow-lg mt-24">
         {sequence.map((slot) => (
           <div 
             key={slot.id}
@@ -139,9 +155,16 @@ const MeadowLevel = ({ onComplete, onBack }: { onComplete: () => void; onBack: (
               if (slot.isMissing && !isSuccess) e.preventDefault();
             }}
             onDrop={(e) => handleDrop(e, slot.id)}
+            onClick={() => {
+              if (slot.isMissing && slot.filledWith && !isSuccess) {
+                sfx.play("pop");
+                setSequence(p => p.map(x => x.id === slot.id ? { ...x, filledWith: null } : x));
+              }
+            }}
             className={`w-24 h-24 rounded-2xl flex items-center justify-center transition-all ${
               slot.isMissing && !slot.filledWith ? "bg-white/40 border-4 border-dashed border-white animate-pulse" : "bg-white/80"
-            }`}
+            } ${slot.isMissing && slot.filledWith && !isSuccess ? "cursor-pointer hover:opacity-80" : ""}`}
+            title={slot.isMissing && slot.filledWith ? "Tap to remove" : undefined}
           >
             {slot.filledWith && (
               <motion.div 
@@ -151,29 +174,34 @@ const MeadowLevel = ({ onComplete, onBack }: { onComplete: () => void; onBack: (
               />
             )}
             {slot.isMissing && !slot.filledWith && (
-              <span className="text-3xl opacity-30">?</span>
+              <span className="text-3xl opacity-30 select-none">?</span>
             )}
           </div>
         ))}
       </div>
 
       {/* Options Bank */}
-      <div className="flex gap-6 mt-10">
-        {options.map((opt, i) => (
-          <motion.div 
-            key={i}
-            draggable={!isSuccess}
-            onDragStart={(e: any) => {
-              e.dataTransfer.setData("shapeId", opt);
-              sfx.play("pop");
-            }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="w-24 h-24 bg-white rounded-2xl shadow-md flex items-center justify-center cursor-grab active:cursor-grabbing border-b-4 border-slate-200"
-          >
-            <div style={getShapeStyle(opt)} className="pointer-events-none" />
-          </motion.div>
-        ))}
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-green-800 text-xs font-bold uppercase tracking-wider">Choose a Shape:</span>
+        <div className="flex gap-6">
+          {options.map((opt, i) => (
+            <motion.div 
+              key={i}
+              draggable={!isSuccess}
+              onDragStart={(e: any) => {
+                e.dataTransfer.setData("shapeId", opt);
+                sfx.play("pop");
+              }}
+              onClick={() => handleOptionClick(opt)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-24 h-24 bg-white rounded-2xl shadow-md flex items-center justify-center cursor-pointer active:scale-95 border-b-4 border-slate-200 hover:border-green-400 transition"
+              title="Click or drag to place"
+            >
+              <div style={getShapeStyle(opt)} className="pointer-events-none" />
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );

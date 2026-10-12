@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
+import { Mic, MicOff, Volume2, Square, Sparkles, Globe, Play, Pause } from "lucide-react";
 import { Child, Lesson, Language } from "../types";
 import { C, F, T, AGE_META, XP_PER_LESSON, XP_PER_CORRECT } from "../utils/config";
 import { Card, Txt, Heading, Label, Chip, Btn } from "./Primitives";
@@ -22,6 +23,11 @@ interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  isVoice?: boolean;
+  audioUrl?: string;
+  voiceDuration?: number;
+  provider?: string;
+  lang?: Language;
 }
 
 export const ChildChat: React.FC<ChildChatProps> = ({
@@ -39,6 +45,16 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   const [typedMessage, setTypedMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  
+  // Multilingual & Voice State (N-ATLAS Sovereign Integration)
+  const [chatLang, setChatLang] = useState<Language>(lang);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Quiz state
   const [chosenAnswer, setChosenAnswer] = useState<string | null>(null);
@@ -48,35 +64,183 @@ export const ChildChat: React.FC<ChildChatProps> = ({
 
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Clean up media streams and speech on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Text to Speech playback
+  const speakMessage = (msgId: string, text: string, targetLang: Language) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    
+    if (speakingMsgId === msgId) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setSpeakingMsgId(msgId);
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const langLocales: Record<Language, string> = {
+      en: "en-NG",
+      yo: "yo-NG",
+      ha: "ha-NG",
+      ig: "ig-NG"
+    };
+    utterance.lang = langLocales[targetLang] || "en-US";
+    utterance.pitch = 1.1; // Friendly child companion pitch
+    utterance.rate = 0.95;
+
+    utterance.onend = () => setSpeakingMsgId(null);
+    utterance.onerror = () => setSpeakingMsgId(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Start Voice Recording
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone access is not supported in this browser.");
+        return;
+      }
+
+      sfx.playTap();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.start(100);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Microphone error:", err);
+      alert("Please allow microphone access to talk to Kobe!");
+    }
+  };
+
+  // Stop Recording & Send Voice Note
+  const stopRecording = (cancel = false) => {
+    if (!mediaRecorderRef.current || !isRecording) return;
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const recorder = mediaRecorderRef.current;
+    const duration = recordingSeconds;
+    setIsRecording(false);
+    setRecordingSeconds(0);
+
+    recorder.onstop = async () => {
+      // Stop all audio tracks
+      recorder.stream.getTracks().forEach((track) => track.stop());
+
+      if (cancel || audioChunksRef.current.length === 0) {
+        sfx.play("pop");
+        return;
+      }
+
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      const localAudioUrl = URL.createObjectURL(audioBlob);
+
+      // Convert Blob to Base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        const base64Data = (reader.result as string)?.split(",")[1];
+        if (base64Data) {
+          await send(undefined, base64Data, localAudioUrl, duration);
+        }
+      };
+    };
+
+    recorder.stop();
+  };
+
   // Restart chat on tab or lesson updates
   useEffect(() => {
-    const freshIntro = lesson
-      ? `Hello! I am ${compName}, your tech assistant. Ask me anything about our lesson today: "${
-          lesson.title[lang] || lesson.title.en
-        }"!`
-      : `Hello! I am ${compName}. You can ask me any question about Artificial Intelligence, Coding, Cyber Safety, or Design!`;
+    const welcomePhrases: Record<Language, string> = {
+      en: lesson 
+        ? `Hello! I am ${compName}, your tech assistant. Ask me anything about our lesson today: "${lesson.title[chatLang] || lesson.title.en}"!`
+        : `Hello! I am ${compName}. Tap the microphone or type to ask me anything in English, Yorùbá, Hausa, or Igbo!`,
+      yo: lesson
+        ? `Bawo ni! Emi ni ${compName}. Beere ohunkohun nipa eko wa loni: "${lesson.title[chatLang] || lesson.title.en}"!`
+        : `Bawo ni! Emi ni ${compName}. Te bọtini gbohungbohun lati ba mi soro ni Ede Yoruba!`,
+      ha: lesson
+        ? `Sannu! Ni ne ${compName}. Tambaye ni komai game da darasinmu a yau: "${lesson.title[chatLang] || lesson.title.en}"!`
+        : `Sannu! Ni ne ${compName}. Danna makirufo domin yin magana da ni a harshen Hausa!`,
+      ig: lesson
+        ? `Ndị kedu! Abụ m ${compName}. Jụọ m ihe ọ bụla gbasara ihe mmụta anyị taa: "${lesson.title[chatLang] || lesson.title.en}"!`
+        : `Ndị kedu! Abụ m ${compName}. Pịa maikrofon ka anyị kparịta ụka n'asụsụ Igbo!`
+    };
 
-    setMessages([{ id: "intro", role: "assistant", content: freshIntro }]);
+    setMessages([{ 
+      id: "intro", 
+      role: "assistant", 
+      content: welcomePhrases[chatLang] || welcomePhrases.en,
+      provider: "N-ATLAS Multilingual Engine",
+      lang: chatLang
+    }]);
     
     // Reset Quiz
     setChosenAnswer(null);
     setRevealAnswer(false);
     setAttempts(0);
     setQuizDone(false);
-  }, [lesson, lang]);
+  }, [lesson, chatLang]);
 
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  }, [messages, isTyping, isRecording]);
 
-  const send = async () => {
-    if (!typedMessage.trim() || isTyping) return;
-    const text = typedMessage.trim();
-    setTypedMessage("");
+  const send = async (
+    textOverride?: string, 
+    audioBase64?: string, 
+    audioUrl?: string, 
+    voiceDuration?: number
+  ) => {
+    const text = textOverride ?? typedMessage.trim();
+    if ((!text && !audioBase64) || isTyping) return;
+    
+    if (!audioBase64) {
+      setTypedMessage("");
+    }
 
-    const uMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: text };
+    const uMsg: ChatMessage = { 
+      id: Date.now().toString(), 
+      role: "user", 
+      content: audioBase64 ? `🎙️ Voice Note (${voiceDuration || 1}s)` : text,
+      isVoice: Boolean(audioBase64),
+      audioUrl: audioUrl,
+      voiceDuration: voiceDuration,
+      lang: chatLang
+    };
+
     setMessages((prev) => [...prev, uMsg]);
     setIsTyping(true);
 
@@ -90,8 +254,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       `The child's track is "${AGE_LABEL_STR(child.ageGroup)}" for age levels ${AGE_AGES_STR(child.ageGroup)}.`,
       `Ensure you adjust your tone to their age traits. Your character traits for this track:`,
       `[CHARACTER DETAILS]: ${meta.kobeStyle}`,
-      `Keep your chat responses informative but highly concise (max 2-3 short paragraphs).`,
-      `The child's language code is "${lang}". If requested, explain translations.`,
+      `Keep your chat responses informative, warm, and concise (max 2-3 short paragraphs).`,
+      `The child's selected language is "${chatLang}". Respond strictly in this language.`,
       contextPrompt
     ].join("\n");
 
@@ -100,9 +264,11 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: text,
+          message: text || undefined,
+          audioBase64: audioBase64 || undefined,
+          language: chatLang,
           systemPrompt: sysPrompt,
-          history: messages.slice(-10) // Limit depth
+          history: messages.slice(-8) // Limit depth
         })
       });
 
@@ -111,10 +277,23 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       }
 
       const raw = await apiResponse.json();
+      const replyMsgId = "kobe-" + Date.now().toString();
+
       setMessages((prev) => [
         ...prev,
-        { id: "kobe-" + Date.now().toString(), role: "assistant", content: raw.text }
+        { 
+          id: replyMsgId, 
+          role: "assistant", 
+          content: raw.text,
+          provider: raw.provider || "N-ATLAS Sovereign AI",
+          lang: chatLang
+        }
       ]);
+
+      // If user sent a voice question, automatically speak back the first sentence
+      if (audioBase64) {
+        speakMessage(replyMsgId, raw.text, chatLang);
+      }
     } catch (e) {
       console.error(e);
       setMessages((prev) => [
@@ -122,7 +301,13 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         {
           id: "err-kobe",
           role: "assistant",
-          content: "Oh! My neural connection flickered. Try asking me again, or make sure your internet is connected!"
+          content: chatLang === "yo" 
+            ? "Ẹ jọwọ, asopọ mi dabi ẹni pe o fẹlẹ. Ẹ gbiyanju lẹẹkansi!" 
+            : chatLang === "ha"
+            ? "Don Allah, an samu matsala wajen sadarwa. Da fatan za a sake gwadawa!"
+            : chatLang === "ig"
+            ? "Biko, enwere nsogbu njikọ. Biko nwaa ọzọ!"
+            : "Oh! My neural connection flickered. Try asking me again, or make sure your internet is connected!"
         }
       ]);
     } finally {
@@ -364,19 +549,81 @@ export const ChildChat: React.FC<ChildChatProps> = ({
 
         {activeTab === "chat" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* 1. N-ATLAS Multilingual Sovereign Selector Bar */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 8,
+                background: C.white,
+                padding: "8px 12px",
+                borderRadius: 14,
+                border: "1px solid " + C.mist,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.slate }}>🌍 Language:</span>
+                {(
+                  [
+                    { code: "en", label: "English 🇬🇧" },
+                    { code: "yo", label: "Yorùbá 🇳🇬" },
+                    { code: "ha", label: "Hausa 🇳🇬" },
+                    { code: "ig", label: "Igbo 🇳🇬" }
+                  ] as const
+                ).map((langOpt) => {
+                  const isActive = chatLang === langOpt.code;
+                  return (
+                    <button
+                      key={langOpt.code}
+                      onClick={() => {
+                        sfx.playTap();
+                        setChatLang(langOpt.code as Language);
+                      }}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                        border: isActive ? `2px solid ${borderCol}` : "1px solid " + C.mist,
+                        background: isActive ? borderCol + "15" : C.snow,
+                        color: isActive ? borderCol : C.slate,
+                        fontWeight: isActive ? 800 : 600,
+                        fontSize: 11.5,
+                        cursor: "pointer",
+                        transition: "all 0.15s"
+                      }}
+                    >
+                      {langOpt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <Sparkles size={12} color="#10B981" />
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#10B981", letterSpacing: 0.4, textTransform: "uppercase" }}>
+                  N-ATLAS Sovereign AI
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Messages List */}
             <div
               ref={listRef}
               style={{
                 display: "flex",
                 flexDirection: "column",
                 gap: 12,
-                maxHeight: 400,
+                maxHeight: 380,
                 overflowY: "auto",
                 paddingRight: 4
               }}
             >
               {messages.map((m) => {
                 const isKobe = m.role === "assistant";
+                const isSpeakingThis = speakingMsgId === m.id;
+
                 return (
                   <div
                     key={m.id}
@@ -395,15 +642,50 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                         border: isKobe ? "1px solid " + C.mist : "none",
                         borderRadius: isKobe ? "0 14px 14px 14px" : "14px 14px 0 14px",
                         padding: "10px 14px",
-                        maxWidth: "75%",
+                        maxWidth: "80%",
                         boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
                       }}
                     >
                       {isKobe && (
-                        <Label color={borderCol} style={{ marginBottom: 2 }}>
-                          {compName} Assistant
-                        </Label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 12 }}>
+                          <Label color={borderCol} style={{ fontSize: 10.5, fontWeight: 800 }}>
+                            {compName} • {m.provider || "N-ATLAS"}
+                          </Label>
+                          <button
+                            onClick={() => speakMessage(m.id, m.content, m.lang || chatLang)}
+                            style={{
+                              background: isSpeakingThis ? borderCol : borderCol + "15",
+                              color: isSpeakingThis ? C.white : borderCol,
+                              border: "none",
+                              borderRadius: 14,
+                              padding: "3px 8px",
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                            title="Listen to response"
+                          >
+                            <Volume2 size={12} />
+                            {isSpeakingThis ? "Playing..." : "Listen"}
+                          </button>
+                        </div>
                       )}
+
+                      {/* If user sent voice note */}
+                      {m.isVoice && m.audioUrl && (
+                        <div style={{ marginBottom: 6 }}>
+                          <audio 
+                            src={m.audioUrl} 
+                            controls 
+                            style={{ height: 32, width: 220, filter: "contrast(85%)" }} 
+                          />
+                        </div>
+                      )}
+
                       <Txt size={13} style={{ lineHeight: 1.6, display: "block" }}>
                         {m.content}
                       </Txt>
@@ -424,14 +706,14 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                     }}
                   >
                     <Txt size={12} color={C.stone}>
-                      {compName} is thinking...
+                      {compName} is processing on N-ATLAS...
                     </Txt>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Input keyboard bar footer */}
+            {/* 3. Input & Voice Recording Footer Bar */}
             <div
               style={{
                 position: "fixed",
@@ -443,29 +725,131 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                 borderTop: "1.5px solid " + C.mist,
                 display: "flex",
                 gap: 8,
+                alignItems: "center",
                 zIndex: 10
               }}
             >
-              <input
-                type="text"
-                value={typedMessage}
-                onChange={(e) => setTypedMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder={T[lang].askKobe + "..."}
-                style={{
-                  flex: 1,
-                  background: C.snow,
-                  border: "1px solid " + C.mist,
-                  borderRadius: 12,
-                  padding: "10px 14px",
-                  fontSize: 13.5,
-                  outline: "none",
-                  fontFamily: F.body
-                }}
-              />
-              <Btn variant="yellow" size="sm" onClick={send} disabled={isTyping || !typedMessage.trim()}>
-                Ask
-              </Btn>
+              {isRecording ? (
+                /* LIVE RECORDING STATE */
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "#FEE2E2",
+                    border: "1.5px solid #EF4444",
+                    borderRadius: 14,
+                    padding: "8px 14px"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#EF4444",
+                        animation: "pulse 1s infinite"
+                      }}
+                    />
+                    <Txt size={13} weight={800} color="#B91C1C">
+                      Recording ({recordingSeconds}s)... Speak now in {chatLang.toUpperCase()}
+                    </Txt>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      onClick={() => stopRecording(true)}
+                      style={{
+                        background: "rgba(0,0,0,0.06)",
+                        border: "none",
+                        borderRadius: 10,
+                        padding: "6px 10px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#7F1D1D",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => stopRecording(false)}
+                      style={{
+                        background: "#10B981",
+                        border: "none",
+                        borderRadius: 10,
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        color: C.white,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4
+                      }}
+                    >
+                      Send Voice ▶
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* DEFAULT TEXT + VOICE BUTTON STATE */
+                <>
+                  <button
+                    onClick={startRecording}
+                    disabled={isTyping}
+                    style={{
+                      background: "#10B98115",
+                      border: "1.5px solid #10B981",
+                      borderRadius: 12,
+                      width: 44,
+                      height: 44,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: isTyping ? "not-allowed" : "pointer",
+                      color: "#10B981",
+                      flexShrink: 0,
+                      transition: "all 0.15s"
+                    }}
+                    title="Tap to speak in English, Yoruba, Hausa or Igbo"
+                  >
+                    <Mic size={20} />
+                  </button>
+
+                  <input
+                    type="text"
+                    value={typedMessage}
+                    onChange={(e) => setTypedMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && send()}
+                    placeholder={
+                      chatLang === "yo"
+                        ? "Te ibi lati te ibeere re tabi tẹ maiki..."
+                        : chatLang === "ha"
+                        ? "Rubuta tambayarka ko danna makirufo..."
+                        : chatLang === "ig"
+                        ? "Dee ajụjụ gị ebe a ma ọ bụ pịa maikrofon..."
+                        : T[lang].askKobe + " or tap mic to speak..."
+                    }
+                    style={{
+                      flex: 1,
+                      background: C.snow,
+                      border: "1px solid " + C.mist,
+                      borderRadius: 12,
+                      padding: "10px 14px",
+                      fontSize: 13.5,
+                      outline: "none",
+                      fontFamily: F.body
+                    }}
+                  />
+
+                  <Btn variant="yellow" size="sm" onClick={() => send()} disabled={isTyping || !typedMessage.trim()}>
+                    Ask
+                  </Btn>
+                </>
+              )}
             </div>
           </div>
         )}

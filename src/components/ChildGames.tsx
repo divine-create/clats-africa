@@ -163,6 +163,17 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
 
   const cyberGames: Game[] = [
     {
+      id: "deepfake-detective",
+      name: "Deepfake Detective",
+      desc: "Analyze real vs AI-generated claims and photos to protect the truth!",
+      difficulty: "Intermediate",
+      xpAward: 150,
+      status: "Available",
+      supportsModule: "🔒 Digital Safety",
+      supportsLesson: "Deepfakes & Disinformation",
+      icon: "🕵️"
+    },
+    {
       id: "phishing-swipe",
       name: "Phishing Swipe",
       desc: "Spot the scams! Swipe left on viruses, right on safe messages.",
@@ -1162,6 +1173,34 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) 
             </div>
           );
         }
+        if (gameId === "deepfake-detective") {
+          return (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(15, 23, 42, 0.8)",
+                backdropFilter: "blur(4px)",
+                zIndex: 10000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16
+              }}
+            >
+              <DeepfakeDetective
+                onBack={() => {
+                  sfx.playTap();
+                  setActiveGameModal(null);
+                }}
+              />
+            </div>
+          );
+        }
+
         if (gameId === "phishing-swipe") {
           return (
             <div
