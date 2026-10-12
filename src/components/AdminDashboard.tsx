@@ -3730,12 +3730,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                             selectedCompanion,
                             "young innovators"
                           );
-                          showToast(`Testing browser TTS voice synthesis for ${selectedCompanion}.`);
+                          showToast(`Testing YarnGPT sovereign voice synthesis for ${selectedCompanion}.`);
                         }}
                         className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
                       >
                         <Volume2 size={13} />
-                        <span>Play Synthesized Voice ({selectedCompanion})</span>
+                        <span>Play YarnGPT Sovereign Voice ({selectedCompanion})</span>
                       </button>
                     </div>
                   </div>

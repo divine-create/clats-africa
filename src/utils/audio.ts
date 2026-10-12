@@ -273,19 +273,14 @@ class CompanionVoice {
     };
   }
 
-  // Play audio file from Supabase storage or fall back to high quality voice synthesis
+  // Play audio file from Supabase storage or synthesize speech with YarnGPT
   async speak(text: string, character: "kobe" | "chibi", ageGroup: string, checkToggle: boolean = true) {
     if (checkToggle && !this.isNarrationEnabled(ageGroup)) {
       return;
     }
 
     try {
-      // Cancel any ongoing speech synthesis
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-
-      // Stop any ongoing static file playback
+      // Stop any ongoing playback
       if (this.activeAudio) {
         this.activeAudio.pause();
         this.activeAudio = null;
@@ -296,8 +291,8 @@ class CompanionVoice {
       if (conf.voice_mode === "Uploaded Voice" && conf.voice_url) {
         await this.playUploadedVoice(character);
       } else {
-        // Dynamic text-to-speech fallback
-        this.speakTTS(text, character, ageGroup);
+        // Dynamic YarnGPT sovereign voice synthesis
+        await this.speakTTS(text, character, ageGroup);
       }
     } catch (e) {
       console.warn("CompanionVoice speak error:", e);
@@ -308,9 +303,6 @@ class CompanionVoice {
   async playUploadedVoice(character: "kobe" | "chibi"): Promise<void> {
     return new Promise((resolve) => {
       try {
-        if ("speechSynthesis" in window) {
-          window.speechSynthesis.cancel();
-        }
         if (this.activeAudio) {
           this.activeAudio.pause();
           this.activeAudio = null;
@@ -358,62 +350,40 @@ class CompanionVoice {
     this.speakTTS(text, character, ageGroup);
   }
 
-  // Custom high precision speech synthesizer matching companion personality
-  speakTTS(text: string, character: "kobe" | "chibi", ageGroup: string) {
-    if (!("speechSynthesis" in window)) return;
-
+  // Sovereign YarnGPT speech synthesizer matching companion personality
+  async speakTTS(text: string, character: "kobe" | "chibi", ageGroup: string) {
     try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-
-      const conf = this.configs[character];
-      // custom rates & pitches, default scaled nicely
-      if (character === "kobe") {
-        utterance.pitch = conf.speech_pitch !== undefined ? conf.speech_pitch : 0.90;
-        utterance.rate = conf.speech_rate !== undefined ? conf.speech_rate : 0.95;
-      } else {
-        utterance.pitch = conf.speech_pitch !== undefined ? conf.speech_pitch : 1.25;
-        utterance.rate = conf.speech_rate !== undefined ? conf.speech_rate : 1.02;
+      if (this.activeAudio) {
+        this.activeAudio.pause();
+        this.activeAudio = null;
       }
 
-      if (window.speechSynthesis.getVoices) {
-        const voices = window.speechSynthesis.getVoices();
-        let selectedVoice = null;
+      const res = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          language: "en",
+          character
+        })
+      });
 
-        if (character === "chibi") {
-          selectedVoice = voices.find(v =>
-            v.lang.startsWith("en") &&
-            (v.name.toLowerCase().includes("female") ||
-             v.name.toLowerCase().includes("zira") ||
-             v.name.toLowerCase().includes("samantha") ||
-             v.name.toLowerCase().includes("hazel") ||
-             v.name.toLowerCase().includes("google us english"))
-          );
-        } else {
-          selectedVoice = voices.find(v =>
-            v.lang.startsWith("en") &&
-            (v.name.toLowerCase().includes("male") ||
-             v.name.toLowerCase().includes("david") ||
-             v.name.toLowerCase().includes("google uk english male"))
-          );
-        }
-
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
+      if (res.ok) {
+        const data = await res.json();
+        const audioSrc = data.audioBase64 || data.audioUrl;
+        if (audioSrc) {
+          const audio = new Audio(audioSrc);
+          this.activeAudio = audio;
+          audio.volume = 1.0;
+          await audio.play();
         }
       }
-
-      window.speechSynthesis.speak(utterance);
     } catch (e) {
-      console.warn("CompanionVoice speakTTS error:", e);
+      console.warn("CompanionVoice speakTTS (YarnGPT) error:", e);
     }
   }
 
   stop() {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
     if (this.activeAudio) {
       this.activeAudio.pause();
       this.activeAudio = null;

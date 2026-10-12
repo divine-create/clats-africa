@@ -51,6 +51,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -66,7 +67,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
 
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Clean up media streams, active audio, and speech on unmount
+  // Clean up media streams and active audio on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -77,36 +78,10 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         activeAudioRef.current.pause();
         activeAudioRef.current = null;
       }
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
     };
   }, []);
 
-  const fallbackBrowserSpeech = (text: string, targetLang: Language) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      setSpeakingMsgId(null);
-      return;
-    }
-    const cleanText = text.replace(/[*#_`~>\[\]]/g, "").trim();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    const langLocales: Record<Language, string> = {
-      en: "en-NG",
-      yo: "yo-NG",
-      ha: "ha-NG",
-      ig: "ig-NG"
-    };
-    utterance.lang = langLocales[targetLang] || "en-US";
-    utterance.pitch = 1.1; // Friendly child companion pitch
-    utterance.rate = 0.95;
-
-    utterance.onend = () => setSpeakingMsgId(null);
-    utterance.onerror = () => setSpeakingMsgId(null);
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  // Multi-Tier Studio Text to Speech playback (YarnGPT / ElevenLabs / Azure / Browser)
+  // Sovereign YarnGPT Text to Speech playback (Authentic Nigerian Voice Engine)
   const speakMessage = async (msgId: string, text: string, targetLang: Language) => {
     // If already speaking this message, toggle off
     if (speakingMsgId === msgId) {
@@ -114,10 +89,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         activeAudioRef.current.pause();
         activeAudioRef.current = null;
       }
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
       setSpeakingMsgId(null);
+      setIsSynthesizing(false);
       return;
     }
 
@@ -126,14 +99,11 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       activeAudioRef.current.pause();
       activeAudioRef.current = null;
     }
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
 
     setSpeakingMsgId(msgId);
+    setIsSynthesizing(true);
 
     try {
-      // 1. Try server-side sovereign TTS (YarnGPT / ElevenLabs / Azure)
       const res = await fetch("/api/ai/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -148,28 +118,36 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         const data = await res.json();
         const audioSrc = data.audioBase64 || data.audioUrl;
 
-        if (audioSrc && !data.fallbackToBrowser) {
+        if (audioSrc) {
           const audio = new Audio(audioSrc);
           activeAudioRef.current = audio;
 
           audio.onended = () => {
             setSpeakingMsgId(null);
+            setIsSynthesizing(false);
             activeAudioRef.current = null;
           };
           audio.onerror = () => {
-            fallbackBrowserSpeech(text, targetLang);
+            console.warn("Failed to play YarnGPT audio buffer.");
+            setSpeakingMsgId(null);
+            setIsSynthesizing(false);
+            activeAudioRef.current = null;
           };
 
           await audio.play();
+          setIsSynthesizing(false);
           return;
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.warn("YarnGPT voice synthesis returned an error:", errData);
       }
     } catch (e) {
-      console.warn("Cloud TTS failed, using browser speech engine:", e);
+      console.warn("YarnGPT voice synthesis error:", e);
     }
 
-    // 2. High-tuned Browser Speech Synthesis Fallback
-    fallbackBrowserSpeech(text, targetLang);
+    setSpeakingMsgId(null);
+    setIsSynthesizing(false);
   };
 
   // Start Voice Recording
@@ -735,7 +713,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
                             title="Listen to response"
                           >
                             <Volume2 size={12} />
-                            {isSpeakingThis ? "Playing..." : "Listen"}
+                            {isSpeakingThis ? (isSynthesizing ? "Connecting..." : "Playing...") : "Listen"}
                           </button>
                         </div>
                       )}
