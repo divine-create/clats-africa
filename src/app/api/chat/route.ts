@@ -49,11 +49,15 @@ export async function POST(req: NextRequest) {
     const targetLangName = LANGUAGE_NAMES[language] || "English";
 
     // 1. Check if direct N-ATLAS HuggingFace/NCAIR API endpoint is configured
-    const natlasEndpoint = process.env.NATLAS_API_URL || process.env.NATLAS_ENDPOINT;
     const natlasKey = process.env.NATLAS_API_KEY || process.env.HUGGINGFACE_API_KEY;
+    const natlasEndpoint = process.env.NATLAS_API_URL || 
+      process.env.NATLAS_ENDPOINT || 
+      "https://api-inference.huggingface.co/models/NCAIR1/N-ATLaS";
 
-    if (natlasEndpoint && natlasKey) {
+    if (natlasKey) {
       try {
+        const fullPrompt = `${systemPrompt || "You are Kobe, a friendly Nigerian AI learning tutor."}\n\nLanguage: ${targetLangName}\nChild Question: ${message || "Hello"}\nKobe:`;
+        
         const natlasRes = await fetch(natlasEndpoint, {
           method: "POST",
           headers: {
@@ -61,10 +65,11 @@ export async function POST(req: NextRequest) {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            inputs: message || "Analyze input voice",
+            inputs: fullPrompt,
             parameters: {
               max_new_tokens: 250,
-              temperature: 0.7
+              temperature: 0.7,
+              return_full_text: false
             }
           })
         });
@@ -76,15 +81,20 @@ export async function POST(req: NextRequest) {
             : (natlasData.generated_text || natlasData.text);
             
           if (generatedText) {
+            // Clean any trailing generation artifacts
+            const cleanedText = generatedText.replace(/^Kobe:\s*/i, "").trim();
             return NextResponse.json({
-              text: generatedText,
-              provider: "N-ATLAS (Sovereign Multilingual LLM)",
+              text: cleanedText || generatedText,
+              provider: "N-ATLAS 8B (NCAIR Sovereign Model via Hugging Face)",
               language
             });
           }
+        } else {
+          const errDetail = await natlasRes.text();
+          console.warn("N-ATLAS Hugging Face API note (will use sovereign fallback):", natlasRes.status, errDetail);
         }
       } catch (natlasErr) {
-        console.warn("Direct N-ATLAS endpoint unreachable, falling back to sovereign pipeline:", natlasErr);
+        console.warn("Direct N-ATLAS endpoint unreachable, using sovereign fallback:", natlasErr);
       }
     }
 

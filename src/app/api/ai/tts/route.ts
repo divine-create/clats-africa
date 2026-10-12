@@ -35,14 +35,14 @@ export async function POST(req: NextRequest) {
 
     // 1. TIER 1: YarnGPT (Sovereign Nigerian Voice Engine)
     const yarngptApiKey = process.env.YARNGPT_API_KEY;
-    const yarngptEndpoint = process.env.YARNGPT_ENDPOINT || "https://api.yarngpt.ai/v1/tts";
+    const yarngptEndpoint = process.env.YARNGPT_ENDPOINT || "https://api.yarngpt.ai/api/v1/tts";
 
     if (yarngptApiKey) {
       try {
         const voiceMap: Record<string, string> = {
-          yo: "remi",    // Warm, fluent Yoruba voice
-          ha: "umar",    // Clear Hausa voice
-          ig: "nonso",   // Engaging Igbo voice
+          yo: "remi",    // Warm Yoruba female voice
+          ha: "umar",    // Clear Hausa male voice
+          ig: "nonso",   // Resonant Igbo male voice
           en: character === "chibi" ? "remi" : "mary"
         };
         const voiceName = voiceMap[language] || "mary";
@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             text: cleanSpeechText,
             voice: voiceName,
-            language: language,
-            speed: speed
+            output_format: "mp3",
+            target_language: language
           })
         });
 
@@ -71,17 +71,54 @@ export async function POST(req: NextRequest) {
               provider: "YarnGPT (Sovereign Nigerian Voice AI)",
               language
             });
-          } else {
-            const yarnData = await yarnRes.json();
-            if (yarnData.audio_url || yarnData.audioBase64) {
-              return NextResponse.json({
-                audioUrl: yarnData.audio_url,
-                audioBase64: yarnData.audioBase64,
-                provider: "YarnGPT (Sovereign Nigerian Voice AI)",
-                language
+          }
+
+          const yarnData = await yarnRes.json();
+          
+          // If direct audio_url returned
+          if (yarnData.audio_url || yarnData.audioBase64) {
+            return NextResponse.json({
+              audioUrl: yarnData.audio_url,
+              audioBase64: yarnData.audioBase64,
+              provider: "YarnGPT (Sovereign Nigerian Voice AI)",
+              language
+            });
+          }
+
+          // If asynchronous job_id returned, poll for completion
+          const jobId = yarnData.job_id || yarnData.id;
+          if (jobId) {
+            const statusEndpoint = `https://api.yarngpt.ai/api/v1/status/${jobId}`;
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            while (attempts < maxAttempts) {
+              await new Promise((r) => setTimeout(r, 600)); // wait 600ms
+              attempts++;
+
+              const pollRes = await fetch(statusEndpoint, {
+                headers: { "Authorization": `Bearer ${yarngptApiKey}` }
               });
+
+              if (pollRes.ok) {
+                const pollData = await pollRes.json();
+                if (pollData.audio_url) {
+                  return NextResponse.json({
+                    audioUrl: pollData.audio_url,
+                    provider: "YarnGPT (Sovereign Nigerian Voice AI)",
+                    language
+                  });
+                }
+                if (pollData.status === "failed") {
+                  console.warn("YarnGPT job failed:", pollData.user_message);
+                  break;
+                }
+              }
             }
           }
+        } else {
+          const errText = await yarnRes.text();
+          console.warn("YarnGPT API responded with error status:", yarnRes.status, errText);
         }
       } catch (yarnErr) {
         console.warn("YarnGPT synthesis attempt failed, falling to secondary tier:", yarnErr);
