@@ -64,12 +64,18 @@ export const ChildChat: React.FC<ChildChatProps> = ({
 
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Clean up media streams and speech on unmount
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Clean up media streams, active audio, and speech on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
+      }
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+        activeAudioRef.current = null;
       }
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
@@ -77,20 +83,13 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     };
   }, []);
 
-  // Text to Speech playback
-  const speakMessage = (msgId: string, text: string, targetLang: Language) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    
-    if (speakingMsgId === msgId) {
-      window.speechSynthesis.cancel();
+  const fallbackBrowserSpeech = (text: string, targetLang: Language) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       setSpeakingMsgId(null);
       return;
     }
-
-    window.speechSynthesis.cancel();
-    setSpeakingMsgId(msgId);
-
-    const utterance = new SpeechSynthesisUtterance(text);
+    const cleanText = text.replace(/[*#_`~>\[\]]/g, "").trim();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     const langLocales: Record<Language, string> = {
       en: "en-NG",
       yo: "yo-NG",
@@ -105,6 +104,72 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     utterance.onerror = () => setSpeakingMsgId(null);
 
     window.speechSynthesis.speak(utterance);
+  };
+
+  // Multi-Tier Studio Text to Speech playback (YarnGPT / ElevenLabs / Azure / Browser)
+  const speakMessage = async (msgId: string, text: string, targetLang: Language) => {
+    // If already speaking this message, toggle off
+    if (speakingMsgId === msgId) {
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+        activeAudioRef.current = null;
+      }
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingMsgId(null);
+      return;
+    }
+
+    // Stop any existing playback
+    if (activeAudioRef.current) {
+      activeAudioRef.current.pause();
+      activeAudioRef.current = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    setSpeakingMsgId(msgId);
+
+    try {
+      // 1. Try server-side sovereign TTS (YarnGPT / ElevenLabs / Azure)
+      const res = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          language: targetLang,
+          character: child.companion || "kobe"
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const audioSrc = data.audioBase64 || data.audioUrl;
+
+        if (audioSrc && !data.fallbackToBrowser) {
+          const audio = new Audio(audioSrc);
+          activeAudioRef.current = audio;
+
+          audio.onended = () => {
+            setSpeakingMsgId(null);
+            activeAudioRef.current = null;
+          };
+          audio.onerror = () => {
+            fallbackBrowserSpeech(text, targetLang);
+          };
+
+          await audio.play();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Cloud TTS failed, using browser speech engine:", e);
+    }
+
+    // 2. High-tuned Browser Speech Synthesis Fallback
+    fallbackBrowserSpeech(text, targetLang);
   };
 
   // Start Voice Recording
