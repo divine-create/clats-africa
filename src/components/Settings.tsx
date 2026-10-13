@@ -101,9 +101,9 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
 
   const limitPresets = [
     { val: 0, label: "No Limit", sub: "Unlimited learning time" },
-    { val: 20, label: "20 min", sub: "Ideal for 2–5 year olds" },
-    { val: 40, label: "40 min", sub: "Ideal for 6–12 year olds" },
-    { val: 60, label: "60 min", sub: "Ideal for 13–18 year olds" }
+    { val: 20, label: "20 min", sub: "Ideal for 6–10 year olds" },
+    { val: 40, label: "40 min", sub: "Ideal for 11–13 year olds" },
+    { val: 60, label: "60 min", sub: "Ideal for 14–18 year olds" }
   ];
 
   const stepTitles = ["Child Details", "Personalise path", "Login PIN", "Time control", "Ready?"];

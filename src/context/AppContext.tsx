@@ -78,12 +78,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("click", handleGlobalClick, true);
   }, [soundEnabled]);
 
+  // Keep DOM root classes synchronized with theme for Tailwind v4 and CSS variables
+  const applyTheme = (t: "light" | "dark") => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    const body = document.body;
+    if (t === "dark") {
+      root.classList.add("dark", "dark-theme");
+      body.classList.add("dark", "dark-theme");
+    } else {
+      root.classList.remove("dark", "dark-theme");
+      body.classList.remove("dark", "dark-theme");
+    }
+  };
+
   // Restore persisted session on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const savedTheme = localStorage.getItem("clats_theme") as "light" | "dark" | null;
-    if (savedTheme) setThemeState(savedTheme);
+    if (savedTheme) {
+      setThemeState(savedTheme);
+      applyTheme(savedTheme);
+    } else {
+      applyTheme("light");
+    }
 
     const savedLang = S.getLang() as Language;
     if (savedLang) setLangState(savedLang);
@@ -140,10 +159,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsSyncing(true);
       try {
         const res = await syncToSupabase(parent);
-        if (res?.synced) setDbConnected(true);
-        else if (res?.code === "ACCOUNT_DELETED") {
+        if (res?.synced) {
+          setDbConnected(true);
+        } else if (res?.code === "ACCOUNT_DELETED") {
           logout();
           alert("Your account was deleted from the cloud database.");
+        } else if (res?.offline) {
+          setDbConnected(false);
+        } else if (!res?.ok && res?.error) {
+          console.warn("Supabase state backing issue:", res.error);
         }
       } catch (e) {
         console.warn("Sync error:", e);
@@ -162,6 +186,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (t: "light" | "dark") => {
     setThemeState(t);
+    applyTheme(t);
     if (typeof window !== "undefined") localStorage.setItem("clats_theme", t);
   };
 

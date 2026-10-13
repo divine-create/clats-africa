@@ -170,9 +170,9 @@ export const AGE_LABEL = {
 };
 
 export const AGE_AGES = {
-  "early explorers": "2–5",
-  "young innovators": "6–12",
-  "future builders": "13–18"
+  "early explorers": "6–10",
+  "young innovators": "11–13",
+  "future builders": "14–18"
 };
 
 export const AGE_META = {
@@ -181,7 +181,7 @@ export const AGE_META = {
     soft: C.yellowSoft,
     kobeStyle: [
       "warm, extremely gentle, playful,",
-      "very short and simple sentences appropriate for ages 2 to 5,",
+      "very short and simple sentences appropriate for ages 6 to 10,",
       "celebrate every step, max one emoji per response,",
       "give friendly verbal pattern hints."
     ].join(" ")
@@ -360,18 +360,21 @@ export async function syncToSupabase(parent: Parent, tutorial_completed?: boolea
       })
     });
     if (res.status === 404) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.code === "ACCOUNT_DELETED") {
-        return { ok: false, code: "ACCOUNT_DELETED", error: data.error };
+        return { ok: false, synced: false, code: "ACCOUNT_DELETED", error: data.error || data.msg };
       }
     }
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      return { ok: true, synced: true, ...data };
     }
-  } catch (e) {
+    const errData = await res.json().catch(() => ({}));
+    return { ok: false, synced: false, error: errData.msg || errData.error || `HTTP ${res.status}` };
+  } catch (e: any) {
     console.warn("Offline: Supabase state backing deferred.", e);
+    return { ok: false, synced: false, offline: true, error: e?.message || "Network offline" };
   }
-  return { ok: true, synced: false };
 }
 
 export async function pullParentFromSupabase(email: string): Promise<Parent | null> {
@@ -382,7 +385,7 @@ export async function pullParentFromSupabase(email: string): Promise<Parent | nu
       body: JSON.stringify({ email })
     });
     if (res.status === 404) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.code === "ACCOUNT_DELETED") {
         throw new Error("ACCOUNT_DELETED");
       }
@@ -392,12 +395,16 @@ export async function pullParentFromSupabase(email: string): Promise<Parent | nu
       if (data.ok && data.parent) {
         return data.parent;
       }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.msg || `Failed to fetch parent data: HTTP ${res.status}`);
     }
   } catch (e: any) {
     if (e?.message === "ACCOUNT_DELETED") {
       throw e;
     }
     console.warn("Could not pull parent from Supabase:", e);
+    throw e;
   }
   return null;
 }

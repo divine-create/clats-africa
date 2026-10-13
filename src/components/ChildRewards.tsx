@@ -291,7 +291,7 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   const earnedCertificatesCount = certificatesData.filter(c => c.unlocked).length;
 
-  // 7. Sticker Sheet items for Tiny Ages 2–5
+  // 7. Sticker Sheet items for Ages 6–10
   const adventureStickers = [
     { id: "koala", emoji: "🐨", name: "Playful Koala", desc: "Unlock by beginning your adventure!", unlocked: true, color: "from-[#FFD166] to-amber-500" },
     { id: "whale", emoji: "🐳", name: "Ocean Explorer", desc: "Earned by completing 1+ lessons!", unlocked: completedCount >= 1, color: "from-[#2EC4B6] to-teal-600" },

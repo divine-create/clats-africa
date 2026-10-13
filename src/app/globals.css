@@ -34,6 +34,7 @@
   --text-title-sensitive: #0f172a;
 }
 
+.dark,
 .dark-theme {
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
