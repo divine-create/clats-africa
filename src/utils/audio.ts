@@ -246,22 +246,21 @@ class CompanionVoice {
     }
   }
 
-  // Check if narration is enabled for a given age group
+  // Check if narration is enabled for a given age group (default ON so voice sounds immediately in sync)
   isNarrationEnabled(ageGroup: string): boolean {
-    const ag = ageGroup?.toLowerCase() || "";
-    if (ag.includes("early") || ag.includes("explorers") || ag === "early explorers") {
-      // Ages 6-10 ("early explorers") was previously enabled by default, now disabled by default
-      const stored = localStorage.getItem(this.TOGGLE_KEY + "_early");
-      return stored === "true";
-    }
-    // Ages 6-18 ("young innovators", "future builders") has toggle (default off till turned on)
-    const stored = localStorage.getItem(this.TOGGLE_KEY + "_" + ag.replace(/\s+/g, "_"));
-    return stored === "true";
+    if (typeof window === "undefined") return true;
+    const ag = (ageGroup || "").toLowerCase();
+    const isYoungExplorer = ag.includes("early") || ag.includes("explorers") || ag.includes("young explorers");
+    const key = isYoungExplorer ? "early" : ag.replace(/\s+/g, "_");
+    const stored = localStorage.getItem(this.TOGGLE_KEY + "_" + key);
+    if (stored !== null) return stored === "true";
+    return true; // Enabled by default across all age groups
   }
 
   setNarrationEnabled(ageGroup: string, enabled: boolean) {
+    if (typeof window === "undefined") return;
     const ag = (ageGroup || "").toLowerCase().replace(/\s+/g, "_");
-    const key = ag.includes("early") ? "early" : ag;
+    const key = (ag.includes("early") || ag.includes("explorers")) ? "early" : ag;
     localStorage.setItem(this.TOGGLE_KEY + "_" + key, String(enabled));
   }
 
@@ -273,7 +272,7 @@ class CompanionVoice {
     };
   }
 
-  // Play audio file from Supabase storage or synthesize speech with YarnGPT
+  // Play audio file from Supabase storage or synthesize speech with YarnGPT and instant fallback
   async speak(text: string, character: "kobe" | "chibi", ageGroup: string, checkToggle: boolean = true) {
     if (checkToggle && !this.isNarrationEnabled(ageGroup)) {
       return;
@@ -281,21 +280,19 @@ class CompanionVoice {
 
     try {
       // Stop any ongoing playback
-      if (this.activeAudio) {
-        this.activeAudio.pause();
-        this.activeAudio = null;
-      }
+      this.stop();
 
       const conf = this.configs[character];
 
       if (conf.voice_mode === "Uploaded Voice" && conf.voice_url) {
         await this.playUploadedVoice(character);
       } else {
-        // Dynamic YarnGPT sovereign voice synthesis
+        // Dynamic YarnGPT sovereign voice synthesis with immediate fallback
         await this.speakTTS(text, character, ageGroup);
       }
     } catch (e) {
       console.warn("CompanionVoice speak error:", e);
+      this.playBrowserSpeech(text, character);
     }
   }
 
@@ -303,10 +300,7 @@ class CompanionVoice {
   async playUploadedVoice(character: "kobe" | "chibi"): Promise<void> {
     return new Promise((resolve) => {
       try {
-        if (this.activeAudio) {
-          this.activeAudio.pause();
-          this.activeAudio = null;
-        }
+        this.stop();
 
         const conf = this.configs[character];
         const fileUrl = conf.voice_url;
@@ -343,20 +337,14 @@ class CompanionVoice {
 
   // Play explicit synthesized voice
   playSynthesizedVoice(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
-    if (this.activeAudio) {
-      this.activeAudio.pause();
-      this.activeAudio = null;
-    }
+    this.stop();
     this.speakTTS(text, character, ageGroup, language);
   }
 
-  // Sovereign YarnGPT speech synthesizer matching companion personality
+  // Sovereign YarnGPT speech synthesizer with instant zero-latency browser speech fallback
   async speakTTS(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
     try {
-      if (this.activeAudio) {
-        this.activeAudio.pause();
-        this.activeAudio = null;
-      }
+      this.stop();
 
       const res = await fetch("/api/ai/tts", {
         method: "POST",
@@ -376,10 +364,31 @@ class CompanionVoice {
           this.activeAudio = audio;
           audio.volume = 1.0;
           await audio.play();
+          return;
         }
       }
+      // If server TTS was not configured or failed, immediately fallback to browser speech synthesis
+      this.playBrowserSpeech(text, character, language);
     } catch (e) {
-      console.warn("CompanionVoice speakTTS (YarnGPT) error:", e);
+      console.warn("CompanionVoice speakTTS (YarnGPT) offline fallback:", e);
+      this.playBrowserSpeech(text, character, language);
+    }
+  }
+
+  // Browser speech synthesis fallback (zero latency, offline resilient)
+  playBrowserSpeech(text: string, character: "kobe" | "chibi", language: string = "en") {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const cleanText = text.replace(/[*#_`~>\[\]\(\)\{\}]/g, "").replace(/\s+/g, " ").trim();
+      if (!cleanText) return;
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = (language === "yo" || language === "ha" || language === "ig") ? "en-NG" : "en-US";
+      utterance.pitch = character === "chibi" ? 1.25 : 0.92;
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn("Browser SpeechSynthesis fallback error:", err);
     }
   }
 
@@ -387,6 +396,9 @@ class CompanionVoice {
     if (this.activeAudio) {
       this.activeAudio.pause();
       this.activeAudio = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
   }
 }

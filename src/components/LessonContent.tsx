@@ -35,6 +35,7 @@ interface LessonContentProps {
   nextModuleTitle?: string;
   isNextModuleLocked?: boolean;
   onShowPaywall?: () => void;
+  theme?: "light" | "dark";
 }
 
 export const LessonContent: React.FC<LessonContentProps> = ({
@@ -48,10 +49,12 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   onNextModule,
   nextModuleTitle,
   isNextModuleLocked,
-  onShowPaywall
+  onShowPaywall,
+  theme
 }) => {
+  const isDark = theme === "dark" || (typeof document !== "undefined" && (document.documentElement.classList.contains("dark") || document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark"));
   const isAges6To12 = child.ageGroup === "young innovators";
-  const isEarlyExplorers = child.ageGroup === "early explorers";
+  const isEarlyExplorers = child.ageGroup === "early explorers" || child.ageGroup === "young explorers";
   const isFutureBuilders = child.ageGroup === "future builders";
   const companion = child.companion || "kobe";
   const compLabel = companion === "chibi" ? "Chibi" : "Kobe";
@@ -126,9 +129,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
   // Inclusive Accessibility States
   const subtitlesOn = true;
-  const voiceAssistActive = isEarlyExplorers; // Auto-on for early explorers
+  const [voiceAssistActive, setVoiceAssistActive] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
   const [micActive, setMicActive] = useState(false);
-  const colorMode = "normal";
+  const colorMode = isDark ? "night" : "normal";
   const fontSize = "normal";
   const dyslexicMode = false;
   const reducedMotion = false;
@@ -435,7 +438,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       }, 700);
       return () => clearTimeout(speakTimer);
     }
-  }, [learningStep, currentQuizIndex, voiceAssistActive, lesson]);
+  }, [learningStep, currentSlideIndex, voiceAssistActive, lesson]);
 
   // Interactive Mini-Activity items mapped dynamically from syllabus database
   const activePuzzle = lesson?.puzzle || (() => {
@@ -853,10 +856,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     </div>
                   </div>
               </div>
-                <div style={{ background: "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ background: colorMode === "night" ? "#1e293b" : "#ffffff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <Txt size={16} weight={900} color="#0f172a">{currentVideoData.title}</Txt>
-                    <Txt size={13} color="#64748b" style={{ display: "block" }}>⏱️ {videoDurationStr || currentVideoData.duration} Video Lecture</Txt>
+                    <Txt size={16} weight={900} color={colorMode === "night" ? "#f8fafc" : "#0f172a"}>{currentVideoData.title}</Txt>
+                    <Txt size={13} color={colorMode === "night" ? "#94a3b8" : "#64748b"} style={{ display: "block" }}>⏱️ {videoDurationStr || currentVideoData.duration} Video Lecture</Txt>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button
@@ -940,17 +943,26 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   <button
                     onClick={() => {
                       sfx.playTap();
-                      setVoiceAssistActive(!voiceAssistActive);
+                      const next = !voiceAssistActive;
+                      setVoiceAssistActive(next);
+                      companionVoice.setNarrationEnabled(next);
+                      if (!next) {
+                        companionVoice.stop();
+                      } else if (storySlides[currentSlideIndex]) {
+                        speakText(storySlides[currentSlideIndex]);
+                      }
                     }}
                     style={{
-                      background: voiceAssistActive ? "#dcfce7" : "#f1f5f9",
-                      border: `2px solid ${voiceAssistActive ? "#16a34a" : "#cbd5e1"}`,
+                      background: voiceAssistActive 
+                        ? (colorMode === "night" ? "rgba(22, 163, 74, 0.25)" : "#dcfce7") 
+                        : (colorMode === "night" ? "#334155" : "#f1f5f9"),
+                      border: `2px solid ${voiceAssistActive ? "#16a34a" : (colorMode === "night" ? "#475569" : "#cbd5e1")}`,
                       borderRadius: 16,
                       padding: "10px 18px",
                       cursor: "pointer",
                       fontSize: 14,
                       fontWeight: 850,
-                      color: voiceAssistActive ? "#15803d" : "#475569"
+                      color: voiceAssistActive ? (colorMode === "night" ? "#86efac" : "#15803d") : (colorMode === "night" ? "#94a3b8" : "#475569")
                     }}
                   >
                     🔊 Read Auto: {voiceAssistActive ? "ON" : "OFF"}
@@ -967,9 +979,11 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       }}
                       disabled={currentSlideIndex === 0}
                       style={{
-                        background: currentSlideIndex === 0 ? "#e2e8f0" : "#ffffff",
-                        border: "2px solid " + (currentSlideIndex === 0 ? "#cbd5e1" : getBorderColor()),
-                        color: currentSlideIndex === 0 ? "#94a3b8" : "#000000",
+                        background: currentSlideIndex === 0 
+                          ? (colorMode === "night" ? "#334155" : "#e2e8f0") 
+                          : (colorMode === "night" ? "#1e293b" : "#ffffff"),
+                        border: "2px solid " + (currentSlideIndex === 0 ? (colorMode === "night" ? "#475569" : "#cbd5e1") : getBorderColor()),
+                        color: currentSlideIndex === 0 ? "#94a3b8" : (colorMode === "night" ? "#f8fafc" : "#000000"),
                         borderRadius: 14,
                         padding: "8px 18px",
                         fontSize: 14,
@@ -987,8 +1001,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       }}
                       disabled={currentSlideIndex === storySlides.length - 1}
                       style={{
-                        background: currentSlideIndex === storySlides.length - 1 ? "#e2e8f0" : "#2EC4B6",
-                        border: "2px solid " + (currentSlideIndex === storySlides.length - 1 ? "#cbd5e1" : "#26a397"),
+                        background: currentSlideIndex === storySlides.length - 1 
+                          ? (colorMode === "night" ? "#334155" : "#e2e8f0") 
+                          : "#2EC4B6",
+                        border: "2px solid " + (currentSlideIndex === storySlides.length - 1 ? (colorMode === "night" ? "#475569" : "#cbd5e1") : "#26a397"),
                         color: currentSlideIndex === storySlides.length - 1 ? "#94a3b8" : "#ffffff",
                         borderRadius: 14,
                         padding: "8px 18px",
@@ -1145,20 +1161,20 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   const isChecked = quizSelectedOption === oIdx;
                   const isCorrect = oIdx === activeQuiz[currentQuizIndex].ans;
 
-                  let optBg = "#f8fafc";
-                  let optBorder = "#cbd5e1";
+                  let optBg = colorMode === "night" ? "#1e293b" : "#f8fafc";
+                  let optBorder = colorMode === "night" ? "#334155" : "#cbd5e1";
 
                   if (quizIsAnswered) {
                     if (isCorrect) {
-                      optBg = "#ecfdf5";
+                      optBg = colorMode === "night" ? "#064e3b" : "#ecfdf5";
                       optBorder = "#10b981";
                     } else if (isChecked) {
-                      optBg = "#fef2f2";
+                      optBg = colorMode === "night" ? "#7f1d1d" : "#fef2f2";
                       optBorder = "#ef4444";
                     }
                   } else {
                     if (isChecked) {
-                      optBg = "#e0f2fe";
+                      optBg = colorMode === "night" ? "#0369a1" : "#e0f2fe";
                       optBorder = "#0284c7";
                     }
                   }
@@ -1185,8 +1201,8 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                           width: 28,
                           height: 28,
                           borderRadius: "50%",
-                          background: isChecked ? (isCorrect ? "#10b981" : "#ef4444") : "#e2e8f0",
-                          color: isChecked ? "#ffffff" : "#1e293b",
+                          background: isChecked ? (isCorrect ? "#10b981" : "#ef4444") : (colorMode === "night" ? "#334155" : "#e2e8f0"),
+                          color: isChecked ? "#ffffff" : (colorMode === "night" ? "#f8fafc" : "#1e293b"),
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1195,7 +1211,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       >
                         {String.fromCharCode(65 + oIdx)}
                       </div>
-                      <Txt size={16 * getFontSizeMultiplier()} weight={800} color="#0f172a">{option}</Txt>
+                      <Txt size={16 * getFontSizeMultiplier()} weight={800} color={isChecked && colorMode === "night" ? "#ffffff" : (colorMode === "night" ? "#f8fafc" : "#0f172a")}>{option}</Txt>
                     </button>
                   );
                 })}
@@ -1205,17 +1221,17 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 <div
                   style={{
                     marginTop: 20,
-                    background: "#ecfdf5",
+                    background: colorMode === "night" ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5",
                     border: "1.5px solid #10b981",
                     borderRadius: 16,
                     padding: "14px 18px",
                     textAlign: "left"
                   }}
                 >
-                  <Txt size={11.5} weight={950} color="#065f46" style={{ textTransform: "uppercase", display: "block", fontFamily: F.mono, marginBottom: 2 }}>
+                  <Txt size={11.5} weight={950} color={colorMode === "night" ? "#6ee7b7" : "#065f46"} style={{ textTransform: "uppercase", display: "block", fontFamily: F.mono, marginBottom: 2 }}>
                     🤖 Grading Feedback:
                   </Txt>
-                  <Txt size={14.5 * getFontSizeMultiplier()} color="#065f46" style={{ fontWeight: 700 }}>
+                  <Txt size={14.5 * getFontSizeMultiplier()} color={colorMode === "night" ? "#a7f3d0" : "#065f46"} style={{ fontWeight: 700 }}>
                     {quizFeedback}
                   </Txt>
                 </div>
@@ -1277,11 +1293,11 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </Chip>
                 </div>
 
-                <Heading size={32} color="#0f172a" style={{ marginBottom: 12 }}>
+                <Heading size={32} color={colorMode === "night" ? "#f8fafc" : "#0f172a"} style={{ marginBottom: 12 }}>
                   {xpGained > 0 ? `You earned +${xpGained} XP` : "Quiz Completed Again!"}
                 </Heading>
 
-                <Txt size={16.5} color="#334155" style={{ display: "block", marginBottom: 24, lineHeight: 1.5, fontWeight: 700 }}>
+                <Txt size={16.5} color={colorMode === "night" ? "#cbd5e1" : "#334155"} style={{ display: "block", marginBottom: 24, lineHeight: 1.5, fontWeight: 700 }}>
                   {xpGained > 0 
                     ? "Great job! You checked your knowledge and earned XP. You can now advance to the next step in your learning journey!"
                     : "Great job! You've already mastered this quiz before, so no new XP was added today, but practicing is always great for your brain!"
@@ -1289,13 +1305,13 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 </Txt>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-                  <div style={{ background: "#ffffff", border: "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
-                    <Txt size={11} color="#64748b" style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>XP Earned</Txt>
+                  <div style={{ background: colorMode === "night" ? "#1e293b" : "#ffffff", border: colorMode === "night" ? "2px solid #334155" : "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
+                    <Txt size={11} color={colorMode === "night" ? "#94a3b8" : "#64748b"} style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>XP Earned</Txt>
                     <Txt size={22} weight={950} color="#10b981">+{xpGained} XP</Txt>
                   </div>
 
-                  <div style={{ background: "#ffffff", border: "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
-                    <Txt size={11} color="#64748b" style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>Quiz Score</Txt>
+                  <div style={{ background: colorMode === "night" ? "#1e293b" : "#ffffff", border: colorMode === "night" ? "2px solid #334155" : "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
+                    <Txt size={11} color={colorMode === "night" ? "#94a3b8" : "#64748b"} style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>Quiz Score</Txt>
                     <Txt size={22} weight={950} color="#0284c7">{pctScore}%</Txt>
                   </div>
                 </div>
@@ -1332,7 +1348,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 {true && (
                   <div
                     style={{
-                      background: "#ffffff",
+                      background: colorMode === "night" ? "#1e293b" : "#ffffff",
                       border: "2.5px solid #2EC4B6",
                       borderRadius: 22,
                       padding: "16px",
@@ -1347,7 +1363,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       <Txt size={11.5} weight={900} color="#0d9488" style={{ textTransform: "uppercase", display: "block" }}>
                         OFFICIAL SHIELD SECURED:
                       </Txt>
-                      <Txt size={16} weight={950} color="#0f172a">
+                      <Txt size={16} weight={950} color={colorMode === "night" ? "#f8fafc" : "#0f172a"}>
                         {lesson?.title.en || "Topic Badge"}
                       </Txt>
                     </div>
@@ -1374,7 +1390,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                         <Txt size={12} weight={900} color={reflectionDone ? "#059669" : "#d97706"} style={{ textTransform: "uppercase", display: "block" }}>
                           🎙️ Kobe's 60-Second Reflection
                         </Txt>
-                        <Txt size={14.5} weight={800} color="#0f172a">
+                        <Txt size={14.5} weight={800} color={colorMode === "night" ? "#f8fafc" : "#0f172a"}>
                           {reflectionDone ? "Superstar Reflection Recorded!" : "What was the coolest thing you learned today?"}
                         </Txt>
                       </div>
@@ -1386,7 +1402,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
                   {!reflectionDone ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-                      <Txt size={12.5} color="#475569">
+                      <Txt size={12.5} color={colorMode === "night" ? "#cbd5e1" : "#475569"}>
                         Tap a reflection below to share with Kobe and claim bonus XP:
                       </Txt>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1408,13 +1424,13 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                               companionVoice.speakTTS(`Wonderful reflection, ${child.name}! You are a true technology champion!`, companion, child.ageGroup, lang);
                             }}
                             style={{
-                              background: "#ffffff",
-                              border: "1.5px solid #cbd5e1",
+                              background: colorMode === "night" ? "#1e293b" : "#ffffff",
+                              border: colorMode === "night" ? "1.5px solid #334155" : "1.5px solid #cbd5e1",
                               borderRadius: 14,
                               padding: "8px 12px",
                               fontSize: 12,
                               fontWeight: 700,
-                              color: "#1e293b",
+                              color: colorMode === "night" ? "#f8fafc" : "#1e293b",
                               cursor: "pointer",
                               textAlign: "left"
                             }}
@@ -1531,8 +1547,8 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   style={{
                     width: "100%",
                     background: `transparent`,
-                    color: "#0f172a",
-                    border: "2px solid #cbd5e1",
+                    color: colorMode === "night" ? "#f8fafc" : "#0f172a",
+                    border: `2px solid ${colorMode === "night" ? "#475569" : "#cbd5e1"}`,
                     borderRadius: 20,
                     padding: "16px 24px",
                     fontSize: 16,
@@ -1549,9 +1565,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   onClick={onClose}
                   style={{
                     width: "100%",
-                    background: "#ffffff",
-                    color: "#334155",
-                    border: "3px solid #cbd5e1",
+                    background: colorMode === "night" ? "#1e293b" : "#ffffff",
+                    color: colorMode === "night" ? "#e2e8f0" : "#334155",
+                    border: `3px solid ${colorMode === "night" ? "#334155" : "#cbd5e1"}`,
                     borderRadius: 20,
                     padding: "14px 24px",
                     fontSize: 16,

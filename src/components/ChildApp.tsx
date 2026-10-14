@@ -127,6 +127,11 @@ const DraggableFloating: React.FC<DraggableFloatingProps> = ({
   return (
     <div
       onPointerDown={handlePointerDown}
+      onClick={(e) => {
+        if (!dragRef.current.hasMoved && onClick) {
+          onClick();
+        }
+      }}
       title={title}
       style={{
         position: "fixed",
@@ -168,14 +173,14 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const [celebrationQueue, setCelebrationQueue] = useState<any[]>([]);
 
   // Load narration preference
-  const isEarly = child.ageGroup === "early explorers";
+  const isYoungExplorer = child.ageGroup === "early explorers" || child.ageGroup === "young explorers";
   const [narrationOn, setNarrationOn] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
 
-  // Auto-Start on Login for Early Explorers
+  // Auto-Start on Login for Young Explorers
   useEffect(() => {
     if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem("hasAutoStarted_" + child.id)) {
       sessionStorage.setItem("hasAutoStarted_" + child.id, "true");
-      if (child.ageGroup === "early explorers") {
+      if (isYoungExplorer) {
         const course = CURRICULUM["early explorers"];
         if (course && course.modules) {
           for (const mod of course.modules) {
@@ -196,7 +201,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         }
       }
     }
-  }, [child]);
+  }, [child, isYoungExplorer]);
 
   // Stop current voice playback whenever changing screens
   useEffect(() => {
@@ -271,25 +276,66 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       });
   }, [child?.id]);
 
-  // Check limits and tick slotUsed in local state reactively
+  const checkTimingLimits = React.useCallback(() => {
+    if (parent) {
+      const parentS = S_RESOLVE();
+      const parentEmail = parent.email;
+      const settings = parentS[parentEmail?.toLowerCase()];
+      if (settings && settings.limitsEnabled) {
+        setLimitsEnabled(prev => !prev ? true : prev);
+        const curS = getCurrentSlot();
+        setSlot(prev => prev !== curS ? curS : prev);
+        if (curS) {
+          const limitSecs = settings.slots[curS] || 0;
+          setSlotLimit(prev => prev !== limitSecs ? limitSecs : prev);
+          setBlocked(prev => {
+            const isBlocked = limitSecs > 0 && slotUsed >= limitSecs;
+            return prev !== isBlocked ? isBlocked : prev;
+          });
+        } else {
+          setSlotLimit(prev => prev !== 0 ? 0 : prev);
+          setBlocked(prev => prev ? false : prev);
+        }
+      } else {
+        setLimitsEnabled(prev => prev ? false : prev);
+        setSlotLimit(prev => prev !== 0 ? 0 : prev);
+        setBlocked(prev => prev ? false : prev);
+      }
+    } else {
+      // Offline fallback: 40 mins
+      setLimitsEnabled(prev => !prev ? true : prev);
+      setSlotLimit(prev => prev !== 40 * 60 ? 40 * 60 : prev);
+    }
+  }, [parent, slotUsed]);
+
+  // Initial check on mount or parent update
   useEffect(() => {
     checkTimingLimits();
+  }, [checkTimingLimits]);
+
+  // Only tick when screen time limits are configured, avoiding high-frequency lag when unlimited
+  useEffect(() => {
+    if (!limitsEnabled || slotLimit <= 0 || blocked) return;
+
     const timer = setInterval(() => {
-      checkTimingLimits();
-      if (!blocked) {
-        setSlotUsed((p) => p + 1);
-      }
+      setSlotUsed(p => {
+        const next = p + 1;
+        if (slotLimit > 0 && next >= slotLimit) {
+          setBlocked(true);
+        }
+        return next;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [child?.id, parent?.email, blocked]);
+  }, [limitsEnabled, slotLimit, blocked]);
 
   // Warning trigger checks
   useEffect(() => {
     if (slotLimit > 0) {
       const remain = slotLimit - slotUsed;
       if (remain === 300) {
-        setToastMessage(T[lang].fiveMinsLeft);
+        setToastMessage(T[lang]?.fiveMinsLeft || "5 minutes left!");
         setTimeout(() => setToastMessage(null), 8000);
       }
       if (remain <= 0) {
@@ -297,43 +343,6 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       }
     }
   }, [slotUsed, slotLimit, lang]);
-
-  const checkTimingLimits = () => {
-
-    if (parent) {
-      const parentS = S_RESOLVE();
-      const parentEmail = parent.email;
-      const settings = parentS[parentEmail.toLowerCase()];
-      if (settings && settings.limitsEnabled) {
-        setLimitsEnabled(true);
-        const curS = getCurrentSlot();
-        setSlot(curS);
-        if (curS) {
-          const limitSecs = settings.slots[curS] || 0;
-          setSlotLimit(limitSecs);
-
-          if (slotUsed >= limitSecs && limitSecs > 0) {
-            setBlocked(true);
-          } else {
-            setBlocked(false);
-          }
-        } else {
-          setSlotLimit(0);
-          setSlotUsed(0);
-          setBlocked(false);
-        }
-      } else {
-        setLimitsEnabled(false);
-        setSlotLimit(0);
-        setSlotUsed(0);
-        setBlocked(false);
-      }
-    } else {
-      // Offline fallback: 40 mins
-      setLimitsEnabled(true);
-      setSlotLimit(40 * 60);
-    }
-  };
 
   const handleLessonComplete = async (
     lessonId: string,
@@ -572,34 +581,32 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   return (
     <div className="tropical-bg" style={{ minHeight: "100vh", paddingBottom: 88, position: "relative", overflowX: "hidden" }}>
       {/* 🌴 Draggable Companion Voice Reader & Theme Toggles */}
-      {!isEarly && (
-        <DraggableFloating
-          initialBottom={95}
-          initialRight={20}
-          onClick={handleToggleNarration}
-          title="Drag anywhere or tap to toggle companion voice reader"
+      <DraggableFloating
+        initialBottom={95}
+        initialRight={20}
+        onClick={handleToggleNarration}
+        title="Drag anywhere or tap to toggle companion voice reader"
+      >
+        <div
+          id="voice-narration-toggle"
+          style={{
+            background: isDark ? "#1e293b" : "#ffffff",
+            border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
+            borderRadius: "50px",
+            padding: "6px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            boxShadow: "0 6px 16px rgba(0,0,0,0.2)",
+            pointerEvents: "none"
+          }}
         >
-          <div
-            id="voice-narration-toggle"
-            style={{
-              background: isDark ? "#1e293b" : "#ffffff",
-              border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
-              borderRadius: "50px",
-              padding: "6px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              boxShadow: "0 6px 16px rgba(0,0,0,0.2)",
-              pointerEvents: "none"
-            }}
-          >
-            <span style={{ fontSize: 18 }}>{narrationOn ? "🔊" : "🔇"}</span>
-            <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? "#cbd5e1" : "#1e293b" }}>
-              READER: {narrationOn ? "ON" : "OFF"}
-            </span>
-          </div>
-        </DraggableFloating>
-      )}
+          <span style={{ fontSize: 18 }}>{narrationOn ? "🔊" : "🔇"}</span>
+          <span style={{ fontSize: 10, fontWeight: 900, color: isDark ? "#cbd5e1" : "#1e293b" }}>
+            READER: {narrationOn ? "ON" : "OFF"}
+          </span>
+        </div>
+      </DraggableFloating>
 
       {onToggleTheme && (
         <DraggableFloating
@@ -795,6 +802,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             lesson={selLesson}
             onLessonComplete={handleLessonComplete}
             lang={lang}
+            theme={theme}
             onClose={() => {
               setSelLesson(null);
               setActiveTab("map");
@@ -840,6 +848,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         <ChildGames
           child={child}
           lang={lang}
+          theme={theme}
           onAddXP={handleAddGamesXP}
         />
       )}

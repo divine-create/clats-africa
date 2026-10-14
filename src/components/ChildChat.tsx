@@ -6,10 +6,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, Volume2, Square, Sparkles, Globe, Play, Pause, Sun, Moon, Radio, MessageSquare, RotateCcw } from "lucide-react";
 import { Child, Lesson, Language } from "../types";
-import { C, F, T, AGE_META } from "../utils/config";
+import { C, F, T, AGE_META, getAgeLabel, getAgeRange } from "../utils/config";
 import { Txt, Heading, Label, Chip, Btn } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
-import { sfx } from "../utils/audio";
+import { sfx, companionVoice } from "../utils/audio";
 import { useApp } from "../context/AppContext";
 
 interface ChildChatProps {
@@ -152,7 +152,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     };
   }, []);
 
-  // Sovereign YarnGPT Text to Speech playback (Authentic Nigerian Voice Engine)
+  // Sovereign YarnGPT Text to Speech playback (Authentic Nigerian Voice Engine) with instant fallback
   const speakMessage = async (msgId: string, text: string, targetLang: Language) => {
     // If already speaking this message, toggle off
     if (speakingMsgId === msgId) {
@@ -160,6 +160,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         activeAudioRef.current.pause();
         activeAudioRef.current = null;
       }
+      companionVoice.stop();
       setSpeakingMsgId(null);
       setIsSynthesizing(false);
       return;
@@ -170,6 +171,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       activeAudioRef.current.pause();
       activeAudioRef.current = null;
     }
+    companionVoice.stop();
 
     setSpeakingMsgId(msgId);
     setIsSynthesizing(true);
@@ -199,10 +201,10 @@ export const ChildChat: React.FC<ChildChatProps> = ({
             activeAudioRef.current = null;
           };
           audio.onerror = () => {
-            console.warn("Failed to play YarnGPT audio buffer.");
-            setSpeakingMsgId(null);
-            setIsSynthesizing(false);
+            console.warn("Failed to play YarnGPT audio buffer, falling back to speech synthesis.");
             activeAudioRef.current = null;
+            companionVoice.playBrowserSpeech(text, (child.companion as any) || "kobe", targetLang);
+            setIsSynthesizing(false);
           };
 
           await audio.play();
@@ -217,8 +219,13 @@ export const ChildChat: React.FC<ChildChatProps> = ({
       console.warn("YarnGPT voice synthesis error:", e);
     }
 
-    setSpeakingMsgId(null);
+    // Zero-latency fallback speech synthesis so Kobe/Chibi is never silent
     setIsSynthesizing(false);
+    companionVoice.playBrowserSpeech(text, (child.companion as any) || "kobe", targetLang);
+    const speechTimeout = Math.min(Math.max(text.length * 75, 2000), 12000);
+    setTimeout(() => {
+      setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
+    }, speechTimeout);
   };
 
   // Start Voice Recording
@@ -432,8 +439,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     }
   };
 
-  const AGE_LABEL_STR = (ag: string) => (ag === "early explorers" ? "Early Explorers" : ag === "young innovators" ? "Young Innovators" : "Future Builders");
-  const AGE_AGES_STR = (ag: string) => (ag === "early explorers" ? "6-10" : ag === "young innovators" ? "11-13" : "14-18");
+  const AGE_LABEL_STR = (ag: string) => getAgeLabel(ag);
+  const AGE_AGES_STR = (ag: string) => getAgeRange(ag);
 
   return (
     <div

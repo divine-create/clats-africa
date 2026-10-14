@@ -22,6 +22,7 @@ interface ChildGamesProps {
   child: Child;
   lang: Language;
   onAddXP: (amount: number) => void;
+  theme?: "light" | "dark";
 }
 
 interface Game {
@@ -36,19 +37,31 @@ interface Game {
   icon: string;
 }
 
-export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP }) => {
-  // Live dynamic theme detection (with click toggle fallback)
+export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, theme }) => {
+  // Live dynamic theme detection (with prop synchronization)
   const [isDark, setIsDark] = useState(() => {
-    return document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark";
+    if (theme) return theme === "dark";
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark") || document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark";
+    }
+    return false;
   });
 
   useEffect(() => {
+    if (theme) {
+      setIsDark(theme === "dark");
+    }
+  }, [theme]);
+
+  useEffect(() => {
     const checkTheme = () => {
-      setIsDark(document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark");
+      if (!theme && typeof document !== "undefined") {
+        setIsDark(document.documentElement.classList.contains("dark") || document.body.classList.contains("dark-theme") || localStorage.getItem("clats_theme") === "dark");
+      }
     };
     window.addEventListener("click", checkTheme);
     return () => window.removeEventListener("click", checkTheme);
-  }, []);
+  }, [theme]);
 
   const companionName = child.companion === "chibi" ? "Chibi" : "Kobe";
 

@@ -5,7 +5,7 @@
 
 export type Language = "en";
 
-export type AgeGroup = "early explorers" | "young innovators" | "future builders";
+export type AgeGroup = "early explorers" | "young explorers" | "young innovators" | "future builders" | string;
 
 export interface Child {
   id: string;

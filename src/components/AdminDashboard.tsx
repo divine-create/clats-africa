@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 import { companionVoice } from "../utils/audio";
-import { S, pullCurriculumFromSupabase } from "../utils/config";
+import { S, pullCurriculumFromSupabase, getDynamicAgeGroups, saveDynamicAgeGroups, DynamicAgeGroupItem, getAgeLabel, getAgeRange } from "../utils/config";
 
 // Types
 type AdminRole = 
@@ -392,6 +392,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
   // Selected Age Group Filter for Curriculum, Users, Games, Rewards, Content Library
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroupType>("young");
+  const [dynamicAgeGroups, setDynamicAgeGroups] = useState<DynamicAgeGroupItem[]>(() => getDynamicAgeGroups());
 
   // Real Datastores mapped from live parents database S
   const [learners, setLearners] = useState<any[]>([]);
@@ -1849,9 +1850,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               </span>
               <div className="flex bg-slate-200 dark:bg-slate-950 p-1 rounded-xl">
                 {[
-                  { id: "early", label: "🐣 Early Explorers", color: "text-emerald-500" },
-                  { id: "young", label: "🤖 Young Innovators", color: "text-[#2EC4B6]" },
-                  { id: "future", label: "🚀 Future Builders", color: "text-[#B8A0FF]" }
+                  { id: "early", label: `🐣 ${getAgeLabel("young explorers")} (${getAgeRange("young explorers")})`, color: "text-emerald-500" },
+                  { id: "young", label: `🤖 ${getAgeLabel("young innovators")} (${getAgeRange("young innovators")})`, color: "text-[#2EC4B6]" },
+                  { id: "future", label: `🚀 ${getAgeLabel("future builders")} (${getAgeRange("future builders")})`, color: "text-[#B8A0FF]" }
                 ].map((g) => {
                   const active = selectedAgeGroup === g.id;
                   return (
@@ -2535,9 +2536,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
                 <div className="space-y-4">
                   {[
-                    { label: "🐣 Early Explorers", count: learners.filter(l => l.ageGroup === 'early').length, color: "bg-emerald-500" },
-                    { label: "🤖 Young Innovators", count: learners.filter(l => l.ageGroup === 'young').length, color: "bg-[#2EC4B6]" },
-                    { label: "🚀 Future Builders", count: learners.filter(l => l.ageGroup === 'future').length, color: "bg-[#B8A0FF]" }
+                    { label: `🐣 ${getAgeLabel("young explorers")}`, count: learners.filter(l => l.ageGroup === 'early').length, color: "bg-emerald-500" },
+                    { label: `🤖 ${getAgeLabel("young innovators")}`, count: learners.filter(l => l.ageGroup === 'young').length, color: "bg-[#2EC4B6]" },
+                    { label: `🚀 ${getAgeLabel("future builders")}`, count: learners.filter(l => l.ageGroup === 'future').length, color: "bg-[#B8A0FF]" }
                   ].map((group, ui) => {
                     const pct = learners.length ? Math.round((group.count / learners.length) * 100) : 0;
                     return (
@@ -2809,7 +2810,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               <div className="p-4 bg-[#2EC4B6]/10 border border-[#2EC4B6]/25 rounded-2xl text-xs flex items-center gap-3">
                 <Shield size={16} className="text-[#2EC4B6] shrink-0" />
                 <p className="m-0 leading-relaxed text-[#2EC4B6] font-bold">
-                  Curriculum Modification Desk (authoritative database mode). Actions triggered here update Supabase learning tracks for <strong>{selectedAgeGroup === "early" ? "Early Explorers" : selectedAgeGroup === "young" ? "Young Innovators" : "Future Builders"}</strong> instantly.
+                  Curriculum Modification Desk (authoritative database mode). Actions triggered here update Supabase learning tracks for <strong>{selectedAgeGroup === "early" ? getAgeLabel("young explorers") : selectedAgeGroup === "young" ? getAgeLabel("young innovators") : getAgeLabel("future builders")}</strong> instantly.
                 </p>
               </div>
 
@@ -3341,7 +3342,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className={`text-base font-black m-0 ${textPrimary}`}>
-                    🎮 Immersive Interaction Minigames for {selectedAgeGroup === "early" ? "Early Explorers" : selectedAgeGroup === "young" ? "Young Innovators" : "Future Builders"}
+                    🎮 Immersive Interaction Minigames for {selectedAgeGroup === "early" ? getAgeLabel("young explorers") : selectedAgeGroup === "young" ? getAgeLabel("young innovators") : getAgeLabel("future builders")}
                   </h3>
                   <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
                     Add new games or map custom XP rewards instantly.
@@ -3496,7 +3497,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                       OFFICIAL CLATS ACADEMIC ENVELOPE
                     </span>
                     <h5 className={`m-0 text-base font-serif font-black tracking-wide ${isDark ? "text-[#FFD166]" : "text-[#14B8A6]"}`}>
-                      {selectedAgeGroup === "early" ? "Primary Explorer Play Certificate" : selectedAgeGroup === "young" ? "Young Innovator in Computing Merit" : "Sovereign Engineering Capstone Certificate"}
+                      {selectedAgeGroup === "early" ? "Young Explorer Play Certificate" : selectedAgeGroup === "young" ? "Young Innovator in Computing Merit" : "Sovereign Engineering Capstone Certificate"}
                     </h5>
                     <p className={`italic text-[10px] m-0 ${isDark ? "text-slate-300" : "text-[#6B7280]"}`}>
                       "Awarded for high diligence in mastering weights networks and cybersecurity rules."
@@ -5422,7 +5423,124 @@ ON CONFLICT (email) DO NOTHING;
                         Bootstrap Dynamic Operational Role
                       </button>
                     </div>
+                </div>
+              </div>
+
+              {/* DYNAMIC AGE TRACKS & DEMOGRAPHICS CONFIGURATION CARD */}
+              <div className={`p-6 rounded-3xl border ${bgCard} space-y-5 shadow-sm`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h3 className={`text-base font-black m-0 ${textPrimary} flex items-center gap-2`}>
+                      <span>👶</span> Dynamic Demographic Age Tracks & Focus Bands
+                    </h3>
+                    <p className={`text-xs ${textSecondary} mt-1`}>
+                      Configure age groups, titles, age limits, and daily screen time quotas dynamically across the entire platform. Nothing on CLATS is hardcoded.
+                    </p>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        saveDynamicAgeGroups(dynamicAgeGroups);
+                        showToast("✅ Age Tracks successfully updated live across all portals!");
+                      }}
+                      className="bg-[#2EC4B6] hover:bg-[#25a195] text-white px-5 py-2.5 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 flex items-center gap-2"
+                    >
+                      <span>💾</span> Save Age Tracks Live
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {dynamicAgeGroups.map((grp, idx) => (
+                    <div
+                      key={grp.id || idx}
+                      className={`p-4 rounded-2xl border ${isDark ? "bg-slate-900/80 border-slate-800" : "bg-slate-50 border-slate-200"} space-y-3.5`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">{grp.icon || "🌱"}</span>
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase font-mono"
+                          style={{ background: `${grp.color || "#2EC4B6"}25`, color: grp.color || "#2EC4B6" }}
+                        >
+                          Key: {grp.key}
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">
+                          Track Display Name
+                        </label>
+                        <input
+                          type="text"
+                          value={grp.label}
+                          onChange={(e) => {
+                            const next = [...dynamicAgeGroups];
+                            next[idx] = { ...next[idx], label: e.target.value };
+                            setDynamicAgeGroups(next);
+                          }}
+                          className={`w-full border rounded-lg p-2 outline-none focus:border-[#2EC4B6] text-xs font-bold ${
+                            isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
+                          }`}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">
+                            Age Range
+                          </label>
+                          <input
+                            type="text"
+                            value={grp.ages}
+                            onChange={(e) => {
+                              const next = [...dynamicAgeGroups];
+                              next[idx] = { ...next[idx], ages: e.target.value, sub: `Ages ${e.target.value}` };
+                              setDynamicAgeGroups(next);
+                            }}
+                            className={`w-full border rounded-lg p-2 outline-none focus:border-[#2EC4B6] text-xs ${
+                              isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
+                            }`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">
+                            Daily Screen Cap
+                          </label>
+                          <input
+                            type="number"
+                            value={grp.defaultMins}
+                            onChange={(e) => {
+                              const next = [...dynamicAgeGroups];
+                              next[idx] = { ...next[idx], defaultMins: Number(e.target.value) || 20 };
+                              setDynamicAgeGroups(next);
+                            }}
+                            className={`w-full border rounded-lg p-2 outline-none focus:border-[#2EC4B6] text-xs ${
+                              isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-500 uppercase tracking-wider text-[9px] font-mono font-bold mb-1">
+                          Pedagogy Focus / Tagline
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={grp.description}
+                          onChange={(e) => {
+                            const next = [...dynamicAgeGroups];
+                            next[idx] = { ...next[idx], description: e.target.value };
+                            setDynamicAgeGroups(next);
+                          }}
+                          className={`w-full border rounded-lg p-2 outline-none focus:border-[#2EC4B6] text-xs resize-none ${
+                            isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

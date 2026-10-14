@@ -16,11 +16,16 @@ import {
   AGE_AGES,
   AGE_META,
   LANG_OPTIONS,
-  INTERESTS
+  INTERESTS,
+  getDynamicAgeGroups,
+  getAgeLabel,
+  getAgeRange
 } from "../utils/config";
 import { CURRICULUM } from "../data/curriculum";
 import { Card, Txt, Heading, Label, Chip, Btn, Toggle, FieldInput, FontOffsetContext } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
+import confetti from "canvas-confetti";
+import { sfx, companionVoice } from "../utils/audio";
 
 interface SettingsScreenProps {
   parent: Parent;
@@ -65,17 +70,35 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
   const [limitMins, setLimitMins] = useState(30);
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
+  const [auditioning, setAuditioning] = useState<"kobe" | "chibi" | null>(null);
+  const [microQuestSolved, setMicroQuestSolved] = useState(false);
   const pendingChildRef = React.useRef<any>(null);
 
-  const ageGroups = [
-    { key: "early explorers" as const, label: "Early Explorers", sub: "Ages 6 - 10", color: C.amber, icon: "🌱" },
-    { key: "young innovators" as const, label: "Young Innovators", sub: "Ages 11 - 13", color: C.teal, icon: "⚡" },
-    { key: "future builders" as const, label: "Future Builders", sub: "Ages 14 - 18", color: C.lavender, icon: "🚀" }
-  ];
+  const dynamicGroups = getDynamicAgeGroups();
+  const ageGroups = dynamicGroups.map((g) => ({
+    key: (g.key || (g.id.includes("explorers") ? "young explorers" : g.id.includes("innovators") ? "young innovators" : "future builders")) as AgeGroup,
+    label: g.label,
+    sub: g.sub || `Ages ${g.ages}`,
+    color: g.color || C.teal,
+    icon: g.icon || "🌱"
+  }));
+
+  const handleAudition = (comp: "kobe" | "chibi") => {
+    setCompanion(comp);
+    setAuditioning(comp);
+    sfx.playTap();
+    const sampleText = comp === "kobe"
+      ? `Hello ${name || "friend"}! I am Kobe, your learning companion. Let's explore technology and create something awesome together!`
+      : `Hi ${name || "friend"}! I am Chibi. I am so excited to guide your learning adventures in tech and creative coding!`;
+    companionVoice.speakTTS(sampleText, comp, ageGroup, lang);
+    setTimeout(() => {
+      setAuditioning((curr) => (curr === comp ? null : curr));
+    }, 4500);
+  };
 
   // Tailor interests based on the selected AgeGroup!
   const getInterestOptions = (ag: AgeGroup) => {
-    if (ag === "early explorers") {
+    if (ag === "early explorers" || (ag as any) === "young explorers") {
       return [
         { key: "Story Matching", icon: "🧸", label: "Story Matching" },
         { key: "Shapes & Colors", icon: "🎨", label: "Shapes & Colors" },
@@ -134,7 +157,8 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
         setErr("Username must only contain lowercase letters, numbers, and underscores.");
         return;
       }
-      setInterests([]);
+      setStep(1);
+    } else if (step === 1) {
       setStep(2);
     } else if (step === 2) {
       if (pin.length < 4) {
@@ -444,53 +468,205 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
             </Card>
 
             <Card style={{ background: cardBg, borderColor: border, color: text }}>
-              <Label style={{ marginBottom: 10, color: textMuted }}>Choose AI Learning Companion</Label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <Label style={{ margin: 0, color: textMuted }}>Choose AI Learning Companion</Label>
+                <Txt size={11} color={borderCol} weight={700}>Tap card to choose · Tap 🔊 to audition</Txt>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                 <div
                   onClick={() => setCompanion("kobe")}
                   style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
+                    padding: "14px 12px",
+                    borderRadius: 16,
                     border: "2px solid " + (companion === "kobe" ? borderCol : border),
                     background: companion === "kobe" ? borderCol + "12" : innerBg,
                     cursor: "pointer",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     gap: 10,
-                    transition: "all 0.15s"
+                    transition: "all 0.15s",
+                    textAlign: "center"
                   }}
                 >
-                  <KobeAvatar size={38} ageGroup={ageGroup} character="kobe" />
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <Txt size={12.5} weight={700} color={companion === "kobe" ? borderCol : text}>Kobe (Boy)</Txt>
-                    <Txt size={10} color={textMuted}>Tech Mentor 🚀</Txt>
+                  <KobeAvatar size={48} ageGroup={ageGroup} character="kobe" />
+                  <div>
+                    <Txt size={13} weight={800} color={companion === "kobe" ? borderCol : text}>Kobe (Boy)</Txt>
+                    <Txt size={10.5} color={textMuted} style={{ display: "block" }}>Tech Mentor 🚀</Txt>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAudition("kobe");
+                    }}
+                    style={{
+                      marginTop: 4,
+                      background: auditioning === "kobe" ? borderCol : (isDark ? "#334155" : "#e2e8f0"),
+                      color: auditioning === "kobe" ? "#ffffff" : text,
+                      border: "none",
+                      borderRadius: 20,
+                      padding: "5px 12px",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                  >
+                    <span>{auditioning === "kobe" ? "🔊 Speaking..." : "🔊 Hear Kobe"}</span>
+                  </button>
                 </div>
 
                 <div
                   onClick={() => setCompanion("chibi")}
                   style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
+                    padding: "14px 12px",
+                    borderRadius: 16,
                     border: "2px solid " + (companion === "chibi" ? borderCol : border),
                     background: companion === "chibi" ? borderCol + "12" : innerBg,
                     cursor: "pointer",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     gap: 10,
-                    transition: "all 0.15s"
+                    transition: "all 0.15s",
+                    textAlign: "center"
                   }}
                 >
-                  <KobeAvatar size={38} ageGroup={ageGroup} character="chibi" />
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <Txt size={12.5} weight={700} color={companion === "chibi" ? borderCol : text}>Chibi (Girl)</Txt>
-                    <Txt size={10} color={textMuted}>Companion ⚡</Txt>
+                  <KobeAvatar size={48} ageGroup={ageGroup} character="chibi" />
+                  <div>
+                    <Txt size={13} weight={800} color={companion === "chibi" ? borderCol : text}>Chibi (Girl)</Txt>
+                    <Txt size={10.5} color={textMuted} style={{ display: "block" }}>Companion ⚡</Txt>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAudition("chibi");
+                    }}
+                    style={{
+                      marginTop: 4,
+                      background: auditioning === "chibi" ? borderCol : (isDark ? "#334155" : "#e2e8f0"),
+                      color: auditioning === "chibi" ? "#ffffff" : text,
+                      border: "none",
+                      borderRadius: 20,
+                      padding: "5px 12px",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                  >
+                    <span>{auditioning === "chibi" ? "🔊 Speaking..." : "🔊 Hear Chibi"}</span>
+                  </button>
                 </div>
               </div>
 
+              {/* FIRST INTERACTIVE MICRO-QUEST PREVIEW */}
+              <div
+                style={{
+                  marginTop: 6,
+                  marginBottom: 16,
+                  padding: "16px",
+                  borderRadius: 18,
+                  background: microQuestSolved
+                    ? (isDark ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5")
+                    : (isDark ? "rgba(245, 158, 11, 0.12)" : "#fef3c7"),
+                  border: `1.5px solid ${microQuestSolved ? "#10b981" : "#f59e0b"}`
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <Txt size={12} weight={900} color={microQuestSolved ? "#059669" : "#b45309"} style={{ textTransform: "uppercase" }}>
+                    🚀 {microQuestSolved ? "Starter Micro-Quest Solved!" : "First Micro-Quest: Power Up Kobe & Chibi"}
+                  </Txt>
+                  {microQuestSolved && <Chip color="#10b981" bg="#d1fae5">+20 STARTER XP</Chip>}
+                </div>
+                <Txt size={12.5} color={text} style={{ display: "block", marginBottom: 10 }}>
+                  {microQuestSolved
+                    ? `Awesome work! ${name || "Your child"} just unlocked their initial energy booster for this learning track.`
+                    : `Tap the cleanest energy source to boost ${companion === "chibi" ? "Chibi" : "Kobe"}'s tech engine:`}
+                </Txt>
+                {!microQuestSolved ? (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {[
+                      { title: "☀️ Clean Solar Battery", correct: true },
+                      { title: "💨 Wind Turbine Node", correct: true },
+                      { title: "🪵 Old Smoke Furnace", correct: false }
+                    ].map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          if (opt.correct) {
+                            sfx.playLevelUp();
+                            confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+                            setMicroQuestSolved(true);
+                            companionVoice.speakTTS(`Super choice! You just powered up our rocket engine!`, companion, ageGroup, lang);
+                          } else {
+                            sfx.playError();
+                          }
+                        }}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 12,
+                          border: `1.5px solid ${border}`,
+                          background: innerBg,
+                          color: text,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                        className="hover:scale-105 active:scale-95"
+                      >
+                        {opt.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 20 }}>⚡</span>
+                    <Txt size={12} color="#10b981" weight={700}>Engine 100% online & ready for takeoff!</Txt>
+                  </div>
+                )}
+              </div>
 
-
+              {/* INTEREST TOPICS MULTI-SELECT PICKER */}
+              <div>
+                <Label style={{ marginBottom: 8, color: textMuted }}>Select Focus Interests (Optional)</Label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {getInterestOptions(ageGroup).map((item) => {
+                    const isSelected = interests.includes(item.key);
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => toggleInterest(item.key)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 14,
+                          border: `1.5px solid ${isSelected ? borderCol : border}`,
+                          background: isSelected ? `${borderCol}18` : innerBg,
+                          color: isSelected ? borderCol : text,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6
+                        }}
+                        className="hover:scale-105 active:scale-95"
+                      >
+                        <span>{item.icon}</span>
+                        <span>{item.label}</span>
+                        {isSelected && <span>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </Card>
           </div>
         )}
@@ -592,7 +768,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
             </div>
             <Heading size={22} color={text}>{name} is enrolled!</Heading>
             <Txt size={13} color={textMuted} style={{ display: "block", marginTop: 4 }}>
-              Learning Track: {AGE_LABEL[ageGroup]} · {AGE_AGES[ageGroup]} years old.
+              Learning Track: {getAgeLabel(ageGroup)} · {getAgeRange(ageGroup)} years old.
             </Txt>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", marginTop: 12 }}>
               <Chip color={borderCol}>{limitMins > 0 ? `${limitMins} Mins Daily` : "No Limit"}</Chip>
@@ -675,7 +851,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
                   } catch (e) {}
                   pendingChildRef.current = null;
                 }
-                setStep((s) => s === 2 ? 0 : s - 1);
+                setStep((s) => s - 1);
                 setErr("");
               }}
               style={{ color: text, background: innerBg, borderColor: border }}

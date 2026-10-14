@@ -157,26 +157,124 @@ export function getNextLevel(xp: number) {
 }
 
 // Dev allowance timing presets (in seconds)
-export const DEV_DEFAULTS = {
+export const DEV_DEFAULTS: Record<string, { morning: number; afternoon: number; evening: number }> = {
   "early explorers": { morning: 120, afternoon: 120, evening: 60 },
+  "young explorers": { morning: 120, afternoon: 120, evening: 60 },
   "young innovators": { morning: 300, afternoon: 300, evening: 300 },
   "future builders": { morning: 900, afternoon: 0, evening: 900 }
 };
 
-export const AGE_LABEL = {
-  "early explorers": "Early Explorers",
+export const AGE_LABEL: Record<string, string> = {
+  "early explorers": "Young Explorers",
+  "young explorers": "Young Explorers",
   "young innovators": "Young Innovators",
   "future builders": "Future Builders"
 };
 
-export const AGE_AGES = {
+export const AGE_AGES: Record<string, string> = {
   "early explorers": "6–10",
+  "young explorers": "6–10",
   "young innovators": "11–13",
   "future builders": "14–18"
 };
 
-export const AGE_META = {
+export interface DynamicAgeGroupItem {
+  id: string;
+  key: string;
+  label: string;
+  ages: string;
+  icon: string;
+  color: string;
+  sub: string;
+  description: string;
+  defaultMins: number;
+}
+
+export const DYNAMIC_AGE_STORAGE_KEY = "clats_dynamic_age_groups_v1";
+
+export const DEFAULT_AGE_GROUPS: DynamicAgeGroupItem[] = [
+  {
+    id: "young_explorers",
+    key: "young explorers",
+    label: "Young Explorers",
+    ages: "6–10",
+    icon: "🌱",
+    color: "#F59E0B",
+    sub: "Ages 6 - 10",
+    description: "Explore, discover, play, and understand core technology concepts with voice assistance.",
+    defaultMins: 20
+  },
+  {
+    id: "young_innovators",
+    key: "young innovators",
+    label: "Young Innovators",
+    ages: "11–13",
+    icon: "⚡",
+    color: "#2EC4B6",
+    sub: "Ages 11 - 13",
+    description: "Experiment, classify, build, and apply logic and data rules.",
+    defaultMins: 40
+  },
+  {
+    id: "future_builders",
+    key: "future builders",
+    label: "Future Builders",
+    ages: "14–18",
+    icon: "🚀",
+    color: "#A78BFA",
+    sub: "Ages 14 - 18",
+    description: "Code, analyze, train models, investigate errors, and create real projects.",
+    defaultMins: 60
+  }
+];
+
+export function getDynamicAgeGroups(): DynamicAgeGroupItem[] {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = localStorage.getItem(DYNAMIC_AGE_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return DEFAULT_AGE_GROUPS;
+}
+
+export function saveDynamicAgeGroups(groups: DynamicAgeGroupItem[]) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(DYNAMIC_AGE_STORAGE_KEY, JSON.stringify(groups));
+  }
+}
+
+export function getAgeLabel(ageGroup: string): string {
+  const norm = (ageGroup || "").toLowerCase().trim();
+  const list = getDynamicAgeGroups();
+  const found = list.find(g => g.key === norm || g.id === norm || (norm.includes("early") && g.id.includes("explorers")));
+  if (found) return found.label;
+  return AGE_LABEL[norm] || "Young Explorers";
+}
+
+export function getAgeRange(ageGroup: string): string {
+  const norm = (ageGroup || "").toLowerCase().trim();
+  const list = getDynamicAgeGroups();
+  const found = list.find(g => g.key === norm || g.id === norm || (norm.includes("early") && g.id.includes("explorers")));
+  if (found) return found.ages;
+  return AGE_AGES[norm] || "6–10";
+}
+
+export const AGE_META: Record<string, { color: string; soft: string; kobeStyle: string }> = {
   "early explorers": {
+    color: C.amber,
+    soft: C.yellowSoft,
+    kobeStyle: [
+      "warm, extremely gentle, playful,",
+      "very short and simple sentences appropriate for ages 6 to 10,",
+      "celebrate every step, max one emoji per response,",
+      "give friendly verbal pattern hints."
+    ].join(" ")
+  },
+  "young explorers": {
     color: C.amber,
     soft: C.yellowSoft,
     kobeStyle: [
