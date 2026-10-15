@@ -10,6 +10,7 @@ interface FeedbackModalProps {
   xpAward: number;
   starsEarned?: number;
   isGrandFinale?: boolean;
+  isReplay?: boolean;
   onNext: () => void;
   onReplay?: () => void;
 }
@@ -20,6 +21,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   xpAward,
   starsEarned = 3,
   isGrandFinale = false,
+  isReplay = false,
   onNext,
   onReplay
 }) => {
@@ -97,11 +99,15 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
           </div>
           <div className="flex justify-between items-center text-slate-300">
             <span>XP Reward:</span>
-            <span className="font-black text-amber-400">+{xpAward} XP</span>
+            <span className="font-black text-amber-400">
+              {isReplay ? `+0 XP (Already Claimed)` : `+${xpAward} XP`}
+            </span>
           </div>
           <div className="flex justify-between items-center text-slate-300">
             <span>Woodland Harmony:</span>
-            <span className="font-black text-teal-300">+1 Forest Spark</span>
+            <span className="font-black text-teal-300">
+              {isReplay ? `⭐ Rating Updated` : `+1 Forest Spark`}
+            </span>
           </div>
         </div>
 

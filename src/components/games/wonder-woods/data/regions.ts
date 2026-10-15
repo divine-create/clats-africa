@@ -14,7 +14,13 @@ export const WONDER_WOODS_REGIONS: RegionData[] = [
     totalLevels: 10,
     x: 18,
     y: 28,
-    lore: "A sunny clearing where flowers, river pebbles, and colorful fireflies teach the first secrets of pattern rhythm."
+    lore: "A sunny clearing where flowers, river pebbles, and colorful fireflies teach the first secrets of pattern rhythm.",
+    cognitivePhase: "SPOT & MATCH",
+    visualLook: "Sunlit grassy meadow with glowing fireflies, flowerbeds, and stepping stones across a gentle brook.",
+    gameplayDescription: "Notice repeated elements, recognise AB/AAB/ABC sequences, identify missing pieces, and induct pattern rules.",
+    animatedPreviewConcept: "Fireflies and flowers pulse rhythmically with gentle pauses to show repeating periods.",
+    signatureChallenge: "The Pattern Keeper's Trial: Construct a 6-stone repeating archway.",
+    soundMotif: "Gentle forest chimes and warm acoustic bells."
   },
   {
     id: "grove",
@@ -25,11 +31,17 @@ export const WONDER_WOODS_REGIONS: RegionData[] = [
     badgeColor: "#0284C7",
     accentBg: "from-sky-950/70 to-indigo-950/80",
     isLocked: true,
-    unlockRequirement: "Earn 10 Stars in Pattern Meadow",
+    unlockRequirement: "Complete Level 10 in Pattern Meadow",
     totalLevels: 8,
     x: 48,
     y: 18,
-    lore: "A sunlit canopy where rare butterflies gather. Children classify creatures by wing shapes, antenna styles, and pollen dust."
+    lore: "A lush sunlit garden canopy where rare butterflies gather. Children classify creatures by wing shapes, antenna styles, and pollen dust.",
+    cognitivePhase: "CLASSIFY",
+    visualLook: "A lush garden filled with colourful butterflies, flowers, leaves, and little collection stations.",
+    gameplayDescription: "Children group objects by colour, shape, size, wing pattern or another visible feature. Later, they discover that one object can belong to different groups depending on the rule.",
+    animatedPreviewConcept: "Butterflies fly across the screen, then settle into groups according to a visible feature. A new butterfly arrives, and the child predicts where it belongs.",
+    signatureChallenge: "“Can you sort the butterflies by wing pattern, not by colour?”",
+    soundMotif: "Fluttering wooden flutes and gentle wind chimes."
   },
   {
     id: "trail",
@@ -44,7 +56,13 @@ export const WONDER_WOODS_REGIONS: RegionData[] = [
     totalLevels: 8,
     x: 78,
     y: 32,
-    lore: "A winding forest path marked by animal tracks. Discover footprint growth sequences and animal migration rhythms."
+    lore: "A winding woodland exploration trail with animal tracks, footprints, burrows, nests, and friendly creatures.",
+    cognitivePhase: "DISCOVER",
+    visualLook: "A woodland exploration trail with animal tracks, footprints, burrows, nests, and friendly creatures.",
+    gameplayDescription: "Identify repeated footprints, movement sequences, sizes, and visual features. The child follows clues to discover a rule.",
+    animatedPreviewConcept: "A creature walks across the path leaving footprints in a repeating sequence. One footprint is missing or different.",
+    signatureChallenge: "“Which animal made the missing track?”",
+    soundMotif: "Earthy rhythmic hand drums and soft woodland rustles."
   },
   {
     id: "river",
@@ -59,7 +77,13 @@ export const WONDER_WOODS_REGIONS: RegionData[] = [
     totalLevels: 8,
     x: 72,
     y: 68,
-    lore: "A singing river where lily pads pulse with gentle tones. Follow auditory and visual ripples to build loop sequences."
+    lore: "A singing river where lily pads pulse with gentle tones. Follow auditory and visual ripples to build loop sequences.",
+    cognitivePhase: "SEQUENCE",
+    visualLook: "A sparkling river with floating leaves, lily pads, stepping stones, and water creatures.",
+    gameplayDescription: "Work with order, repeating units, rhythmic sequences, and predicting what happens next.",
+    animatedPreviewConcept: "Leaves travel downstream in a sequence. The water pauses at an empty space, inviting the child to predict which leaf arrives next.",
+    signatureChallenge: "Reconstruct a sequence after its objects have been shuffled.",
+    soundMotif: "Flowing water marimbas and gentle aquatic ripple pulses."
   },
   {
     id: "observatory",
@@ -74,7 +98,13 @@ export const WONDER_WOODS_REGIONS: RegionData[] = [
     totalLevels: 8,
     x: 28,
     y: 72,
-    lore: "A hilltop terrace looking into starry skies. Align celestial bodies and decode multi-attribute star charts."
+    lore: "A hilltop terrace looking into starry skies. Align celestial bodies and decode multi-attribute star charts.",
+    cognitivePhase: "ANALYZE",
+    visualLook: "A magical night sky, telescopes, constellations, planets, and glowing stars.",
+    gameplayDescription: "Detect longer sequences, alternating attributes, multiple rules, and increasingly subtle anomalies.",
+    animatedPreviewConcept: "Stars illuminate one by one to form a constellation. The sequence repeats, but one star is missing from the next cycle.",
+    signatureChallenge: "Find the missing star using both its position and its shape or colour.",
+    soundMotif: "Soft cosmic tones and celestial sine resonances."
   },
   {
     id: "castle",
@@ -89,6 +119,12 @@ export const WONDER_WOODS_REGIONS: RegionData[] = [
     totalLevels: 6,
     x: 48,
     y: 48,
-    lore: "The ancient heart of Wonder Woods. Synthesize all rules to power the legendary Pattern Engine and craft master patterns."
+    lore: "The ancient heart of Wonder Woods. Synthesize all rules to power the legendary Pattern Engine and craft master patterns.",
+    cognitivePhase: "APPLY & CREATE",
+    visualLook: "A grand woodland castle with magical gates, puzzle rooms, treasure chambers, and a friendly Pattern Keeper.",
+    gameplayDescription: "Combine familiar skills, explain simple rules, correct broken patterns, predict sequences, and create valid patterns of their own.",
+    animatedPreviewConcept: "The castle gate activates only when a complete sequence reveals its rule. The animation demonstrates the goal without giving away the answer.",
+    signatureChallenge: "Design a pattern that satisfies a stated rule, then test whether it works.",
+    soundMotif: "Regal woodland brass and golden clockwork chimes."
   }
 ];

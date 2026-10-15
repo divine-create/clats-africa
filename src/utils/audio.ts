@@ -133,6 +133,50 @@ class AudioSynth {
     }
   }
 
+  playForestChime() {
+    try {
+      if (!this.isSoundEnabled()) return;
+      const ctx = this.init();
+      const now = ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Forest bells)
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+        gain.gain.setValueAtTime(0.06, now + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.1);
+        osc.stop(now + idx * 0.1 + 0.6);
+      });
+    } catch (e) {
+      // Ignored
+    }
+  }
+
+  playCosmicTone() {
+    try {
+      if (!this.isSoundEnabled()) return;
+      const ctx = this.init();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(329.63, now); // E4
+      osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.4); // E5 shimmer
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.7);
+    } catch (e) {
+      // Ignored
+    }
+  }
+
   play(type: string = "tap") {
     switch (type) {
       case "pop":
@@ -151,6 +195,13 @@ class AudioSynth {
       case "reward":
       case "celebrate":
         this.playLevelUp();
+        break;
+      case "chime":
+      case "forest":
+        this.playForestChime();
+        break;
+      case "cosmic":
+        this.playCosmicTone();
         break;
       default:
         this.playTap();

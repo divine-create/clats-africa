@@ -35,6 +35,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
   const [activeLevel, setActiveLevel] = useState<MeadowLevelConfig>(MEADOW_LEVELS[0]);
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
   const [lastEarnedStars, setLastEarnedStars] = useState<number>(3);
+  const [isCurrentLevelReplay, setIsCurrentLevelReplay] = useState<boolean>(false);
 
   // Per-child persistence
   const storageKey = `clats_wonder_woods_progress_${childId}`;
@@ -155,6 +156,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
     setLastEarnedStars(stars);
 
     const isAlreadyCompleted = completedLevels.includes(activeLevel.id);
+    setIsCurrentLevelReplay(isAlreadyCompleted);
     const updatedCompleted = isAlreadyCompleted 
       ? completedLevels 
       : [...completedLevels, activeLevel.id];
@@ -164,7 +166,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
       ...starsPerLevel,
       [activeLevel.id]: Math.max(starsPerLevel[activeLevel.id] || 0, stars)
     };
-    const updatedSparks = totalSparks + 1;
+    const updatedSparks = isAlreadyCompleted ? totalSparks : totalSparks + 1;
     const shouldUnlockGrove = isGroveUnlocked || activeLevel.id === 10;
     const earnedBadge = activeLevel.id === 10 ? "bdg-pattern-meadow-master" : badgeEarned;
 
@@ -177,8 +179,10 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
       earnedBadge
     );
 
-    // Reward XP
-    onRewardXP?.(activeLevel.xpAward);
+    // Reward XP ONLY on first completion to prevent duplicate XP farming
+    if (!isAlreadyCompleted) {
+      onRewardXP?.(activeLevel.xpAward);
+    }
 
     // Open celebration modal
     setShowFeedbackModal(true);
@@ -238,6 +242,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
                 setCurrentScreen("mission_board");
               }}
               onBackToIntro={() => setCurrentScreen("intro")}
+              onExit={onExit}
             />
           </motion.div>
         )}
@@ -312,6 +317,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
           xpAward={activeLevel.xpAward}
           starsEarned={lastEarnedStars}
           isGrandFinale={activeLevel.id === 10}
+          isReplay={isCurrentLevelReplay}
           onNext={handleNextFromFeedback}
           onReplay={() => {
             setShowFeedbackModal(false);

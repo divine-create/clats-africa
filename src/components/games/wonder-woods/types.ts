@@ -133,6 +133,12 @@ export interface RegionData {
   x: number; // Percentage on map
   y: number;
   lore: string;
+  cognitivePhase?: string;
+  visualLook?: string;
+  gameplayDescription?: string;
+  animatedPreviewConcept?: string;
+  signatureChallenge?: string;
+  soundMotif?: string;
 }
 
 export interface WonderWoodsProgress {

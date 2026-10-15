@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info, CheckCircle2, Award } from "lucide-react";
+import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info, CheckCircle2, Award, Music, LogOut } from "lucide-react";
 import { RegionData, RegionId } from "../types";
 import { WONDER_WOODS_REGIONS } from "../data/regions";
 import { sfx } from "../../../../utils/audio";
@@ -11,6 +11,7 @@ interface WorldMapProps {
   unlockedLevel: number;
   isGroveUnlocked?: boolean;
   onBackToIntro: () => void;
+  onExit?: () => void;
 }
 
 export const WorldMap: React.FC<WorldMapProps> = ({
@@ -18,7 +19,8 @@ export const WorldMap: React.FC<WorldMapProps> = ({
   starsCollected,
   unlockedLevel,
   isGroveUnlocked = false,
-  onBackToIntro
+  onBackToIntro,
+  onExit
 }) => {
   const [hoveredRegion, setHoveredRegion] = useState<RegionData | null>(null);
   const [showGroveModal, setShowGroveModal] = useState<boolean>(false);
@@ -40,11 +42,14 @@ export const WorldMap: React.FC<WorldMapProps> = ({
 
   const handleRegionClick = (region: RegionData) => {
     if (region.id === "meadow") {
-      sfx.play("pop");
+      sfx.play("chime");
       onSelectRegion("meadow");
     } else if (region.id === "grove" && isGroveUnlocked) {
       sfx.play("reward");
       setShowGroveModal(true);
+    } else if (region.id === "observatory") {
+      sfx.play("cosmic");
+      setHoveredRegion(region);
     } else {
       sfx.play("error");
       setHoveredRegion(region);
@@ -58,14 +63,29 @@ export const WorldMap: React.FC<WorldMapProps> = ({
 
       {/* Top Map Header */}
       <div className="w-full flex justify-between items-center z-20 bg-slate-900/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-700/80 shadow-md">
-        <button
-          type="button"
-          onClick={onBackToIntro}
-          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-bold"
-        >
-          <ArrowLeft size={16} />
-          <span>Intro</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onBackToIntro}
+            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-bold"
+            title="Return to Story Intro"
+          >
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">Intro</span>
+          </button>
+
+          {onExit && (
+            <button
+              type="button"
+              onClick={onExit}
+              className="p-2 bg-slate-800/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 border border-slate-700/80 rounded-xl transition text-xs font-bold flex items-center gap-1"
+              title="Return to Child Arcade"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Arcade</span>
+            </button>
+          )}
+        </div>
 
         <div className="text-center">
           <h2 
@@ -182,7 +202,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
         {hoveredRegion ? (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="text-3xl p-2 bg-slate-800 rounded-2xl border border-slate-700">
+              <span className="text-3xl p-2 bg-slate-800 rounded-2xl border border-slate-700 shrink-0">
                 {hoveredRegion.icon}
               </span>
               <div>
@@ -190,6 +210,11 @@ export const WorldMap: React.FC<WorldMapProps> = ({
                   <h4 className="text-sm font-black text-white" style={{ fontFamily: "'Baloo 2', system-ui, sans-serif" }}>
                     {hoveredRegion.name}
                   </h4>
+                  {hoveredRegion.cognitivePhase && (
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-800 text-teal-300 border border-teal-500/30 uppercase">
+                      {hoveredRegion.cognitivePhase}
+                    </span>
+                  )}
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
                     !hoveredRegion.isLocked 
                       ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" 
@@ -198,9 +223,14 @@ export const WorldMap: React.FC<WorldMapProps> = ({
                     {!hoveredRegion.isLocked ? "OPEN REGION" : "LOCKED"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 mt-0.5">
+                <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
                   {hoveredRegion.tagline} · <span className="text-slate-400">{hoveredRegion.unlockRequirement}</span>
                 </p>
+                {hoveredRegion.signatureChallenge && (
+                  <p className="text-[11px] text-amber-300 font-medium mt-0.5 line-clamp-1">
+                    Signature Challenge: <em>{hoveredRegion.signatureChallenge}</em>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -208,7 +238,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
               <button
                 type="button"
                 onClick={() => handleRegionClick(hoveredRegion)}
-                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition active:scale-95"
+                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition active:scale-95 shrink-0"
               >
                 <span>{hoveredRegion.id === "meadow" ? "ENTER MEADOW MISSIONS" : "EXPLORE GROVE"}</span>
                 <ChevronRight size={16} />
