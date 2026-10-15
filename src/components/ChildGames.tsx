@@ -66,7 +66,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
   const companionName = child.companion === "chibi" ? "Chibi" : "Kobe";
 
   useEffect(() => {
-    const gameWelcome = `Welcome to the games arena, friend! I am ${companionName}. Let's play some pattern training games to rack up smart points!`;
+    const gameWelcome = `Welcome to the games arena, friend! I am ${companionName}. Let's play some smart learning games to rack up smart points!`;
     const timer = setTimeout(() => {
       companionVoice.speak(gameWelcome, child.companion || "kobe", child.ageGroup);
     }, 850);
@@ -115,41 +115,45 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
     { id: "career" as const, label: child.ageGroup === "future builders" ? "Innovation & Career Readiness" : "Adaptability & Lifelong Learning", icon: child.ageGroup === "future builders" ? "🚀" : "🌱" }
   ];
 
-  // Academies games lists
+  // Academies games lists (tailored by age group)
+  const isOlder = child.ageGroup === "future builders";
+  const isMiddle = child.ageGroup === "young innovators";
+  const isYoung = !isOlder && !isMiddle;
+
   const aiGames: Game[] = [
-    {
+    ...(isYoung ? [{
       id: "wonder-woods",
       name: "Pattern Quest",
       desc: "Restore the magical Pattern Engine in this beautiful adventure! Perfect for ages 6-10.",
-      difficulty: "Beginner",
+      difficulty: "Beginner" as const,
       xpAward: 200,
-      status: "Available",
+      status: "Available" as const,
       supportsModule: "🤖 AI Foundations",
       supportsLesson: "Pattern Recognition",
       icon: "🌳"
-    },
-    {
+    }] : []),
+    ...(isMiddle ? [{
       id: "the-signal-lab",
       name: "The Signal Lab",
       desc: "Junior Analyst required! Analyze datasets and isolate anomalies. Perfect for ages 11-13.",
-      difficulty: "Advanced",
+      difficulty: "Advanced" as const,
       xpAward: 250,
-      status: "Available",
+      status: "Available" as const,
       supportsModule: "🤖 AI Foundations",
       supportsLesson: "Data Classification",
       icon: "🛰️"
-    },
-    {
+    }] : []),
+    ...(isOlder ? [{
       id: "the-intelligence-lab",
       name: "The Intelligence Lab",
       desc: "Apprentice Data Engineer required. Train models, evaluate data, and detect AI bias. Perfect for ages 14-18.",
-      difficulty: "Advanced",
+      difficulty: "Advanced" as const,
       xpAward: 300,
-      status: "Available",
+      status: "Available" as const,
       supportsModule: "🤖 AI Foundations",
       supportsLesson: "Machine Learning & Bias",
       icon: "🌐"
-    },
+    }] : []),
     {
       id: "teachable-machine",
       name: "Teachable Machine",
@@ -622,110 +626,6 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
           })}
         </div>
       </div>
-
-      {/* 3. FEATURED CHALLENGE HERO CARD (Dynamic by Age Group on AI Academy) */}
-      {activeAcademy === "ai" && (() => {
-        const isOlder = child.ageGroup === "future builders";
-        const isMiddle = child.ageGroup === "young innovators";
-        
-        const featuredGameId = isOlder ? "the-intelligence-lab" : isMiddle ? "the-signal-lab" : "wonder-woods";
-        const featuredTag = isOlder ? "⚡ ADVANCED DATA LAB (AGES 14–18)" : isMiddle ? "🛰️ TELEMETRY MISSION (AGES 11–13)" : "🌳 MAGICAL FOREST QUEST (AGES 6–10)";
-        const featuredTitle = isOlder ? "🌐 The Intelligence Lab: FloodWatch" : isMiddle ? "🛰️ The Signal Lab: Junior Analyst" : "🌳 Pattern Quest: The Wonder Woods";
-        const featuredDesc = isOlder 
-          ? "Apprentice Data Engineer required! Train predictive machine learning models, inspect telemetry datasets, detect algorithmic bias, and optimize neural net weights."
-          : isMiddle
-          ? "Junior Analyst required! Monitor live smart city feeds, deduce classification rules across datasets, and isolate telemetry anomalies."
-          : "Embark on an adventure across 6 magical forest zones! Restore ancient pattern sequences and power up the magical Pattern Engine with Kobe and Chibi!";
-        const featuredXP = isOlder ? "+300 XP" : isMiddle ? "+250 XP" : "+200 XP";
-        const featuredDifficulty = isOlder ? "Advanced Lab" : isMiddle ? "Intermediate Lab" : "Beginner Quest";
-        const featuredBtn = isOlder ? "LAUNCH INTELLIGENCE LAB 🚀" : isMiddle ? "ENTER THE SIGNAL LAB 🚀" : "PLAY PATTERN QUEST 🚀";
-        const mascotChar = isOlder ? "kobe" : isMiddle ? "chibi" : (child.companion || "kobe");
-
-        return (
-          <div 
-            style={{
-              maxWidth: 1200,
-              margin: "0 auto 28px"
-            }}
-          >
-            <div 
-              style={{
-                background: isDark 
-                  ? "linear-gradient(135deg, rgba(46, 196, 182, 0.15) 0%, rgba(184, 160, 255, 0.1) 100%)" 
-                  : "linear-gradient(135deg, rgba(254, 243, 199, 0.7) 0%, rgba(253, 230, 138, 0.4) 100%)",
-                border: isDark ? "3px solid #2EC4B6" : "3px solid #FFD166",
-                borderRadius: 30,
-                padding: "36px 32px",
-                boxShadow: "0 12px 24px -10px rgba(0,0,0,0.06)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 24,
-                position: "relative",
-                overflow: "hidden"
-              }}
-            >
-              {/* Background design elements */}
-              <div style={{ position: "absolute", right: "-40px", bottom: "-30px", fontSize: 140, opacity: 0.12, userSelect: "none" }}>🕹️</div>
-
-              <div style={{ flex: "1 1 500px", zIndex: 10 }}>
-                <Chip color="#B45309" bg="#FEF3C7" style={{ marginBottom: 12, fontWeight: 900, borderRadius: 12, fontSize: 11, border: "1.5px solid #F59E0B" }}>
-                  {featuredTag}
-                </Chip>
-                <Heading size={32} style={{ color: isDark ? "#ffffff" : "#0f172a", marginBottom: 10, fontFamily: F.display, fontWeight: 900 }}>
-                  {featuredTitle}
-                </Heading>
-                <Txt size={15.5} color={isDark ? "#cbd5e1" : "#334155"} style={{ display: "block", marginBottom: 20, lineHeight: 1.5 }}>
-                  {featuredDesc}
-                </Txt>
-
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", marginBottom: 24 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(251, 191, 36, 0.15)", border: "1.5px solid #FBBF24", padding: "6px 12px", borderRadius: 12 }}>
-                    <span style={{ fontSize: 16 }}>⭐</span>
-                    <Txt size={13.5} weight={900} color="#D97706">🏆 {featuredXP} REWARD</Txt>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(16, 185, 129, 0.1)", border: "1.5px solid #10B981", padding: "6px 12px", borderRadius: 12 }}>
-                    <span style={{ fontSize: 16 }}>🟢</span>
-                    <Txt size={13} weight={800} color="#059669">{featuredDifficulty}</Txt>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handlePlayGame(featuredGameId)}
-                  style={{
-                    background: `linear-gradient(135deg, ${C.yellow}, ${C.yellowDark})`,
-                    border: "none",
-                    borderBottom: "5px solid #D97706",
-                    color: "#1e293b",
-                    padding: "16px 36px",
-                    fontSize: 16.5,
-                    fontWeight: 950,
-                    borderRadius: 20,
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontFamily: F.display,
-                    transition: "all 0.15s active:translate-y-1 shadow-md hover:shadow-lg active:border-b-2"
-                  }}
-                  onMouseDown={(e)=> e.currentTarget.style.transform = "translateY(2px)"}
-                  onMouseUp={(e)=> e.currentTarget.style.transform = "none"}
-                >
-                  {featuredBtn}
-                </button>
-              </div>
-
-              <div style={{ flex: "0 0 200px", display: "flex", justifyContent: "center", position: "relative", zIndex: 10 }}>
-                <div style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#ffffff", padding: 20, borderRadius: "50%", border: "4px solid #FBBF24", boxShadow: "0 12px 24px rgba(0,0,0,0.05)" }}>
-                  <MascotImage character={mascotChar as any} height={130} />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* 4. GAME LIBRARY / LIST SECTION */}
       <div 
