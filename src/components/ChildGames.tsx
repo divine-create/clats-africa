@@ -276,29 +276,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
 
   // Playable interactive Game Logic Data
 
-  // 1. PATTERN DETECTIVE QUESTS
-  const patternQuests = [
-    {
-      instructions: "Kobe wants you to complete the sequence color pattern: 🔴 🔵 🔴 🔵 🔴 ...",
-      options: ["🔴 Red Bead", "🔵 Blue Bead", "🟢 Green Bead"],
-      correctIndex: 1,
-      explanation: "Wow! Red and blue alternate perfectly! 1, 2, 1, 2..."
-    },
-    {
-      instructions: "Complete the shape grid pattern: 🔼 🟨 🔼 🟨 🔼 ...",
-      options: ["🟨 Square Block", "🔼 Triangle Peak", "🟢 Round Circle"],
-      correctIndex: 0,
-      explanation: "Excellent! The square block comes directly after the triangle."
-    },
-    {
-      instructions: "Find what completes the pattern: ABC, DEF, GHI, ...",
-      options: ["WXY", "MNO", "JKL"],
-      correctIndex: 2,
-      explanation: "Fantastic! JKL completes the alphabetical groupings!"
-    }
-  ];
-
-  // 2. AI SORTING QUESTS
+  // 1. AI SORTING QUESTS
   const sortingQuests = [
     {
       item: "🍎 Apple",
@@ -426,7 +404,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
       setIsGameCompleted(true);
       setShowXPClaimModal({
         xp: xlAward,
-        title: gameId === "pattern-detective" ? "Pattern Detective" : gameId === "ai-sorting" ? "AI Sorting Challenge" : gameId === "smart-machine" ? "Smart Machine Match" : "Train the Robot"
+        title: gameId === "ai-sorting" ? "AI Sorting Challenge" : gameId === "smart-machine" ? "Smart Machine Match" : "Train the Robot"
       });
     }
   };
@@ -645,91 +623,109 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
         </div>
       </div>
 
-      {/* 3. FEATURED CHALLENGE HERO CARD (Only on AI/MVP selection) */}
-      {activeAcademy === "ai" && (
-        <div 
-          style={{
-            maxWidth: 1200,
-            margin: "0 auto 28px"
-          }}
-        >
+      {/* 3. FEATURED CHALLENGE HERO CARD (Dynamic by Age Group on AI Academy) */}
+      {activeAcademy === "ai" && (() => {
+        const isOlder = child.ageGroup === "future builders";
+        const isMiddle = child.ageGroup === "young innovators";
+        
+        const featuredGameId = isOlder ? "the-intelligence-lab" : isMiddle ? "the-signal-lab" : "wonder-woods";
+        const featuredTag = isOlder ? "⚡ ADVANCED DATA LAB (AGES 14–18)" : isMiddle ? "🛰️ TELEMETRY MISSION (AGES 11–13)" : "🌳 MAGICAL FOREST QUEST (AGES 6–10)";
+        const featuredTitle = isOlder ? "🌐 The Intelligence Lab: FloodWatch" : isMiddle ? "🛰️ The Signal Lab: Junior Analyst" : "🌳 Pattern Quest: The Wonder Woods";
+        const featuredDesc = isOlder 
+          ? "Apprentice Data Engineer required! Train predictive machine learning models, inspect telemetry datasets, detect algorithmic bias, and optimize neural net weights."
+          : isMiddle
+          ? "Junior Analyst required! Monitor live smart city feeds, deduce classification rules across datasets, and isolate telemetry anomalies."
+          : "Embark on an adventure across 6 magical forest zones! Restore ancient pattern sequences and power up the magical Pattern Engine with Kobe and Chibi!";
+        const featuredXP = isOlder ? "+300 XP" : isMiddle ? "+250 XP" : "+200 XP";
+        const featuredDifficulty = isOlder ? "Advanced Lab" : isMiddle ? "Intermediate Lab" : "Beginner Quest";
+        const featuredBtn = isOlder ? "LAUNCH INTELLIGENCE LAB 🚀" : isMiddle ? "ENTER THE SIGNAL LAB 🚀" : "PLAY PATTERN QUEST 🚀";
+        const mascotChar = isOlder ? "kobe" : isMiddle ? "chibi" : (child.companion || "kobe");
+
+        return (
           <div 
             style={{
-              background: isDark 
-                ? "linear-gradient(135deg, rgba(46, 196, 182, 0.15) 0%, rgba(184, 160, 255, 0.1) 100%)" 
-                : "linear-gradient(135deg, rgba(254, 243, 199, 0.7) 0%, rgba(253, 230, 138, 0.4) 100%)",
-              border: isDark ? "3px solid #2EC4B6" : "3px solid #FFD166",
-              borderRadius: 30,
-              padding: "36px 32px",
-              boxShadow: "0 12px 24px -10px rgba(0,0,0,0.06)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 24,
-              position: "relative",
-              overflow: "hidden"
+              maxWidth: 1200,
+              margin: "0 auto 28px"
             }}
           >
-            {/* Background design elements */}
-            <div style={{ position: "absolute", right: "-40px", bottom: "-30px", fontSize: 140, opacity: 0.12, userSelect: "none" }}>🕹️</div>
+            <div 
+              style={{
+                background: isDark 
+                  ? "linear-gradient(135deg, rgba(46, 196, 182, 0.15) 0%, rgba(184, 160, 255, 0.1) 100%)" 
+                  : "linear-gradient(135deg, rgba(254, 243, 199, 0.7) 0%, rgba(253, 230, 138, 0.4) 100%)",
+                border: isDark ? "3px solid #2EC4B6" : "3px solid #FFD166",
+                borderRadius: 30,
+                padding: "36px 32px",
+                boxShadow: "0 12px 24px -10px rgba(0,0,0,0.06)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 24,
+                position: "relative",
+                overflow: "hidden"
+              }}
+            >
+              {/* Background design elements */}
+              <div style={{ position: "absolute", right: "-40px", bottom: "-30px", fontSize: 140, opacity: 0.12, userSelect: "none" }}>🕹️</div>
 
-            <div style={{ flex: "1 1 500px", zIndex: 10 }}>
-              <Chip color="#B45309" bg="#FEF3C7" style={{ marginBottom: 12, fontWeight: 900, borderRadius: 12, fontSize: 11, border: "1.5px solid #F59E0B" }}>
-                🔥 FEATURED LEARNING CHALLENGE
-              </Chip>
-              <Heading size={34} style={{ color: isDark ? "#ffffff" : "#0f172a", marginBottom: 10, fontFamily: F.display, fontWeight: 900 }}>
-                🤖 Pattern Detective
-              </Heading>
-              <Txt size={16} color={isDark ? "#cbd5e1" : "#334155"} style={{ display: "block", marginBottom: 20 }}>
-                Help Kobe teach a robot how to recognize patterns. Complete sequences to train automated intelligence brains!
-              </Txt>
+              <div style={{ flex: "1 1 500px", zIndex: 10 }}>
+                <Chip color="#B45309" bg="#FEF3C7" style={{ marginBottom: 12, fontWeight: 900, borderRadius: 12, fontSize: 11, border: "1.5px solid #F59E0B" }}>
+                  {featuredTag}
+                </Chip>
+                <Heading size={32} style={{ color: isDark ? "#ffffff" : "#0f172a", marginBottom: 10, fontFamily: F.display, fontWeight: 900 }}>
+                  {featuredTitle}
+                </Heading>
+                <Txt size={15.5} color={isDark ? "#cbd5e1" : "#334155"} style={{ display: "block", marginBottom: 20, lineHeight: 1.5 }}>
+                  {featuredDesc}
+                </Txt>
 
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(251, 191, 36, 0.15)", border: "1.5px solid #FBBF24", padding: "6px 12px", borderRadius: 12 }}>
-                  <span style={{ fontSize: 16 }}>⭐</span>
-                  <Txt size={13.5} weight={900} color="#D97706">🏆 +100 XP REWARD</Txt>
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", marginBottom: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(251, 191, 36, 0.15)", border: "1.5px solid #FBBF24", padding: "6px 12px", borderRadius: 12 }}>
+                    <span style={{ fontSize: 16 }}>⭐</span>
+                    <Txt size={13.5} weight={900} color="#D97706">🏆 {featuredXP} REWARD</Txt>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(16, 185, 129, 0.1)", border: "1.5px solid #10B981", padding: "6px 12px", borderRadius: 12 }}>
+                    <span style={{ fontSize: 16 }}>🟢</span>
+                    <Txt size={13} weight={800} color="#059669">{featuredDifficulty}</Txt>
+                  </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(16, 185, 129, 0.1)", border: "1.5px solid #10B981", padding: "6px 12px", borderRadius: 12 }}>
-                  <span style={{ fontSize: 16 }}>🟢</span>
-                  <Txt size={13} weight={800} color="#059669">Beginner Course</Txt>
-                </div>
+                <button
+                  onClick={() => handlePlayGame(featuredGameId)}
+                  style={{
+                    background: `linear-gradient(135deg, ${C.yellow}, ${C.yellowDark})`,
+                    border: "none",
+                    borderBottom: "5px solid #D97706",
+                    color: "#1e293b",
+                    padding: "16px 36px",
+                    fontSize: 16.5,
+                    fontWeight: 950,
+                    borderRadius: 20,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontFamily: F.display,
+                    transition: "all 0.15s active:translate-y-1 shadow-md hover:shadow-lg active:border-b-2"
+                  }}
+                  onMouseDown={(e)=> e.currentTarget.style.transform = "translateY(2px)"}
+                  onMouseUp={(e)=> e.currentTarget.style.transform = "none"}
+                >
+                  {featuredBtn}
+                </button>
               </div>
 
-              <button
-                onClick={() => handlePlayGame("pattern-detective")}
-                style={{
-                  background: `linear-gradient(135deg, ${C.yellow}, ${C.yellowDark})`,
-                  border: "none",
-                  borderBottom: "5px solid #D97706",
-                  color: "#1e293b",
-                  padding: "16px 36px",
-                  fontSize: 17,
-                  fontWeight: 950,
-                  borderRadius: 20,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontFamily: F.display,
-                  transition: "all 0.15s active:translate-y-1 shadow-md hover:shadow-lg active:border-b-2"
-                }}
-                onMouseDown={(e)=> e.currentTarget.style.transform = "translateY(2px)"}
-                onMouseUp={(e)=> e.currentTarget.style.transform = "none"}
-              >
-                PLAY NOW 🚀
-              </button>
-            </div>
-
-            <div style={{ flex: "0 0 200px", display: "flex", justifyContent: "center", position: "relative", zIndex: 10 }}>
-              <div style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#ffffff", padding: 20, borderRadius: "50%", border: "4px solid #FBBF24", boxShadow: "0 12px 24px rgba(0,0,0,0.05)" }}>
-                <MascotImage character="kobe" height={130} />
+              <div style={{ flex: "0 0 200px", display: "flex", justifyContent: "center", position: "relative", zIndex: 10 }}>
+                <div style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#ffffff", padding: 20, borderRadius: "50%", border: "4px solid #FBBF24", boxShadow: "0 12px 24px rgba(0,0,0,0.05)" }}>
+                  <MascotImage character={mascotChar as any} height={130} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 4. GAME LIBRARY / LIST SECTION */}
       <div 
@@ -1098,6 +1094,19 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                   sfx.playTap();
                   setActiveGameModal(null);
                 }}
+                onRewardXP={(xp) => {
+                  onAddXP(xp);
+                  setShowXPClaimModal({ xp, title: "Pattern Quest Master" });
+                  if (!completedGames.includes("wonder-woods")) {
+                    setCompletedGames(prev => [...prev, "wonder-woods"]);
+                    try {
+                      localStorage.setItem(`clats_game_completed_${child.id}_wonder-woods`, "true");
+                    } catch {}
+                  }
+                }}
+                companion={child.companion as any || "kobe"}
+                lang={lang}
+                childId={child.id}
               />
             </div>
           );
@@ -1306,7 +1315,6 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
         }
 
         const currentQuests = 
-          gameId === "pattern-detective" ? patternQuests :
           gameId === "ai-sorting" ? sortingQuests :
           gameId === "smart-machine" ? matchingQuests :
           trainingQuests;
@@ -1374,7 +1382,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                 <span style={{ fontSize: 24 }}>🕹️</span>
                 <div>
                   <Heading size={18} style={{ fontWeight: 900 }}>
-                    {gameId === "pattern-detective" ? "Pattern Detective" : gameId === "ai-sorting" ? "AI Sorting Challenge" : gameId === "smart-machine" ? "Smart Machine Match" : "Train the Robot"}
+                    {gameId === "ai-sorting" ? "AI Sorting Challenge" : gameId === "smart-machine" ? "Smart Machine Match" : "Train the Robot"}
                   </Heading>
                   <Txt size={11} color="#2EC4B6" style={{ fontWeight: 800 }}>
                     Step {gameStep + 1} of {currentQuests.length} Progress
@@ -1400,8 +1408,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                 )}
 
                 <Txt size={14.5} weight={800} style={{ display: "block", color: isDark ? "#fff" : "#0f172a", marginBottom: 6 }}>
-                  {gameId === "pattern-detective" ? (currentQuest as any).instructions : 
-                   gameId === "ai-sorting" ? `Object: ${(currentQuest as any).item}` : 
+                  {gameId === "ai-sorting" ? `Object: ${(currentQuest as any).item}` : 
                    gameId === "smart-machine" ? `Smart Tool: ${(currentQuest as any).tool}` : 
                    `Sensor Feed: ${(currentQuest as any).animal}`}
                 </Txt>
@@ -1479,7 +1486,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                   </div>
 
                   <button
-                    onClick={() => handleNextQuest(currentQuests, gameId, gameId === "pattern-detective" ? 50 : gameId === "ai-sorting" ? 50 : gameId === "smart-machine" ? 75 : 100)}
+                    onClick={() => handleNextQuest(currentQuests, gameId, gameId === "ai-sorting" ? 50 : gameId === "smart-machine" ? 75 : 100)}
                     style={{
                       width: "100%",
                       padding: "14px",
@@ -1552,7 +1559,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
             </div>
 
             <Txt size={13.5} color={isDark ? "#b8a0ff" : "#4f46e5"} style={{ display: "block", fontWeight: 900, textTransform: "uppercase", marginBottom: 20 }}>
-              🎖️ Unlocked Badge: {showXPClaimModal.title === "Pattern Detective" ? "Pattern Master 🏅" : 
+              🎖️ Unlocked Badge: {showXPClaimModal.title === "Pattern Quest Master" ? "Pattern Master 🏅" : 
                                    showXPClaimModal.title === "AI Sorting Challenge" ? "AI Explorer 🚀" : 
                                    showXPClaimModal.title === "Smart Machine Match" ? "Smart Thinker 🧠" : 
                                    "Future Builder 🤖"}
