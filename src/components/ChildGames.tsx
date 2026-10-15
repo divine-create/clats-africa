@@ -92,11 +92,33 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
   const [completedGames, setCompletedGames] = useState<string[]>(() => {
     try {
       const keys = ["teachable-machine", "smart-city-builder", "phishing-swipe"];
-      return keys.filter(k => localStorage.getItem(`clats_game_completed_${child.id}_${k}`) === "true");
+      const list = keys.filter(k => localStorage.getItem(`clats_game_completed_${child.id}_${k}`) === "true");
+
+      // Verify Wonder Woods actual full completion (all 10 missions completed)
+      const rawWW = localStorage.getItem(`clats_wonder_woods_progress_${child.id}`);
+      if (rawWW) {
+        try {
+          const parsed = JSON.parse(rawWW);
+          const isDone = Array.isArray(parsed.completedLevels) && (parsed.completedLevels.length >= 10 || parsed.completedLevels.includes(10));
+          if (isDone) {
+            list.push("wonder-woods");
+          } else {
+            // Clean up any stale premature completion flag from previous bug
+            localStorage.removeItem(`clats_game_completed_${child.id}_wonder-woods`);
+          }
+        } catch {}
+      } else {
+        localStorage.removeItem(`clats_game_completed_${child.id}_wonder-woods`);
+      }
+
+      return list;
     } catch {
       return [];
     }
   });
+
+  // Reactive tick to refresh game progression stats
+  const [progressUpdateTick, setProgressUpdateTick] = useState(0);
 
   // Keep a dynamic streak value for gamification
   const [streak, setStreak] = useState(() => {
@@ -249,8 +271,71 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
     return careerGames;
   };
 
+  // Dynamic Game State & Progression Resolver (Gamified Engine)
+  const getGameStatusInfo = (gameId: string) => {
+    // Reference progressUpdateTick to ensure reactive re-evaluation
+    void progressUpdateTick;
+
+    if (gameId === "wonder-woods") {
+      try {
+        const raw = localStorage.getItem(`clats_wonder_woods_progress_${child.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const completedLevels = Array.isArray(parsed.completedLevels) ? parsed.completedLevels : [];
+          const completedCount = completedLevels.length;
+          const unlockedLevel = typeof parsed.unlockedLevel === "number" ? Math.min(10, parsed.unlockedLevel) : 1;
+          const isDone = completedCount >= 10 || completedLevels.includes(10);
+          const percent = isDone ? 100 : Math.min(100, Math.round((completedCount / 10) * 100));
+
+          return {
+            isCompleted: isDone,
+            isInProgress: completedCount > 0 && !isDone,
+            progressPercent: percent,
+            progressHeader: "QUEST PROGRESS",
+            progressDisplay: isDone 
+              ? "100% · MASTERED" 
+              : completedCount > 0 
+              ? `${percent}% (${completedCount}/10 Missions)` 
+              : "0% (10 Missions Ahead)",
+            badgeText: isDone ? "✓ COMPLETED" : completedCount > 0 ? `LEVEL ${unlockedLevel} / 10` : null,
+            badgeType: isDone ? "completed" : completedCount > 0 ? "in_progress" : "none",
+            buttonText: isDone 
+              ? "🔄 Replay Game (Earned)" 
+              : completedCount > 0 
+              ? `⚡ Continue Quest (Level ${unlockedLevel})` 
+              : "Start Adventure ▶"
+          };
+        }
+      } catch {}
+
+      return {
+        isCompleted: false,
+        isInProgress: false,
+        progressPercent: 0,
+        progressHeader: "QUEST PROGRESS",
+        progressDisplay: "0% (10 Missions Ahead)",
+        badgeText: null,
+        badgeType: "none",
+        buttonText: "Start Adventure ▶"
+      };
+    }
+
+    // Default arcade mini-games
+    const isDone = completedGames.includes(gameId);
+    return {
+      isCompleted: isDone,
+      isInProgress: false,
+      progressPercent: isDone ? 100 : 0,
+      progressHeader: "MISSION COMPLETION",
+      progressDisplay: `${isDone ? 100 : 0}%`,
+      badgeText: isDone ? "✓ COMPLETED" : null,
+      badgeType: isDone ? "completed" : "none",
+      buttonText: isDone ? "🔄 Replay Game (Earned)" : "Play Game ▶"
+    };
+  };
+
   const getCompletedProgressPercentage = (gameId: string) => {
-    return completedGames.includes(gameId) ? 100 : 0;
+    return getGameStatusInfo(gameId).progressPercent;
   };
 
   // Pre-configured Badge requirements
@@ -680,9 +765,11 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
           }}
         >
           {getActiveArray().map(game => {
-            const isCompleted = completedGames.includes(game.id);
+            const statusInfo = getGameStatusInfo(game.id);
             const isComingSoon = game.status === "Coming Soon";
-            const progressVal = getCompletedProgressPercentage(game.id);
+            const isCompleted = statusInfo.isCompleted;
+            const isInProgress = statusInfo.isInProgress;
+            const progressVal = statusInfo.progressPercent;
 
             return (
               <div
@@ -751,6 +838,30 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                   </div>
                 )}
 
+                {/* In-Progress badge for active multi-level quest */}
+                {!isComingSoon && !isCompleted && isInProgress && (
+                  <div 
+                    style={{
+                      position: "absolute",
+                      top: 14,
+                      right: 14,
+                      fontSize: 11.5,
+                      background: isDark ? "rgba(14, 165, 233, 0.15)" : "rgba(14, 165, 233, 0.12)",
+                      border: "1.5px solid #0ea5e9",
+                      color: isDark ? "#38bdf8" : "#0284c7",
+                      fontWeight: 900,
+                      padding: "4px 10px",
+                      borderRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}
+                  >
+                    <span>⚡</span>
+                    <span>{statusInfo.badgeText}</span>
+                  </div>
+                )}
+
                 <div>
                   <div style={{ fontSize: 32, marginBottom: 12 }}>{game.icon}</div>
                   
@@ -797,15 +908,35 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                     </Txt>
                   </div>
 
-                  {/* DYNAMIC PROGRESS IN INDICATOR */}
+                  {/* DYNAMIC PROGRESS INDICATOR */}
                   {!isComingSoon && (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <Txt size={11} weight={800} color={isDark ? "#94a3b8" : "#64748b"}>MISSION COMPLETION</Txt>
-                        <Txt size={11.5} weight={900} color="#10B981">{progressVal}%</Txt>
+                        <Txt size={11} weight={800} color={isDark ? "#94a3b8" : "#64748b"}>
+                          {statusInfo.progressHeader}
+                        </Txt>
+                        <Txt 
+                          size={11.5} 
+                          weight={900} 
+                          color={isCompleted ? "#10B981" : isInProgress ? "#0ea5e9" : (isDark ? "#94a3b8" : "#64748b")}
+                        >
+                          {statusInfo.progressDisplay}
+                        </Txt>
                       </div>
                       <div style={{ width: "100%", height: 8, background: isDark ? "#334155" : "#e2e8f0", borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ width: `${progressVal}%`, height: "100%", background: "#10B981", borderRadius: 4, transition: "width 0.3s ease" }} />
+                        <div 
+                          style={{ 
+                            width: `${progressVal}%`, 
+                            height: "100%", 
+                            background: isCompleted 
+                              ? "#10B981" 
+                              : isInProgress 
+                              ? "linear-gradient(90deg, #38bdf8 0%, #10b981 100%)" 
+                              : "#94a3b8", 
+                            borderRadius: 4, 
+                            transition: "width 0.4s ease" 
+                          }} 
+                        />
                       </div>
                     </div>
                   )}
@@ -854,6 +985,29 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                     >
                       🔄 Replay Game (Earned)
                     </button>
+                  ) : isInProgress ? (
+                    <button
+                      onClick={() => handlePlayGame(game.id)}
+                      style={{
+                        width: "100%",
+                        background: "linear-gradient(135deg, #0ea5e9 0%, #10b981 100%)",
+                        border: "none",
+                        borderBottom: "4px solid #0369a1",
+                        color: "#ffffff",
+                        padding: "12px 14px",
+                        fontSize: 13,
+                        fontWeight: 900,
+                        borderRadius: 14,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        boxShadow: "0 4px 12px rgba(14, 165, 233, 0.25)"
+                      }}
+                    >
+                      {statusInfo.buttonText}
+                    </button>
                   ) : (
                     <button
                       onClick={() => handlePlayGame(game.id)}
@@ -874,7 +1028,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                         gap: 6
                       }}
                     >
-                      Play Game ▶
+                      {statusInfo.buttonText || "Play Game ▶"}
                     </button>
                   )}
                 </div>
@@ -993,16 +1147,30 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
                 onExit={() => {
                   sfx.playTap();
                   setActiveGameModal(null);
+                  setProgressUpdateTick(t => t + 1);
                 }}
                 onRewardXP={(xp) => {
                   onAddXP(xp);
                   setShowXPClaimModal({ xp, title: "Pattern Quest Master" });
-                  if (!completedGames.includes("wonder-woods")) {
-                    setCompletedGames(prev => [...prev, "wonder-woods"]);
-                    try {
-                      localStorage.setItem(`clats_game_completed_${child.id}_wonder-woods`, "true");
-                    } catch {}
-                  }
+                  setProgressUpdateTick(t => t + 1);
+
+                  // Only mark Wonder Woods as fully completed when all 10 missions are finished!
+                  try {
+                    const raw = localStorage.getItem(`clats_wonder_woods_progress_${child.id}`);
+                    if (raw) {
+                      const parsed = JSON.parse(raw);
+                      const isFullyDone = Array.isArray(parsed.completedLevels) && (parsed.completedLevels.length >= 10 || parsed.completedLevels.includes(10));
+                      if (isFullyDone) {
+                        if (!completedGames.includes("wonder-woods")) {
+                          setCompletedGames(prev => [...prev, "wonder-woods"]);
+                        }
+                        localStorage.setItem(`clats_game_completed_${child.id}_wonder-woods`, "true");
+                      } else {
+                        localStorage.removeItem(`clats_game_completed_${child.id}_wonder-woods`);
+                        setCompletedGames(prev => prev.filter(k => k !== "wonder-woods"));
+                      }
+                    }
+                  } catch {}
                 }}
                 companion={child.companion as any || "kobe"}
                 lang={lang}
