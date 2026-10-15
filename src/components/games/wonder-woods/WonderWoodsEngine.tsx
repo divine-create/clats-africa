@@ -282,6 +282,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
               preview={activeLevel.preview}
               levelNumber={activeLevel.id}
               levelTitle={activeLevel.title}
+              companion={companion}
               onPlay={() => setCurrentScreen("gameplay")}
               onSkip={() => setCurrentScreen("gameplay")}
             />

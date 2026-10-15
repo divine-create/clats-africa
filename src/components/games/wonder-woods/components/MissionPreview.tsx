@@ -9,6 +9,7 @@ interface MissionPreviewProps {
   preview: MissionPreviewConfig;
   levelNumber: number;
   levelTitle: string;
+  companion?: "kobe" | "chibi";
   onPlay: () => void;
   onSkip?: () => void;
 }
@@ -17,9 +18,11 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
   preview,
   levelNumber,
   levelTitle,
+  companion = "kobe",
   onPlay,
   onSkip
 }) => {
+  const companionName = companion === "chibi" ? "Chibi" : "Kobe";
   const [stepIndex, setStepIndex] = useState(0);
   const [isCompletedCycle, setIsCompletedCycle] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -117,7 +120,7 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
           className="text-center mb-6"
         >
           <span className="text-amber-400 text-xs font-black uppercase tracking-widest bg-amber-400/10 border border-amber-400/30 px-3 py-1 rounded-full">
-            💡 Watch Kobe's Secret Rule
+            💡 Watch {companionName}&apos;s Secret Rule
           </span>
           <h3 
             className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-amber-200 to-emerald-300 mt-2"
