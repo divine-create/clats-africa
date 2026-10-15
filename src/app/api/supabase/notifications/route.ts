@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
+}
 
 export async function GET(req: NextRequest) {
   try {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database not configured", ok: false }, { status: 503 });
+    }
+
     const parentEmail = req.nextUrl.searchParams.get("parent_email");
     if (!parentEmail) {
       return NextResponse.json({ error: "Missing parent_email" }, { status: 400 });
@@ -30,6 +38,11 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database not configured", ok: false }, { status: 503 });
+    }
+
     const { notification_id, parent_email, mark_all } = await req.json();
 
     if (mark_all && parent_email) {
@@ -60,6 +73,11 @@ export async function PATCH(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database not configured", ok: false }, { status: 503 });
+    }
+
     const { parent_email, child_id, type, title, message, icon, badge_color } = await req.json();
 
     if (!parent_email || !title || !message) {

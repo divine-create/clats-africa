@@ -20,6 +20,8 @@ interface ChildChatProps {
   onClose: () => void;
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
+  narrationOn?: boolean;
+  onToggleNarration?: () => void;
 }
 
 interface ChatMessage {
@@ -40,7 +42,9 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   lang,
   onClose,
   theme: themeProp,
-  onToggleTheme
+  onToggleTheme,
+  narrationOn: narrationOnProp,
+  onToggleNarration: onToggleNarrationProp
 }) => {
   const meta = AGE_META[child.ageGroup] || { color: C.teal, soft: C.tealGhost, kobeStyle: "" };
   const borderCol = meta.color;
@@ -130,6 +134,28 @@ export const ChildChat: React.FC<ChildChatProps> = ({
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
 
+  // Track whether YarnGPT cloud endpoint is available or offline
+  const yarnGptAvailableRef = useRef<boolean | null>(null);
+
+  // Unified Reader Narration state
+  const [internalNarration, setInternalNarration] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
+  const isReaderOn = narrationOnProp !== undefined ? narrationOnProp : internalNarration;
+
+  const handleToggleReader = () => {
+    const nextVal = !isReaderOn;
+    companionVoice.setNarrationEnabled(child.ageGroup, nextVal);
+    setInternalNarration(nextVal);
+    if (onToggleNarrationProp) {
+      onToggleNarrationProp();
+    }
+    sfx.playTap();
+    if (nextVal) {
+      companionVoice.speak("Voice reader activated!", child.companion || "kobe", child.ageGroup, false);
+    } else {
+      companionVoice.stop();
+    }
+  };
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -173,25 +199,69 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     }
     companionVoice.stop();
 
+    // Unlock Web Speech API context synchronously within user gesture
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.resume();
+      } catch (e) {}
+    }
+
+    // Helper for browser speech synthesis fallback
+    const fallbackToBrowserSpeech = () => {
+      setIsSynthesizing(false);
+      setSpeakingMsgId(msgId);
+      companionVoice.playBrowserSpeech(text, (child.companion as any) || "kobe", targetLang, {
+        onStart: () => {
+          setSpeakingMsgId(msgId);
+          setIsSynthesizing(false);
+        },
+        onEnd: () => {
+          setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
+        },
+        onError: () => {
+          setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
+          setIsSynthesizing(false);
+        }
+      });
+      // Safety timeout in case onEnd does not trigger
+      const fallbackMs = Math.min(Math.max(text.length * 75, 2500), 12000);
+      setTimeout(() => {
+        setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
+      }, fallbackMs);
+    };
+
+    // If cloud YarnGPT was previously flagged as unavailable (e.g. no API key in env),
+    // speak instantly with zero delay!
+    if (yarnGptAvailableRef.current === false) {
+      fallbackToBrowserSpeech();
+      return;
+    }
+
     setSpeakingMsgId(msgId);
     setIsSynthesizing(true);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1800);
+
       const res = await fetch("/api/ai/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           text,
           language: targetLang,
           character: child.companion || "kobe"
         })
       });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
         const audioSrc = data.audioBase64 || data.audioUrl;
 
         if (audioSrc) {
+          yarnGptAvailableRef.current = true;
           const audio = new Audio(audioSrc);
           activeAudioRef.current = audio;
 
@@ -201,10 +271,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
             activeAudioRef.current = null;
           };
           audio.onerror = () => {
-            console.warn("Failed to play YarnGPT audio buffer, falling back to speech synthesis.");
             activeAudioRef.current = null;
-            companionVoice.playBrowserSpeech(text, (child.companion as any) || "kobe", targetLang);
-            setIsSynthesizing(false);
+            fallbackToBrowserSpeech();
           };
 
           await audio.play();
@@ -212,20 +280,15 @@ export const ChildChat: React.FC<ChildChatProps> = ({
           return;
         }
       } else {
-        const errData = await res.json().catch(() => ({}));
-        console.warn("YarnGPT voice synthesis returned an error:", errData);
+        // If 500 (e.g. YARNGPT_API_KEY unset), remember so subsequent clicks are immediate!
+        yarnGptAvailableRef.current = false;
       }
     } catch (e) {
-      console.warn("YarnGPT voice synthesis error:", e);
+      yarnGptAvailableRef.current = false;
     }
 
     // Zero-latency fallback speech synthesis so Kobe/Chibi is never silent
-    setIsSynthesizing(false);
-    companionVoice.playBrowserSpeech(text, (child.companion as any) || "kobe", targetLang);
-    const speechTimeout = Math.min(Math.max(text.length * 75, 2000), 12000);
-    setTimeout(() => {
-      setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
-    }, speechTimeout);
+    fallbackToBrowserSpeech();
   };
 
   // Start Voice Recording
@@ -405,8 +468,8 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         }
       ]);
 
-      // If user sent a voice question or in Walkie-Talkie mode, automatically speak back
-      if (audioBase64 || chatViewMode === "walkie") {
+      // If user sent a voice question or in Walkie-Talkie mode (and reader is enabled), automatically speak back
+      if ((audioBase64 || chatViewMode === "walkie") && isReaderOn) {
         speakMessage(replyMsgId, raw.text, chatLang);
       }
     } catch (e) {
@@ -431,7 +494,7 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         }
       ]);
 
-      if (audioBase64 || chatViewMode === "walkie") {
+      if ((audioBase64 || chatViewMode === "walkie") && isReaderOn) {
         speakMessage(replyMsgId, sovereignReply, chatLang);
       }
     } finally {
@@ -486,6 +549,30 @@ export const ChildChat: React.FC<ChildChatProps> = ({
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Dedicated Narration Reader Toggle */}
+            <button
+              onClick={handleToggleReader}
+              style={{
+                background: isReaderOn ? "rgba(16,185,129,0.35)" : isDark ? "rgba(15,23,42,0.65)" : "rgba(255,255,255,0.25)",
+                border: isReaderOn ? "1.5px solid #34d399" : "1px solid rgba(255,255,255,0.25)",
+                borderRadius: 20,
+                padding: "6px 12px",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backdropFilter: "blur(6px)"
+              }}
+              title={isReaderOn ? "Voice Reader is ON (tap to mute)" : "Voice Reader is OFF (tap to turn on)"}
+            >
+              <span>{isReaderOn ? "🔊" : "🔇"}</span>
+              <span>Reader: {isReaderOn ? "ON" : "OFF"}</span>
+            </button>
+
             {/* Seamless Light/Dark Mode Switcher */}
             <button
               onClick={handleToggleTheme}

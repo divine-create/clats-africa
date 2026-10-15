@@ -5425,6 +5425,7 @@ ON CONFLICT (email) DO NOTHING;
                     </div>
                 </div>
               </div>
+            </div>
 
               {/* DYNAMIC AGE TRACKS & DEMOGRAPHICS CONFIGURATION CARD */}
               <div className={`p-6 rounded-3xl border ${bgCard} space-y-5 shadow-sm`}>

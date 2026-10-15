@@ -113,10 +113,6 @@ const DraggableFloating: React.FC<DraggableFloatingProps> = ({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
       setIsDragging(false);
-
-      if (!dragRef.current.hasMoved && onClick) {
-        onClick();
-      }
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -778,6 +774,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           onClose={() => setActiveTab("home")}
           theme={theme}
           onToggleTheme={onToggleTheme}
+          narrationOn={narrationOn}
+          onToggleNarration={handleToggleNarration}
         />
       )}
 

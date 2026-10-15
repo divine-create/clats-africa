@@ -147,6 +147,7 @@ export interface CompanionConfig {
 
 class CompanionVoice {
   private activeAudio: HTMLAudioElement | null = null;
+  private activeUtterance: SpeechSynthesisUtterance | null = null;
   private TOGGLE_KEY = "clats_companion_narration_enabled_v2";
   private CACHE_KEY = "clats_companion_configs_cached_v3";
 
@@ -376,19 +377,91 @@ class CompanionVoice {
   }
 
   // Browser speech synthesis fallback (zero latency, offline resilient)
-  playBrowserSpeech(text: string, character: "kobe" | "chibi", language: string = "en") {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  playBrowserSpeech(
+    text: string, 
+    character: "kobe" | "chibi", 
+    language: string = "en",
+    callbacks?: {
+      onStart?: () => void;
+      onEnd?: () => void;
+      onError?: (err: any) => void;
+    }
+  ) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      callbacks?.onError?.("SpeechSynthesis not supported");
+      return;
+    }
+
     try {
       window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*#_`~>\[\]\(\)\{\}]/g, "").replace(/\s+/g, " ").trim();
-      if (!cleanText) return;
+      // Resume in case speech synthesis was paused or suspended by Chrome
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      const cleanText = text
+        .replace(/[*#_`~>\[\]\(\)\{\}]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!cleanText) {
+        callbacks?.onEnd?.();
+        return;
+      }
+
       const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = (language === "yo" || language === "ha" || language === "ig") ? "en-NG" : "en-US";
-      utterance.pitch = character === "chibi" ? 1.25 : 0.92;
+      // Pin to instance and global window to prevent V8 garbage collection
+      this.activeUtterance = utterance;
+      (window as any).__clats_speech_utterance = utterance;
+
+      // Select best matching voice from available system voices
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        let selectedVoice: SpeechSynthesisVoice | undefined;
+        if (language === "yo" || language === "ha" || language === "ig") {
+          selectedVoice = voices.find(v => v.lang.startsWith("en-NG") || v.lang.startsWith("pcm"));
+        }
+        if (!selectedVoice) {
+          selectedVoice =
+            voices.find(v => v.lang === "en-NG") ||
+            voices.find(v => v.lang.startsWith("en-GB")) ||
+            voices.find(v => v.lang.startsWith("en-US")) ||
+            voices.find(v => v.lang.startsWith("en"));
+        }
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+          utterance.lang = selectedVoice.lang;
+        } else {
+          utterance.lang = "en-US";
+        }
+      } else {
+        utterance.lang = "en-US";
+      }
+
+      utterance.pitch = character === "chibi" ? 1.2 : 0.95;
       utterance.rate = 0.95;
+
+      utterance.onstart = () => {
+        callbacks?.onStart?.();
+      };
+
+      utterance.onend = () => {
+        this.activeUtterance = null;
+        (window as any).__clats_speech_utterance = null;
+        callbacks?.onEnd?.();
+      };
+
+      utterance.onerror = (e) => {
+        console.warn("SpeechSynthesis utterance error:", e);
+        this.activeUtterance = null;
+        (window as any).__clats_speech_utterance = null;
+        callbacks?.onError?.(e);
+      };
+
+      window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.warn("Browser SpeechSynthesis fallback error:", err);
+      callbacks?.onError?.(err);
     }
   }
 
@@ -399,6 +472,10 @@ class CompanionVoice {
     }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
+    }
+    this.activeUtterance = null;
+    if (typeof window !== "undefined") {
+      (window as any).__clats_speech_utterance = null;
     }
   }
 }
