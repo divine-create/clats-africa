@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Language = "en";
+export type Language = "en" | "yo" | "ha" | "ig" | "fr";
 
 export type AgeGroup = "early explorers" | "young explorers" | "young innovators" | "future builders" | string;
 
@@ -35,6 +35,8 @@ export interface Child {
   badges?: string[];
   completedLessons?: string[];
   is_premium?: boolean;
+  isB2B?: boolean;
+  orgId?: string;
 }
 
 export interface Parent {

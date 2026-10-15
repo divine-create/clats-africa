@@ -17,7 +17,7 @@ import { KobeAvatar } from "./KobeAvatar";
 import { sfx } from "../utils/audio";
 import { useApp } from "../context/AppContext";
 
-export type SovereignLang = "en" | "yo" | "ha" | "ig";
+export type SovereignLang = Language;
 
 interface KobeLessonSidekickProps {
   child: Child;
@@ -111,7 +111,8 @@ export const KobeLessonSidekick: React.FC<KobeLessonSidekickProps> = ({
       en: `Hi ${child.name}! I am ${compName}. Got any questions about "${lessonTitle}"? Tap mic or ask me anything!`,
       yo: `Bawo ni ${child.name}! Emi ni ${compName}. Ṣe o ni ibeere kankan nipa "${lessonTitle}"? Beere lọwọ mi!`,
       ha: `Sannu ${child.name}! Ni ne ${compName}. Kuna da wata tambaya game da "${lessonTitle}"? Tambaye ni komai!`,
-      ig: `Kedu ${child.name}! Abụ m ${compName}. Ị nwere ajụjụ ọ bụla gbasara "${lessonTitle}"? Jụọ m ihe ọ bụla!`
+      ig: `Kedu ${child.name}! Abụ m ${compName}. Ị nwere ajụjụ ọ bụla gbasara "${lessonTitle}"? Jụọ m ihe ọ bụla!`,
+      fr: `Salut ${child.name} ! Je suis ${compName}. Des questions sur "${lessonTitle}" ? Appuie sur le micro ou pose-moi des questions !`
     };
 
     setMessages([

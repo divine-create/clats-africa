@@ -131,8 +131,8 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const subtitlesOn = true;
   const [voiceAssistActive, setVoiceAssistActive] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
   const [micActive, setMicActive] = useState(false);
-  const colorMode = isDark ? "night" : "normal";
-  const fontSize = "normal";
+  const [colorMode] = useState<"night" | "normal" | "accessible">(isDark ? "night" : "normal");
+  const [fontSize] = useState<"normal" | "large" | "extra">("normal");
   const dyslexicMode = false;
   const reducedMotion = false;
 
@@ -945,7 +945,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       sfx.playTap();
                       const next = !voiceAssistActive;
                       setVoiceAssistActive(next);
-                      companionVoice.setNarrationEnabled(next);
+                      companionVoice.setNarrationEnabled(child.ageGroup, next);
                       if (!next) {
                         companionVoice.stop();
                       } else if (storySlides[currentSlideIndex]) {

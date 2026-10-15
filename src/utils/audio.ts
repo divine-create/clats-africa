@@ -132,6 +132,43 @@ class AudioSynth {
       // Ignored
     }
   }
+
+  play(type: string = "tap") {
+    switch (type) {
+      case "pop":
+      case "tap":
+        this.playTap();
+        break;
+      case "coin":
+      case "success":
+        this.playCoin();
+        break;
+      case "buzzer":
+      case "error":
+        this.playBuzzer();
+        break;
+      case "levelup":
+      case "reward":
+      case "celebrate":
+        this.playLevelUp();
+        break;
+      default:
+        this.playTap();
+        break;
+    }
+  }
+
+  playError() {
+    this.playBuzzer();
+  }
+
+  playSuccess() {
+    this.playCoin();
+  }
+
+  playReward() {
+    this.playLevelUp();
+  }
 }
 
 export interface CompanionConfig {
@@ -258,11 +295,16 @@ class CompanionVoice {
     return true; // Enabled by default across all age groups
   }
 
-  setNarrationEnabled(ageGroup: string, enabled: boolean) {
+  setNarrationEnabled(ageGroupOrEnabled: string | boolean, enabled?: boolean) {
     if (typeof window === "undefined") return;
-    const ag = (ageGroup || "").toLowerCase().replace(/\s+/g, "_");
+    if (typeof ageGroupOrEnabled === "boolean") {
+      localStorage.setItem(this.TOGGLE_KEY + "_early", String(ageGroupOrEnabled));
+      localStorage.setItem(this.TOGGLE_KEY + "_all", String(ageGroupOrEnabled));
+      return;
+    }
+    const ag = (ageGroupOrEnabled || "").toLowerCase().replace(/\s+/g, "_");
     const key = (ag.includes("early") || ag.includes("explorers")) ? "early" : ag;
-    localStorage.setItem(this.TOGGLE_KEY + "_" + key, String(enabled));
+    localStorage.setItem(this.TOGGLE_KEY + "_" + key, String(enabled ?? true));
   }
 
   // Deprecated legacy getter so other parts do not fail

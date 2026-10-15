@@ -247,14 +247,14 @@ export const ParentAuthScreen: React.FC<ParentAuthScreenProps> = ({
               gap: 4
             }}
           >
-            ← {T[lang].back}
+            ← {T[lang]?.back || T.en.back}
           </button>
           <Heading
             size={22}
             color={isDark ? "#FFFFFF" : "#0F172A"}
             style={{ marginBottom: 6, fontWeight: 900 }}
           >
-            {isLogin ? T[lang].welcomeBack : (lang === "en" ? "Create Your Account" : T[lang].createAccount)}
+            {isLogin ? (T[lang]?.welcomeBack || T.en.welcomeBack) : (lang === "en" ? "Create Your Account" : (T[lang]?.createAccount || T.en.createAccount || "Create Your Account"))}
           </Heading>
           {isLogin ? (
             <Txt size={13.5} color={isDark ? "#94A3B8" : "#475569"} style={{ display: "block", marginBottom: 20 }}>

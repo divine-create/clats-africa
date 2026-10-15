@@ -17,6 +17,7 @@ interface AppContextType {
   lang: Language;
   setLang: (l: Language) => void;
   theme: "light" | "dark";
+  isDark: boolean;
   setTheme: (t: "light" | "dark") => void;
   parent: Parent | null;
   setParent: (p: Parent | null) => void;
@@ -213,8 +214,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") window.location.href = redirectTo;
   };
 
+  const isDark = theme === "dark";
+
   return (
-    <AppContext.Provider value={{ lang, setLang, theme, setTheme, parent, setParent, activeChild, setActiveChild, dbConnected, isSyncing, logout, soundEnabled, setSoundEnabled }}>
+    <AppContext.Provider value={{ lang, setLang, theme, isDark, setTheme, parent, setParent, activeChild, setActiveChild, dbConnected, isSyncing, logout, soundEnabled, setSoundEnabled }}>
       {children}
     </AppContext.Provider>
   );

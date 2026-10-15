@@ -8,6 +8,7 @@ import { Eye, EyeOff, Sparkles, HelpCircle } from "lucide-react";
 import { Child, Language } from "../types";
 import { C, F, T, S } from "../utils/config";
 import { MascotImage } from "./Onboarding";
+import { ClatsAvatar } from "./ClatsAvatar";
 import { sfx } from "../utils/audio";
 
 interface ChildLoginScreenProps {

@@ -124,8 +124,59 @@ export const T: Record<Language, Record<string, string>> = {
     passed: "PASSED",
     needsReview: "NEEDS REVIEW",
     correctCount: "Correct",
-    viewCommunitySpace: "View community space",
     noKidsYet: "No child profiles added yet. Create one to get started!"
+  },
+  yo: {
+    tagline: "Kikọ awọn ọkan imọ-ẹrọ ti ọla loni",
+    getStarted: "Bẹ̀rẹ̀",
+    signIn: "Wọlé",
+    welcomeBack: "Kaabọ Pada",
+    createAccount: "Ṣẹda Akọọlẹ",
+    hello: "Bawo",
+    readyToLearn: "Ṣe o ti ṣetan lati kọ ẹkọ loni?",
+    startLearning: "Bẹrẹ Ẹkọ",
+    back: "Pada",
+    viewCommunitySpace: "Wo agbegbe awọn obi",
+    noKidsYet: "Ko si profaili ọmọ kankan ti a fikun si sibẹ."
+  },
+  ha: {
+    tagline: "Gina tunanin fasahar gobe a yau",
+    getStarted: "Fara",
+    signIn: "Shiga",
+    welcomeBack: "Barka da Dawowa",
+    createAccount: "Ƙirƙiri Asusun",
+    hello: "Sannu",
+    readyToLearn: "Ka shirya don koyo yau?",
+    startLearning: "Fara Koyo",
+    back: "Koma",
+    viewCommunitySpace: "Duba dandalin iyaye",
+    noKidsYet: "Babu asusun yara a yanzu."
+  },
+  ig: {
+    tagline: "Iwulite uche teknụzụ nke echi taa",
+    getStarted: "Bido",
+    signIn: "Banye",
+    welcomeBack: "Nnọọ Ọzọ",
+    createAccount: "Mepụta Akaụntụ",
+    hello: "Ndewo",
+    readyToLearn: "Ị dịla njikere ịmụta ihe taa?",
+    startLearning: "Bido Ịmụ Ihe",
+    back: "Azụ",
+    viewCommunitySpace: "Lee ohere obodo ndị nne na nna",
+    noKidsYet: "Ọ nwebeghị profaịlụ nwatakịrị agbakwunyere."
+  },
+  fr: {
+    tagline: "Bâtir les esprits technologiques de demain aujourd'hui",
+    getStarted: "Commencer",
+    signIn: "Se connecter",
+    welcomeBack: "Bon retour",
+    createAccount: "Créer un compte",
+    hello: "Bonjour",
+    readyToLearn: "Prêt à apprendre aujourd'hui ?",
+    startLearning: "Commencer l'apprentissage",
+    back: "Retour",
+    viewCommunitySpace: "Voir l'espace communautaire",
+    noKidsYet: "Aucun profil d'enfant ajouté pour l'instant."
   }
 };
 

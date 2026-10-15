@@ -378,7 +378,10 @@ export const ChildChat: React.FC<ChildChatProps> = ({
         : `Sannu! Ni ne ${compName}. Danna makirufo domin yin magana da ni a harshen Hausa!`,
       ig: lesson
         ? `Ndị kedu! Abụ m ${compName}. Jụọ m ihe ọ bụla gbasara ihe mmụta anyị taa: "${lesson.title[chatLang] || lesson.title.en}"!`
-        : `Ndị kedu! Abụ m ${compName}. Pịa maikrofon ka anyị kparịta ụka n'asụsụ Igbo!`
+        : `Ndị kedu! Abụ m ${compName}. Pịa maikrofon ka anyị kparịta ụka n'asụsụ Igbo!`,
+      fr: lesson
+        ? `Bonjour ! Je suis ${compName}, votre assistant tech. Posez-moi des questions sur notre leçon : "${lesson.title[chatLang] || lesson.title.en}" !`
+        : `Bonjour ! Je suis ${compName}. Appuyez sur le microphone ou écrivez pour me poser des questions !`
     };
 
     setMessages([{ 

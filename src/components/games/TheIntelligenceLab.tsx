@@ -32,8 +32,8 @@ const FloodWatchMission = ({ onComplete, onBack }: { onComplete: () => void; onB
     { id: 4, city: "Metro Core", rainfall: 50, drainage: "Good", waterLevel: "Medium", flood: false },
   ]);
 
-  const testLocation = { city: "Outpost 9", rainfall: 90, drainage: "Poor", waterLevel: "Medium" };
-  const biasLocation = { city: "Desert Flats", rainfall: 10, drainage: "Poor", waterLevel: "Low" };
+  const testLocation: { city: string; rainfall: number; drainage: "Good" | "Poor"; waterLevel: "Low" | "Medium" | "High" } = { city: "Outpost 9", rainfall: 90, drainage: "Poor", waterLevel: "Medium" };
+  const biasLocation: { city: string; rainfall: number; drainage: "Good" | "Poor"; waterLevel: "Low" | "Medium" | "High" } = { city: "Desert Flats", rainfall: 10, drainage: "Poor", waterLevel: "Low" };
 
   const addLog = (msg: string) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
