@@ -8,6 +8,7 @@ import { sfx } from "../../../../utils/audio";
 interface MissionBoardProps {
   unlockedLevel: number;
   completedLevels: number[];
+  starsPerLevel?: Record<number, number>;
   onSelectLevel: (level: MeadowLevelConfig) => void;
   onBackToMap: () => void;
 }
@@ -15,6 +16,7 @@ interface MissionBoardProps {
 export const MissionBoard: React.FC<MissionBoardProps> = ({
   unlockedLevel,
   completedLevels,
+  starsPerLevel = {},
   onSelectLevel,
   onBackToMap
 }) => {
@@ -28,6 +30,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
     }
   };
 
+  const totalEarnedStars = Object.values(starsPerLevel).reduce((acc, s) => acc + s, 0) || (completedLevels.length * 3);
   const progressPercent = Math.round((completedLevels.length / MEADOW_LEVELS.length) * 100);
 
   return (
@@ -60,7 +63,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
 
         <div className="bg-emerald-950/80 border border-emerald-400/50 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-black text-emerald-300 shadow-sm">
           <Star size={14} className="fill-amber-400 text-amber-400" />
-          <span>{completedLevels.length} / 10 ⭐</span>
+          <span>{totalEarnedStars} / 30 ⭐</span>
         </div>
       </div>
 
@@ -68,7 +71,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
       <div className="w-full max-w-md mx-auto my-2 z-10 px-2">
         <div className="flex justify-between items-center text-[11px] font-bold text-slate-300 mb-1">
           <span>Meadow Mastery</span>
-          <span className="text-emerald-400">{progressPercent}% Complete</span>
+          <span className="text-emerald-400">{progressPercent}% Complete ({completedLevels.length}/10 Missions)</span>
         </div>
         <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
           <div 
@@ -84,6 +87,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
           const isCompleted = completedLevels.includes(level.id);
           const isNext = level.id === unlockedLevel && !isCompleted;
           const isUnlocked = level.id <= unlockedLevel;
+          const stars = starsPerLevel[level.id] || (isCompleted ? 3 : 0);
 
           return (
             <motion.div
@@ -118,7 +122,15 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
                   </span>
                   
                   {isCompleted && (
-                    <CheckCircle2 size={16} className="text-emerald-400 fill-emerald-950" />
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3].map((s) => (
+                        <Star
+                          key={s}
+                          size={10}
+                          className={s <= stars ? "fill-amber-400 text-amber-400" : "fill-slate-800 text-slate-700"}
+                        />
+                      ))}
+                    </div>
                   )}
                   {isNext && (
                     <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full uppercase">

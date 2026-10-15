@@ -80,7 +80,10 @@ export const TactileTile: React.FC<TactileTileProps> = ({
       {/* Symbol / Emoji */}
       <span 
         className="drop-shadow-md transform transition-transform group-hover:scale-110 pointer-events-none"
-        style={{ fontSize: size === "sm" ? "1.6rem" : size === "lg" ? "2.6rem" : "2.1rem" }}
+        style={{ 
+          fontSize: size === "sm" ? "1.6rem" : size === "lg" ? "2.6rem" : "2.1rem",
+          transform: item.size === "lg" ? "scale(1.32)" : item.size === "sm" ? "scale(0.78)" : undefined
+        }}
       >
         {item.symbol}
       </span>

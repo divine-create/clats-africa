@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { MeadowLevelConfig, RegionId } from "./types";
+import { MeadowLevelConfig, RegionId, WonderWoodsProgress } from "./types";
 import { MEADOW_LEVELS } from "./data/meadowLevels";
 import { IntroScreen } from "./components/IntroScreen";
 import { WorldMap } from "./components/WorldMap";
@@ -33,7 +33,8 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
   // Selected state
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>("meadow");
   const [activeLevel, setActiveLevel] = useState<MeadowLevelConfig>(MEADOW_LEVELS[0]);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
+  const [lastEarnedStars, setLastEarnedStars] = useState<number>(3);
 
   // Per-child persistence
   const storageKey = `clats_wonder_woods_progress_${childId}`;
@@ -60,32 +61,121 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
     return [];
   });
 
-  const saveProgress = (newUnlocked: number, newCompleted: number[]) => {
+  const [starsPerLevel, setStarsPerLevel] = useState<Record<number, number>>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.starsPerLevel || {};
+      }
+    } catch {}
+    return {};
+  });
+
+  const [totalSparks, setTotalSparks] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.totalSparks || 0;
+      }
+    } catch {}
+    return 0;
+  });
+
+  const [isGroveUnlocked, setIsGroveUnlocked] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return Boolean(parsed.isGroveUnlocked || parsed.completedLevels?.includes(10));
+      }
+    } catch {}
+    return false;
+  });
+
+  const [badgeEarned, setBadgeEarned] = useState<string | undefined>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.badgeEarned;
+      }
+    } catch {}
+    return undefined;
+  });
+
+  const saveProgress = (
+    newUnlocked: number,
+    newCompleted: number[],
+    newStars: Record<number, number>,
+    newSparks: number,
+    newGroveUnlocked: boolean,
+    newBadge?: string
+  ) => {
     setUnlockedLevel(newUnlocked);
     setCompletedLevels(newCompleted);
+    setStarsPerLevel(newStars);
+    setTotalSparks(newSparks);
+    setIsGroveUnlocked(newGroveUnlocked);
+    if (newBadge) setBadgeEarned(newBadge);
+
+    const progressPayload: WonderWoodsProgress = {
+      unlockedLevel: newUnlocked,
+      completedLevels: newCompleted,
+      starsPerLevel: newStars,
+      totalSparks: newSparks,
+      isGroveUnlocked: newGroveUnlocked,
+      badgeEarned: newBadge || badgeEarned,
+      updatedAt: new Date().toISOString()
+    };
+
     try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          unlockedLevel: newUnlocked,
-          completedLevels: newCompleted,
-          updatedAt: new Date().toISOString()
-        })
-      );
+      localStorage.setItem(storageKey, JSON.stringify(progressPayload));
     } catch (e) {
       console.warn("Could not save Wonder Woods progress to localStorage:", e);
     }
+
+    // Background cloud sync to Supabase if endpoint exists
+    try {
+      fetch("/api/supabase/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          childId,
+          type: "wonder_woods_progress",
+          payload: progressPayload
+        })
+      }).catch(() => {});
+    } catch {}
   };
 
-  // Level Completion Handler
-  const handleLevelCompleted = () => {
+  // Level Completion Handler with Star Payout
+  const handleLevelCompleted = (stars: number = 3) => {
+    setLastEarnedStars(stars);
+
     const isAlreadyCompleted = completedLevels.includes(activeLevel.id);
     const updatedCompleted = isAlreadyCompleted 
       ? completedLevels 
       : [...completedLevels, activeLevel.id];
 
     const nextLevelToUnlock = Math.max(unlockedLevel, activeLevel.id + 1);
-    saveProgress(nextLevelToUnlock, updatedCompleted);
+    const updatedStars = {
+      ...starsPerLevel,
+      [activeLevel.id]: Math.max(starsPerLevel[activeLevel.id] || 0, stars)
+    };
+    const updatedSparks = totalSparks + 1;
+    const shouldUnlockGrove = isGroveUnlocked || activeLevel.id === 10;
+    const earnedBadge = activeLevel.id === 10 ? "bdg-pattern-meadow-master" : badgeEarned;
+
+    saveProgress(
+      nextLevelToUnlock,
+      updatedCompleted,
+      updatedStars,
+      updatedSparks,
+      shouldUnlockGrove,
+      earnedBadge
+    );
 
     // Reward XP
     onRewardXP?.(activeLevel.xpAward);
@@ -103,8 +193,8 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
       setActiveLevel(nextLevelConfig);
       setCurrentScreen("preview");
     } else {
-      // Reached end of Meadow! Return to Mission Board
-      setCurrentScreen("mission_board");
+      // Reached end of Meadow! Return to World Map so child can admire unlocked Grove
+      setCurrentScreen("world_map");
     }
   };
 
@@ -142,6 +232,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
             <WorldMap
               starsCollected={completedLevels.length}
               unlockedLevel={unlockedLevel}
+              isGroveUnlocked={isGroveUnlocked}
               onSelectRegion={(regId) => {
                 setSelectedRegionId(regId);
                 setCurrentScreen("mission_board");
@@ -163,6 +254,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
             <MissionBoard
               unlockedLevel={unlockedLevel}
               completedLevels={completedLevels}
+              starsPerLevel={starsPerLevel}
               onSelectLevel={(lvl) => {
                 setActiveLevel(lvl);
                 setCurrentScreen("preview");
@@ -218,6 +310,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
           levelTitle={activeLevel.title}
           subrule={activeLevel.subrule}
           xpAward={activeLevel.xpAward}
+          starsEarned={lastEarnedStars}
           isGrandFinale={activeLevel.id === 10}
           onNext={handleNextFromFeedback}
           onReplay={() => {

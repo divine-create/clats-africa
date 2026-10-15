@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info } from "lucide-react";
+import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info, CheckCircle2, Award } from "lucide-react";
 import { RegionData, RegionId } from "../types";
 import { WONDER_WOODS_REGIONS } from "../data/regions";
 import { sfx } from "../../../../utils/audio";
@@ -9,6 +9,7 @@ interface WorldMapProps {
   onSelectRegion: (regionId: RegionId) => void;
   starsCollected: number;
   unlockedLevel: number;
+  isGroveUnlocked?: boolean;
   onBackToIntro: () => void;
 }
 
@@ -16,17 +17,37 @@ export const WorldMap: React.FC<WorldMapProps> = ({
   onSelectRegion,
   starsCollected,
   unlockedLevel,
+  isGroveUnlocked = false,
   onBackToIntro
 }) => {
   const [hoveredRegion, setHoveredRegion] = useState<RegionData | null>(null);
+  const [showGroveModal, setShowGroveModal] = useState<boolean>(false);
+
+  // Compute dynamic locked states based on user progression
+  const dynamicRegions = WONDER_WOODS_REGIONS.map((region) => {
+    if (region.id === "meadow") {
+      return { ...region, isLocked: false };
+    }
+    if (region.id === "grove" && isGroveUnlocked) {
+      return {
+        ...region,
+        isLocked: false,
+        unlockRequirement: "Unlocked by Meadow Archway!"
+      };
+    }
+    return region;
+  });
 
   const handleRegionClick = (region: RegionData) => {
-    if (region.isLocked) {
+    if (region.id === "meadow") {
+      sfx.play("pop");
+      onSelectRegion("meadow");
+    } else if (region.id === "grove" && isGroveUnlocked) {
+      sfx.play("reward");
+      setShowGroveModal(true);
+    } else {
       sfx.play("error");
       setHoveredRegion(region);
-    } else {
-      sfx.play("pop");
-      onSelectRegion(region.id);
     }
   };
 
@@ -60,7 +81,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
 
         <div className="bg-slate-800/90 border border-amber-400/50 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
           <Sparkles size={14} className="text-amber-400" />
-          <span className="text-xs font-black text-amber-300">{starsCollected} / 10 ⭐</span>
+          <span className="text-xs font-black text-amber-300">{starsCollected} / 10 Missions ⭐</span>
         </div>
       </div>
 
@@ -79,7 +100,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
         </svg>
 
         {/* Region Nodes */}
-        {WONDER_WOODS_REGIONS.map((region) => {
+        {dynamicRegions.map((region) => {
           const isPlayable = !region.isLocked;
           const isSelected = hoveredRegion?.id === region.id;
 
@@ -104,7 +125,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
                 }`}
                 aria-label={`${region.name} - ${isPlayable ? "Playable" : "Locked"}`}
               >
-                {/* Active beacon ripple for playable meadow */}
+                {/* Active beacon ripple for playable meadow or unlocked grove */}
                 {isPlayable && (
                   <div 
                     className="absolute -inset-2.5 rounded-full animate-ping opacity-30" 
@@ -135,7 +156,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
                   {/* Playable Star Count Badge */}
                   {isPlayable && (
                     <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-slate-950 font-black text-[10px] rounded-full px-1.5 py-0.5 border border-white shadow">
-                      PLAY
+                      {region.id === "meadow" ? "PLAY" : "OPEN"}
                     </div>
                   )}
                 </div>
@@ -186,10 +207,10 @@ export const WorldMap: React.FC<WorldMapProps> = ({
             {!hoveredRegion.isLocked && (
               <button
                 type="button"
-                onClick={() => onSelectRegion(hoveredRegion.id)}
+                onClick={() => handleRegionClick(hoveredRegion)}
                 className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition active:scale-95"
               >
-                <span>ENTER MEADOW MISSIONS</span>
+                <span>{hoveredRegion.id === "meadow" ? "ENTER MEADOW MISSIONS" : "EXPLORE GROVE"}</span>
                 <ChevronRight size={16} />
               </button>
             )}
@@ -197,10 +218,52 @@ export const WorldMap: React.FC<WorldMapProps> = ({
         ) : (
           <div className="flex items-center gap-2 text-xs text-slate-400 font-medium justify-center py-1">
             <Info size={16} className="text-teal-400" />
-            <span>Tap <strong>Pattern Meadow</strong> to begin your 10-level challenge board!</span>
+            <span>Tap <strong>Pattern Meadow</strong> to play your 10-level challenge board!</span>
           </div>
         )}
       </div>
+
+      {/* Grove Unlock Celebration Modal */}
+      <AnimatePresence>
+        {showGroveModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 20 }}
+              className="bg-slate-900 border-4 border-sky-400 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl text-white"
+            >
+              <div className="w-18 h-18 bg-sky-500/20 border-2 border-sky-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 shadow-lg">
+                🦋
+              </div>
+              <h3 
+                className="text-2xl font-black text-sky-300"
+                style={{ fontFamily: "'Baloo 2', system-ui, sans-serif" }}
+              >
+                Butterfly Grove Unlocked!
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 mt-2 font-medium">
+                Congratulations! By solving the 10th Meadow Trial and restoring the ancient archway, you unlocked the gateway to <strong>Butterfly Grove</strong>!
+              </p>
+              <div className="mt-4 p-3 bg-slate-800/80 rounded-2xl border border-sky-500/30 text-xs text-sky-200 font-bold">
+                Classification & Feature Grouping missions will be available in the next Wonder Woods adventure expansion!
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGroveModal(false)}
+                className="mt-5 w-full py-3 bg-gradient-to-r from-sky-400 to-teal-300 hover:from-sky-300 hover:to-teal-200 text-slate-950 font-black text-sm rounded-xl shadow-lg transition active:scale-95"
+              >
+                Close & Return to Map
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

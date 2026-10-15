@@ -1,13 +1,14 @@
 import React, { useEffect } from "react";
 import { motion } from "motion/react";
 import confetti from "canvas-confetti";
-import { Star, Award, ArrowRight, RotateCcw } from "lucide-react";
+import { Star, Award, ArrowRight, RotateCcw, Sparkles } from "lucide-react";
 import { sfx } from "../../../../utils/audio";
 
 interface FeedbackModalProps {
   levelTitle: string;
   subrule: string;
   xpAward: number;
+  starsEarned?: number;
   isGrandFinale?: boolean;
   onNext: () => void;
   onReplay?: () => void;
@@ -17,6 +18,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   levelTitle,
   subrule,
   xpAward,
+  starsEarned = 3,
   isGrandFinale = false,
   onNext,
   onReplay
@@ -37,14 +39,26 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-slate-900 border-4 border-amber-400 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] text-white relative"
       >
-        {/* Animated Trophy / Star Badge */}
-        <motion.div
-          animate={isGrandFinale ? { rotate: [0, -10, 10, -10, 0] } : { scale: [1, 1.15, 1] }}
-          transition={{ repeat: Infinity, duration: 3 }}
-          className="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-200 text-slate-950 rounded-full flex items-center justify-center text-4xl font-black mx-auto mb-4 shadow-xl border-4 border-white"
-        >
-          {isGrandFinale ? "🏆" : "⭐"}
-        </motion.div>
+        {/* Animated Trophy / Stars */}
+        <div className="flex justify-center items-center gap-2 mb-3">
+          {[1, 2, 3].map((s) => (
+            <motion.div
+              key={s}
+              initial={{ scale: 0, rotate: -30 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: s * 0.12 }}
+            >
+              <Star
+                size={s === 2 ? 40 : 32}
+                className={
+                  s <= starsEarned
+                    ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]"
+                    : "fill-slate-800 text-slate-700"
+                }
+              />
+            </motion.div>
+          ))}
+        </div>
 
         {/* Title */}
         <h3 
@@ -58,8 +72,25 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
           {levelTitle} · <span className="text-emerald-300">{subrule}</span>
         </p>
 
+        {/* Grand Finale Badge Callout */}
+        {isGrandFinale && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="my-3 p-3 bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 border-2 border-amber-400/60 rounded-2xl flex flex-col items-center gap-1 shadow-lg"
+          >
+            <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs uppercase tracking-wider">
+              <Award size={18} />
+              <span>Badge Unlocked: Pattern Meadow Master</span>
+            </div>
+            <p className="text-[11px] text-teal-200 font-bold">
+              🦋 Butterfly Grove is now UNLOCKED on your World Map!
+            </p>
+          </motion.div>
+        )}
+
         {/* Summary Card */}
-        <div className="my-5 p-4 bg-slate-800/80 border border-slate-700 rounded-2xl flex flex-col gap-1.5 text-xs">
+        <div className="my-4 p-4 bg-slate-800/80 border border-slate-700 rounded-2xl flex flex-col gap-1.5 text-xs">
           <div className="flex justify-between items-center text-slate-300">
             <span>Cognitive Skill Learned:</span>
             <span className="font-black text-emerald-400">Pattern Recognition</span>
@@ -82,7 +113,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
             className="w-full py-3.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 hover:from-emerald-300 hover:to-amber-200 text-slate-950 font-black text-base rounded-2xl shadow-xl flex items-center justify-center gap-2 transition active:scale-95"
             style={{ fontFamily: "'Baloo 2', system-ui, sans-serif" }}
           >
-            <span>{isGrandFinale ? "RETURN TO WORLD MAP 🌟" : "CONTINUE TO NEXT MISSION"}</span>
+            <span>{isGrandFinale ? "VIEW WORLD MAP 🌟" : "CONTINUE TO NEXT MISSION"}</span>
             <ArrowRight size={18} />
           </button>
 
