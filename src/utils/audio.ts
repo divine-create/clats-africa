@@ -481,7 +481,7 @@ class CompanionVoice {
       }
     } catch (e) {
       console.warn("CompanionVoice speak error:", e);
-      this.playBrowserSpeech(text, character);
+      this.playBrowserSpeech(text, character, "en", undefined, { ageGroup });
     }
   }
 
@@ -532,7 +532,84 @@ class CompanionVoice {
 
   // Excited celebratory voice announcement (higher energy, pitch, and enthusiasm)
   async speakExcited(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
-    return this.speakTTS(text, character, ageGroup, language, { excited: true });
+    return this.speakTTS(text, character, ageGroup, language, { excited: true, ageGroup });
+  }
+
+  private isAgesSixToTen(ageGroup?: string): boolean {
+    if (!ageGroup) return true;
+    const ag = ageGroup.toLowerCase();
+    return (
+      ag.includes("early") ||
+      ag.includes("explorer") ||
+      ag.includes("6-10") ||
+      ag.includes("6–10") ||
+      ag.includes("6 to 10")
+    );
+  }
+
+  private selectVoiceForCharacter(
+    voices: SpeechSynthesisVoice[],
+    character: "kobe" | "chibi",
+    language: string
+  ): { voice?: SpeechSynthesisVoice; isConfirmedMale: boolean } {
+    if (!voices || voices.length === 0) {
+      return { voice: undefined, isConfirmedMale: false };
+    }
+
+    const malePattern = /\b(male|guy|david|mark|daniel|george|ryan|christopher|eric|steffan|rishi|aaron|alex|fred|oliver|thomas|arthur|luke|abeo|tayo|femi|jude|umar|nonso|osagie|adam|nathan|liam|jacob|connor|matthew|andrew|brian|james|paul|richard|steven|edward|kevin)\b/i;
+    const femalePattern = /\b(female|woman|girl|zira|hazel|susan|heather|linda|catherine|samantha|victoria|karen|moira|tessa|fiona|serena|aria|jenny|sonia|libby|maisie|natasha|clara|emily|ava|allison|monica|wura|idera|zainab|adaora|mary|regina|chinenye)\b/i;
+
+    const enVoices = voices.filter(
+      (v) =>
+        v.lang.startsWith("en-NG") ||
+        v.lang.startsWith("pcm") ||
+        v.lang.startsWith("en-GB") ||
+        v.lang.startsWith("en-US") ||
+        v.lang.startsWith("en")
+    );
+    const pool = enVoices.length > 0 ? enVoices : voices;
+
+    if (character === "kobe") {
+      // 1. Prefer Nigerian/British/US explicitly male voices first
+      const preferredLangOrder = ["en-NG", "en-GB", "en-US", "en"];
+      for (const langPrefix of preferredLangOrder) {
+        const langMale = pool.find(
+          (v) => v.lang.startsWith(langPrefix) && malePattern.test(v.name) && !femalePattern.test(v.name)
+        );
+        if (langMale) {
+          return { voice: langMale, isConfirmedMale: true };
+        }
+      }
+      const anyMale = pool.find((v) => malePattern.test(v.name) && !femalePattern.test(v.name));
+      if (anyMale) {
+        return { voice: anyMale, isConfirmedMale: true };
+      }
+
+      // 2. Next best: a voice that is not explicitly female
+      const nonFemale =
+        pool.find((v) => v.lang === "en-NG" && !femalePattern.test(v.name)) ||
+        pool.find((v) => v.lang.startsWith("en-GB") && !femalePattern.test(v.name)) ||
+        pool.find((v) => v.lang.startsWith("en-US") && !femalePattern.test(v.name)) ||
+        pool.find((v) => !femalePattern.test(v.name));
+      if (nonFemale) {
+        return { voice: nonFemale, isConfirmedMale: false };
+      }
+
+      return { voice: pool[0], isConfirmedMale: false };
+    } else {
+      // Chibi: prefer sweet, friendly female voices
+      const explicitFemale =
+        pool.find((v) => v.lang === "en-NG" && femalePattern.test(v.name)) ||
+        pool.find((v) => v.lang.startsWith("en-GB") && femalePattern.test(v.name)) ||
+        pool.find((v) => v.lang.startsWith("en-US") && femalePattern.test(v.name)) ||
+        pool.find((v) => femalePattern.test(v.name));
+      if (explicitFemale) {
+        return { voice: explicitFemale, isConfirmedMale: false };
+      }
+
+      const nonMale = pool.find((v) => !malePattern.test(v.name)) || pool[0];
+      return { voice: nonMale, isConfirmedMale: false };
+    }
   }
 
   // Sovereign YarnGPT speech synthesizer with instant zero-latency browser speech fallback
@@ -541,8 +618,11 @@ class CompanionVoice {
     character: "kobe" | "chibi",
     ageGroup: string,
     language: string = "en",
-    options?: { excited?: boolean }
+    options?: { excited?: boolean; ageGroup?: string }
   ) {
+    const resolvedAgeGroup = options?.ageGroup || ageGroup || "early explorers";
+    const isYoungExplorer = this.isAgesSixToTen(resolvedAgeGroup);
+
     try {
       this.stop();
 
@@ -552,7 +632,8 @@ class CompanionVoice {
         body: JSON.stringify({
           text,
           language,
-          character
+          character,
+          ageGroup: resolvedAgeGroup
         })
       });
 
@@ -563,7 +644,10 @@ class CompanionVoice {
           const audio = new Audio(audioSrc);
           this.activeAudio = audio;
           audio.volume = 1.0;
-          if (options?.excited) {
+          if (character === "kobe" && isYoungExplorer) {
+            // Friendly, upbeat, playful male cadence for ages 6–10
+            audio.playbackRate = options?.excited ? 1.11 : 1.05;
+          } else if (options?.excited) {
             audio.playbackRate = 1.07;
           }
           gameMusic.setDucked(true);
@@ -578,10 +662,10 @@ class CompanionVoice {
         }
       }
       // If server TTS was not configured or failed, immediately fallback to browser speech synthesis
-      this.playBrowserSpeech(text, character, language, undefined, options);
+      this.playBrowserSpeech(text, character, language, undefined, { ...options, ageGroup: resolvedAgeGroup });
     } catch (e) {
       console.warn("CompanionVoice speakTTS (YarnGPT) offline fallback:", e);
-      this.playBrowserSpeech(text, character, language, undefined, options);
+      this.playBrowserSpeech(text, character, language, undefined, { ...options, ageGroup: resolvedAgeGroup });
     }
   }
 
@@ -595,7 +679,7 @@ class CompanionVoice {
       onEnd?: () => void;
       onError?: (err: any) => void;
     },
-    options?: { excited?: boolean }
+    options?: { excited?: boolean; ageGroup?: string }
   ) {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       callbacks?.onError?.("SpeechSynthesis not supported");
@@ -623,36 +707,45 @@ class CompanionVoice {
       this.activeUtterance = utterance;
       (window as any).__clats_speech_utterance = utterance;
 
-      // Select best matching voice from available system voices
+      const isYoungExplorer = this.isAgesSixToTen(options?.ageGroup);
+
+      // Select best gender-matched voice from available system voices
       const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        let selectedVoice: SpeechSynthesisVoice | undefined;
-        if (language === "yo" || language === "ha" || language === "ig") {
-          selectedVoice = voices.find(v => v.lang.startsWith("en-NG") || v.lang.startsWith("pcm"));
-        }
-        if (!selectedVoice) {
-          selectedVoice =
-            voices.find(v => v.lang === "en-NG") ||
-            voices.find(v => v.lang.startsWith("en-GB")) ||
-            voices.find(v => v.lang.startsWith("en-US")) ||
-            voices.find(v => v.lang.startsWith("en"));
-        }
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-          utterance.lang = selectedVoice.lang;
-        } else {
-          utterance.lang = "en-US";
-        }
+      const { voice: selectedVoice, isConfirmedMale } = this.selectVoiceForCharacter(
+        voices,
+        character,
+        language
+      );
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        utterance.lang = selectedVoice.lang;
       } else {
         utterance.lang = "en-US";
       }
 
-      if (options?.excited) {
-        utterance.pitch = character === "chibi" ? 1.35 : 1.14;
-        utterance.rate = 1.05;
+      if (character === "kobe") {
+        if (isYoungExplorer) {
+          // Ages 6–10: Male, friendly, warm, playful companion voice
+          if (isConfirmedMale) {
+            utterance.pitch = options?.excited ? 1.16 : 1.07;
+            utterance.rate = options?.excited ? 1.07 : 1.01;
+          } else {
+            // Shift neutral/default voice into a warm, playful male register
+            utterance.pitch = options?.excited ? 0.88 : 0.82;
+            utterance.rate = options?.excited ? 1.08 : 1.03;
+          }
+        } else {
+          // Ages 11+: Confident, friendly male voice
+          utterance.pitch = isConfirmedMale
+            ? (options?.excited ? 1.10 : 1.0)
+            : (options?.excited ? 0.86 : 0.80);
+          utterance.rate = options?.excited ? 1.05 : 0.98;
+        }
       } else {
-        utterance.pitch = character === "chibi" ? 1.2 : 0.95;
-        utterance.rate = 0.95;
+        // Chibi: Cheerful, sweet female companion voice
+        utterance.pitch = options?.excited ? 1.35 : 1.22;
+        utterance.rate = options?.excited ? 1.06 : 0.98;
       }
 
       utterance.onstart = () => {
@@ -723,19 +816,19 @@ const MELODY_LIBRARY: Record<MusicThemeId, MelodyDefinition> = {
   wonder_woods_hub: {
     name: "Enchanted Woodland Overture",
     tempoMs: 550,
-    waveType: "sine",
+    waveType: "triangle",
     notes: [523.25, 659.25, 783.99, 659.25, 880.0, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 0],
     bassNotes: [261.63, 0, 261.63, 0, 220.0, 0, 196.0, 0, 174.61, 0, 196.0, 0, 261.63, 0, 261.63, 0],
-    baseGain: 0.022
+    baseGain: 0.16
   },
   // Levels 1–2 (SPOT: Firefly Glow & Stream Stepping Stones)
   meadow_spot: {
     name: "Firefly Dusk Lullaby",
     tempoMs: 600,
-    waveType: "sine",
+    waveType: "triangle",
     notes: [392.0, 493.88, 587.33, 783.99, 659.25, 587.33, 493.88, 0, 392.0, 440.0, 493.88, 587.33, 493.88, 440.0, 392.0, 0],
     bassNotes: [196.0, 0, 0, 0, 220.0, 0, 0, 0, 196.0, 0, 0, 0, 146.83, 0, 0, 0],
-    baseGain: 0.022
+    baseGain: 0.16
   },
   // Levels 3–5 (MATCH: Blooming Garden, Woodland Trio, Pebble Rhythm)
   meadow_match: {
@@ -744,25 +837,25 @@ const MELODY_LIBRARY: Record<MusicThemeId, MelodyDefinition> = {
     waveType: "triangle",
     notes: [349.23, 440.0, 523.25, 440.0, 587.33, 523.25, 440.0, 392.0, 349.23, 392.0, 440.0, 523.25, 392.0, 440.0, 349.23, 0],
     bassNotes: [174.61, 0, 261.63, 0, 293.66, 0, 261.63, 0, 233.08, 0, 261.63, 0, 174.61, 0, 174.61, 0],
-    baseGain: 0.018
+    baseGain: 0.15
   },
   // Levels 6–7 (CLASSIFY & APPLY: Size Sorters & Dual Feature)
   meadow_classify: {
     name: "Curious Collector's Groove",
     tempoMs: 480,
-    waveType: "sine",
+    waveType: "triangle",
     notes: [440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0, 392.0, 440.0, 0, 523.25, 0, 659.25, 587.33, 523.25, 0],
     bassNotes: [220.0, 0, 261.63, 0, 293.66, 0, 196.0, 0, 220.0, 0, 261.63, 0, 196.0, 0, 220.0, 0],
-    baseGain: 0.022
+    baseGain: 0.16
   },
   // Levels 8–9 (DISCOVER: Detective Rule & Sneaky Intruder)
   meadow_discover: {
     name: "Woodland Detective Mystery",
     tempoMs: 520,
-    waveType: "sine",
+    waveType: "triangle",
     notes: [440.0, 0, 523.25, 493.88, 440.0, 0, 329.63, 0, 440.0, 523.25, 659.25, 587.33, 523.25, 493.88, 440.0, 0],
     bassNotes: [220.0, 0, 0, 0, 164.81, 0, 0, 0, 220.0, 0, 0, 0, 196.0, 0, 220.0, 0],
-    baseGain: 0.020
+    baseGain: 0.15
   },
   // Level 10 (CREATE / TRIAL: Pattern Keeper's Grand Trial)
   meadow_trial: {
@@ -771,16 +864,16 @@ const MELODY_LIBRARY: Record<MusicThemeId, MelodyDefinition> = {
     waveType: "triangle",
     notes: [523.25, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 523.25, 659.25, 783.99, 0],
     bassNotes: [261.63, 0, 392.0, 0, 220.0, 0, 329.63, 0, 174.61, 0, 196.0, 0, 261.63, 0, 261.63, 0],
-    baseGain: 0.020
+    baseGain: 0.16
   },
   // Quiz & Arcade Quest Thinking Melody
   quiz_quest: {
     name: "Thinking Cap Melody",
     tempoMs: 620,
-    waveType: "sine",
+    waveType: "triangle",
     notes: [523.25, 0, 659.25, 587.33, 523.25, 0, 392.0, 0, 440.0, 523.25, 587.33, 0, 523.25, 493.88, 523.25, 0],
     bassNotes: [261.63, 0, 0, 0, 196.0, 0, 0, 0, 220.0, 0, 0, 0, 196.0, 0, 261.63, 0],
-    baseGain: 0.018
+    baseGain: 0.15
   }
 };
 
@@ -793,6 +886,22 @@ class GameMusicController {
   private customAudio: HTMLAudioElement | null = null;
   private customTracks: Partial<Record<MusicThemeId, string>> = {};
   private MUSIC_STORAGE_KEY = "clats_game_music_enabled_v1";
+  private unlockBound: boolean = false;
+
+  private ensureUnlockListener() {
+    if (typeof window === "undefined" || this.unlockBound) return;
+    this.unlockBound = true;
+    const resumeCtx = () => {
+      if (this.ctx && this.ctx.state === "suspended") {
+        this.ctx.resume().catch(() => {});
+      }
+      if (this.customAudio && this.customAudio.paused && this.currentTheme && this.isMusicEnabled()) {
+        this.customAudio.play().catch(() => {});
+      }
+    };
+    window.addEventListener("pointerdown", resumeCtx, { passive: true });
+    window.addEventListener("keydown", resumeCtx, { passive: true });
+  }
 
   isMusicEnabled(): boolean {
     if (typeof window === "undefined") return true;
@@ -840,12 +949,13 @@ class GameMusicController {
   setDucked(ducked: boolean) {
     this.isDucked = ducked;
     if (this.customAudio) {
-      this.customAudio.volume = ducked ? 0.05 : 0.18;
+      this.customAudio.volume = ducked ? 0.22 : 0.65;
     }
   }
 
   startTheme(theme: MusicThemeId) {
     if (typeof window === "undefined") return;
+    this.ensureUnlockListener();
     if (this.currentTheme === theme && (this.intervalId !== null || this.customAudio !== null)) {
       return;
     }
@@ -861,7 +971,7 @@ class GameMusicController {
       try {
         const audio = new Audio(customUrl);
         audio.loop = true;
-        audio.volume = this.isDucked ? 0.05 : 0.18;
+        audio.volume = this.isDucked ? 0.22 : 0.65;
         this.customAudio = audio;
         audio.play().catch(() => {});
         return;
@@ -890,41 +1000,58 @@ class GameMusicController {
         const bassFreq = melody.bassNotes[idx % melody.bassNotes.length];
         this.stepIndex++;
 
-        // Volume multiplier drops gently when companion is speaking
-        const duckMultiplier = this.isDucked ? 0.25 : 1.0;
+        // Volume multiplier drops gently when companion is speaking so both remain audible
+        const duckMultiplier = this.isDucked ? 0.38 : 1.0;
         const targetGain = melody.baseGain * duckMultiplier;
-        const noteDuration = (melody.tempoMs / 1000) * 0.9;
+        const noteDuration = (melody.tempoMs / 1000) * 0.92;
 
         if (noteFreq > 0) {
+          // Primary warm melody note
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = melody.waveType;
           osc.frequency.setValueAtTime(noteFreq, now);
 
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(targetGain, now + 0.04);
-          gain.gain.exponentialRampToValueAtTime(0.0008, now + noteDuration);
+          gain.gain.setValueAtTime(0.002, now);
+          gain.gain.linearRampToValueAtTime(targetGain, now + 0.035);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + noteDuration);
 
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start(now);
           osc.stop(now + noteDuration);
+
+          // Harmonic bell shimmer (1 octave higher) for crystal clarity on small speakers
+          const shimmerOsc = this.ctx.createOscillator();
+          const shimmerGain = this.ctx.createGain();
+          shimmerOsc.type = "sine";
+          shimmerOsc.frequency.setValueAtTime(noteFreq * 2, now);
+
+          shimmerGain.gain.setValueAtTime(0.001, now);
+          shimmerGain.gain.linearRampToValueAtTime(targetGain * 0.32, now + 0.025);
+          shimmerGain.gain.exponentialRampToValueAtTime(0.0008, now + noteDuration * 0.75);
+
+          shimmerOsc.connect(shimmerGain);
+          shimmerGain.connect(this.ctx.destination);
+          shimmerOsc.start(now);
+          shimmerOsc.stop(now + noteDuration * 0.75);
         }
 
         if (bassFreq > 0) {
           const bassOsc = this.ctx.createOscillator();
           const bassGain = this.ctx.createGain();
-          bassOsc.type = "sine";
+          // Triangle bass carries warm upper harmonics audible on mobile/laptop speakers
+          bassOsc.type = "triangle";
           bassOsc.frequency.setValueAtTime(bassFreq, now);
 
-          bassGain.gain.setValueAtTime(0.001, now);
-          bassGain.gain.linearRampToValueAtTime(targetGain * 0.7, now + 0.05);
-          bassGain.gain.exponentialRampToValueAtTime(0.0008, now + noteDuration * 1.4);
+          bassGain.gain.setValueAtTime(0.002, now);
+          bassGain.gain.linearRampToValueAtTime(targetGain * 0.85, now + 0.045);
+          bassGain.gain.exponentialRampToValueAtTime(0.001, now + noteDuration * 1.45);
 
           bassOsc.connect(bassGain);
           bassGain.connect(this.ctx.destination);
           bassOsc.start(now);
-          bassOsc.stop(now + noteDuration * 1.4);
+          bassOsc.stop(now + noteDuration * 1.45);
         }
       } catch {
         // Ignore AudioContext autoplay restrictions until user interacts
@@ -953,4 +1080,5 @@ class GameMusicController {
 export const gameMusic = new GameMusicController();
 export const companionVoice = new CompanionVoice();
 export const sfx = new AudioSynth();
+
 

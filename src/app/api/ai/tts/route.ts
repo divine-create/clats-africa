@@ -41,15 +41,17 @@ export async function POST(req: NextRequest) {
     }
 
     // YarnGPT Sovereign Voice Mapping
-    // Available voices: umar, osagie, mary, adaora, zainab, adam, idera, emma, wura, jude, chinenye, tayo, regina, femi, nonso, remi
+    // Male voices for Kobe: tayo (playful, friendly English), femi (Yoruba), umar (Hausa), nonso (Igbo)
+    // Female voices for Chibi: wura (English), idera (Yoruba), zainab (Hausa), adaora (Igbo)
+    const isChibi = character === "chibi";
     const voiceMap: Record<string, string> = {
-      yo: "remi",    // Melodious, warm Yoruba voice
-      ha: "umar",    // Clear, friendly Hausa voice
-      ig: "nonso",   // Resonant, authentic Igbo voice
-      en: character === "chibi" ? "wura" : "tayo" // Upbeat, energetic Nigerian English voice for Kobe; sweet voice for Chibi
+      yo: isChibi ? "idera" : "femi",
+      ha: isChibi ? "zainab" : "umar",
+      ig: isChibi ? "adaora" : "nonso",
+      en: isChibi ? "wura" : "tayo"
     };
 
-    const voiceName = voiceMap[language] || (character === "chibi" ? "wura" : "tayo");
+    const voiceName = voiceMap[language] || (isChibi ? "wura" : "tayo");
     const yarngptEndpoint = process.env.YARNGPT_ENDPOINT || "https://api.yarngpt.ai/api/v1/tts";
 
     // 1. Submit TTS generation request with required Idempotency-Key

@@ -210,19 +210,25 @@ export const ChildChat: React.FC<ChildChatProps> = ({
     const fallbackToBrowserSpeech = () => {
       setIsSynthesizing(false);
       setSpeakingMsgId(msgId);
-      companionVoice.playBrowserSpeech(text, (child.companion as any) || "kobe", targetLang, {
-        onStart: () => {
-          setSpeakingMsgId(msgId);
-          setIsSynthesizing(false);
+      companionVoice.playBrowserSpeech(
+        text,
+        (child.companion as any) || "kobe",
+        targetLang,
+        {
+          onStart: () => {
+            setSpeakingMsgId(msgId);
+            setIsSynthesizing(false);
+          },
+          onEnd: () => {
+            setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
+          },
+          onError: () => {
+            setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
+            setIsSynthesizing(false);
+          }
         },
-        onEnd: () => {
-          setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
-        },
-        onError: () => {
-          setSpeakingMsgId((curr) => (curr === msgId ? null : curr));
-          setIsSynthesizing(false);
-        }
-      });
+        { ageGroup: child.ageGroup }
+      );
       // Safety timeout in case onEnd does not trigger
       const fallbackMs = Math.min(Math.max(text.length * 75, 2500), 12000);
       setTimeout(() => {

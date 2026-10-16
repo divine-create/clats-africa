@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { Child, Language } from "../types";
 import { C, F } from "../utils/config";
-import { sfx, companionVoice } from "../utils/audio";
+import { sfx, companionVoice, gameMusic } from "../utils/audio";
 import { useLearningTimeTracker } from "../utils/timeTracker";
 import { Heading, Txt, Chip } from "./Primitives";
 import { MascotImage } from "./Onboarding";
@@ -333,11 +333,45 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
     return getGameStatusInfo(gameId).progressPercent;
   };
 
-  // Pre-configured Badge requirements
+  // Sequenced 4-Step Game Mission Badges (matches 4/4 Badge Locker)
+  const wonderWoodsStatus = getGameStatusInfo("wonder-woods");
   const badgesList = [
-    { id: "ai-trainer", name: "AI Trainer", icon: "🧠", desc: "Unlock from Teachable Machine", unlocked: completedGames.includes("teachable-machine"), color: "#6366F1" },
-    { id: "urban-innovator", name: "Urban Innovator", icon: "🏙️", desc: "Unlock from Smart City Builder", unlocked: completedGames.includes("smart-city-builder"), color: "#26c6da" },
-    { id: "cyber-guardian", name: "Cyber Guardian", icon: "🛡️", desc: "Unlock from Phishing Swipe", unlocked: completedGames.includes("phishing-swipe"), color: "#F59E0B" },
+    {
+      id: "pattern-keeper",
+      step: 1,
+      name: "Pattern Keeper",
+      icon: "🦋",
+      desc: "Step 1: Complete Pattern Meadow in Wonder Woods (Pattern Quest)",
+      unlocked: completedGames.includes("wonder-woods") || Boolean(wonderWoodsStatus.isCompleted),
+      color: "#10B981"
+    },
+    {
+      id: "ai-trainer",
+      step: 2,
+      name: "AI Trainer",
+      icon: "🧠",
+      desc: "Step 2: Complete a training mission in Teachable Machine",
+      unlocked: completedGames.includes("teachable-machine"),
+      color: "#6366F1"
+    },
+    {
+      id: "urban-innovator",
+      step: 3,
+      name: "Urban Innovator",
+      icon: "🏙️",
+      desc: "Step 3: Build a sustainable city in Smart City Builder",
+      unlocked: completedGames.includes("smart-city-builder"),
+      color: "#26c6da"
+    },
+    {
+      id: "cyber-guardian",
+      step: 4,
+      name: "Cyber Guardian",
+      icon: "🛡️",
+      desc: "Step 4: Defend against cyber threats in Phishing Swipe",
+      unlocked: completedGames.includes("phishing-swipe"),
+      color: "#F59E0B"
+    },
   ];
 
   const badgesEarnedCount = badgesList.filter(b => b.unlocked).length;
@@ -351,7 +385,16 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
     setSelectedAnswer(null);
     setGameFeedback(null);
     setIsGameCompleted(false);
+    if (gameId !== "wonder-woods") {
+      gameMusic.startTheme("quiz_quest");
+    }
   };
+
+  useEffect(() => {
+    if (!activeGameModal) {
+      gameMusic.stop();
+    }
+  }, [activeGameModal]);
 
   const handleNotifyMe = (gameName: string) => {
     sfx.playCoin();
@@ -1093,7 +1136,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
             </Txt>
           </div>
           <Chip bg={isDark ? "rgba(184, 160, 255, 0.15)" : "rgba(99,102,241,0.1)"} color={isDark ? "#B8A0FF" : "#6366f1"} style={{ fontSize: 11, fontWeight: 900, padding: "6px 12px" }}>
-            🎖️ CLATS BADGE LOCKER: {badgesEarnedCount} / 4
+            🎖️ CLATS BADGE LOCKER: {badgesEarnedCount} / {badgesList.length}
           </Chip>
         </div>
 
@@ -1134,10 +1177,13 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
               </div>
 
               <div>
-                <Heading size={14.5} style={{ color: b.unlocked ? (isDark ? "#fff" : "#78350F") : (isDark ? "#64748b" : "#94a3b8"), fontWeight: 900 }}>
+                <Txt size={9.5} color={b.unlocked ? "#10B981" : "#94a3b8"} weight={900} style={{ display: "block", textTransform: "uppercase", marginBottom: 2 }}>
+                  MISSION BADGE #{b.step}
+                </Txt>
+                <Heading size={14.5} style={{ color: b.unlocked ? (isDark ? "#fff" : "#78350F") : (isDark ? "#cbd5e1" : "#475569"), fontWeight: 900 }}>
                   {b.name}
                 </Heading>
-                <Txt size={11} color={b.unlocked ? (isDark ? "#cbd5e1" : "#92400E") : (isDark ? "#475569" : "#94a3b8")} style={{ display: "block", marginTop: 2 }}>
+                <Txt size={11} color={b.unlocked ? (isDark ? "#cbd5e1" : "#92400E") : (isDark ? "#94a3b8" : "#64748b")} style={{ display: "block", marginTop: 2 }}>
                   {b.desc}
                 </Txt>
                 {b.unlocked ? (

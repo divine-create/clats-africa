@@ -31,6 +31,7 @@ import {
   getClaimedStreakMilestones,
   saveClaimedStreakMilestones
 } from "../utils/streak";
+import { evaluateChildBadges, evaluateAdventureStickers } from "../utils/badges";
 
 interface ChildRewardsProps {
   child: Child;
@@ -202,58 +203,8 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   const levelProgress = currentXP - currentStepMin;
   const levelProgressPct = currentLevelObj.lv === 6 ? 100 : Math.min(100, Math.max(0, (levelProgress / levelRange) * 100));
 
-  // 5. Dynamic MVP Badges Log
-  const badgesData = [
-    {
-      id: "first-completed",
-      name: "First Lesson Completed",
-      desc: "Complete your first lesson and set sail.",
-      unlocked: completedCount >= 1,
-      unlockedDate: "Activated",
-      icon: "🏅"
-    },
-    {
-      id: "quiz-champ",
-      name: "Quiz Champion",
-      desc: "Score 100% on any futuristic lesson quiz.",
-      unlocked: hasQuizChampion || completedCount >= 4,
-      unlockedDate: "Earned Today",
-      icon: "🏆"
-    },
-    {
-      id: "ai-explorer",
-      name: "AI Explorer",
-      desc: "Complete the master AI Foundations module.",
-      unlocked: isAiModuleCompleted || completedCount >= 2,
-      unlockedDate: "Earned Recently",
-      icon: "🤖"
-    },
-    {
-      id: "streak-consistent",
-      name: "Consistency Star",
-      desc: "Maintain a gorgeous 7-day learning streak.",
-      unlocked: streak >= 7,
-      unlockedDate: "Earned Today",
-      icon: "⭐"
-    },
-    {
-      id: "future-thinker",
-      name: "Future Thinker",
-      desc: "Amass a balance of 500+ XP in your wallet.",
-      unlocked: currentXP >= 500,
-      unlockedDate: "Activated",
-      icon: "🌟"
-    },
-    {
-      id: "smart-learner",
-      name: "Smart Learner",
-      desc: "Conquer and absolute pass 5 lessons total.",
-      unlocked: completedCount >= 5,
-      unlockedDate: "Activated",
-      icon: "🧩"
-    }
-  ];
-
+  // 5. Unified 8-Step Sequenced Badges Log
+  const badgesData = evaluateChildBadges(child);
   const earnedBadgesCount = badgesData.filter(b => b.unlocked).length;
 
   // 6. Certificates — one per curriculum pathway from the database
@@ -291,16 +242,8 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   const earnedCertificatesCount = certificatesData.filter(c => c.unlocked).length;
 
-  // 7. Sticker Sheet items for Ages 6–10
-  const adventureStickers = [
-    { id: "koala", emoji: "🐨", name: "Playful Koala", desc: "Unlock by beginning your adventure!", unlocked: true, color: "from-[#FFD166] to-amber-500" },
-    { id: "whale", emoji: "🐳", name: "Ocean Explorer", desc: "Earned by completing 1+ lessons!", unlocked: completedCount >= 1, color: "from-[#2EC4B6] to-teal-600" },
-    { id: "dinotech", emoji: "🦖", name: "Dino-Coder", desc: "Earned by completing 2+ lessons!", unlocked: completedCount >= 2, color: "from-[#B8A0FF] to-violet-600" },
-    { id: "leader_lion", emoji: "🦁", name: "Leader Lion", desc: "Earned by maintaining a streak!", unlocked: streak >= 5, color: "from-rose-400 to-red-500" },
-    { id: "rocket", emoji: "🚀", name: "Apex Rocket", desc: "Unlock with 500+ XP milestone!", unlocked: currentXP >= 500, color: "from-blue-400 to-indigo-600" },
-    { id: "star_badge", emoji: "⭐", name: "Super Star", desc: "Unlock by gaining 5+ Stars!", unlocked: totalStars >= 5, color: "from-amber-300 to-yellow-500" }
-  ];
-
+  // 7. Sequenced Sticker Sheet items for Ages 6–10
+  const adventureStickers = evaluateAdventureStickers(child);
   const earnedStickersCount = adventureStickers.filter(s => s.unlocked).length;
 
   // Interaction handlers
@@ -666,11 +609,11 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                   </Chip>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(145px, 1fr))", gap: 14 }}>
                   {adventureStickers.map(stick => (
                     <div
                       key={stick.id}
-                      className="transition-all hover:rotate-3 duration-200"
+                      className="transition-all hover:rotate-2 duration-200"
                       style={{
                         background: stick.unlocked 
                           ? (isDark ? "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06))" : "#faf5ff")
@@ -681,9 +624,13 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                         borderRadius: 20,
                         padding: 12,
                         textAlign: "center",
-                        opacity: stick.unlocked ? 1 : 0.52
+                        opacity: stick.unlocked ? 1 : 0.72,
+                        position: "relative"
                       }}
                     >
+                      <div style={{ fontSize: 9, fontWeight: 900, color: stick.unlocked ? "#2EC4B6" : "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>
+                        Step {stick.step}
+                      </div>
                       <div 
                         style={{
                           width: 64,
@@ -702,18 +649,21 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                         {stick.emoji}
                       </div>
                       <Heading size={13.5} style={{ fontWeight: 800, color: isDark ? "#fff" : "#1e293b" }}>{stick.name}</Heading>
-                      <Txt size={10} color={isDark ? "#94a3b8" : "#64748b"} style={{ display: "block", marginTop: 4, lineHeight: 1.2 }}>
+                      <Txt size={10} color={isDark ? "#cbd5e1" : "#475569"} style={{ display: "block", marginTop: 4, lineHeight: 1.25, fontWeight: 700 }}>
+                        {stick.howToEarn}
+                      </Txt>
+                      <Txt size={9.5} color={isDark ? "#94a3b8" : "#64748b"} style={{ display: "block", marginTop: 2, lineHeight: 1.2 }}>
                         {stick.desc}
                       </Txt>
                       {stick.unlocked ? (
                         <div style={{ display: "flex", justifyContent: "center", gap: 3, alignItems: "center", marginTop: 6, color: "#10b981" }}>
                           <Check size={10} strokeWidth={4} />
-                          <Txt size={9.5} weight={900}>GOT IT</Txt>
+                          <Txt size={9.5} weight={900}>GOT IT ({stick.progressText})</Txt>
                         </div>
                       ) : (
                         <div style={{ display: "flex", justifyContent: "center", gap: 3, alignItems: "center", marginTop: 6, color: "#94a3b8" }}>
                           <Lock size={10} />
-                          <Txt size={9.5} weight={850}>LOCKED</Txt>
+                          <Txt size={9.5} weight={850}>LOCKED • {stick.progressText}</Txt>
                         </div>
                       )}
                     </div>
@@ -852,10 +802,10 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
                 <div>
                   <Heading size={20} style={{ fontWeight: 800, color: isDark ? "#2EC4B6" : "#0f172a" }}>
-                    🏅 Achievement Badges
+                    🏅 Achievement Badges Roadmap (Steps 1–8)
                   </Heading>
                   <Txt size={13.5} color={isDark ? "#cbd5e1" : "#475569"}>
-                    Complete tasks and lessons in CLATS to collect unique credentials of honor.
+                    Follow the 8-step achievement sequence below—each badge shows exactly how to earn it!
                   </Txt>
                 </div>
                 <Chip bg={isDark ? "rgba(184,160,255,0.12)" : "rgba(99,102,241,0.06)"} color="#B8A0FF" style={{ fontWeight: 900 }}>
@@ -863,7 +813,7 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                 </Chip>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(235px, 1fr))", gap: 16 }}>
                 {badgesData.map(badge => {
                   const isUnlocked = badge.unlocked;
 
@@ -873,7 +823,7 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                       className="transition-all duration-300 hover:scale-[1.02]"
                       style={{
                         background: isUnlocked 
-                          ? (isDark ? "rgba(46,196,182,0.04)" : "linear-gradient(135deg, rgba(254,243,197,0.15) 0%, rgba(251,191,36,0.04) 100%)") 
+                          ? (isDark ? "rgba(46,196,182,0.06)" : "linear-gradient(135deg, rgba(254,243,197,0.22) 0%, rgba(251,191,36,0.06) 100%)") 
                           : (isDark ? "#151f32" : "#f8fafc"),
                         border: isUnlocked 
                           ? `2.5px solid ${isDark ? "#2EC4B6" : "#FFD166"}`
@@ -884,40 +834,64 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                         display: "flex",
                         alignItems: "flex-start",
                         gap: 12,
-                        opacity: isUnlocked ? 1 : 0.65
+                        opacity: isUnlocked ? 1 : 0.85
                       }}
                     >
                       <div 
                         style={{
                           fontSize: 32,
                           filter: isUnlocked ? "none" : "grayscale(100%)",
-                          opacity: isUnlocked ? 1 : 0.4
+                          opacity: isUnlocked ? 1 : 0.45
                         }}
                       >
                         {badge.icon}
                       </div>
 
                       <div style={{ flex: 1 }}>
-                        <Heading size={14.5} style={{ color: isUnlocked ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#64748b" : "#94a3b8"), fontWeight: 900 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 900, textTransform: "uppercase", color: isUnlocked ? "#2EC4B6" : "#94a3b8", letterSpacing: 0.4 }}>
+                            Step {badge.step} of {badgesData.length}
+                          </span>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: isUnlocked ? "#10b981" : "#64748b" }}>
+                            {badge.progressCurrent}/{badge.progressTarget} {badge.progressUnit}
+                          </span>
+                        </div>
+                        <Heading size={14.5} style={{ color: isUnlocked ? (isDark ? "#ffffff" : "#0f172a") : (isDark ? "#cbd5e1" : "#475569"), fontWeight: 900 }}>
                           {badge.name}
                         </Heading>
-                        <Txt size={11} color={isDark ? "#94a3b8" : "#475569"} style={{ display: "block", marginTop: 4, lineHeight: 1.3 }}>
+                        <Txt size={10.5} color={isUnlocked ? "#2EC4B6" : (isDark ? "#cbd5e1" : "#334155")} style={{ display: "block", marginTop: 3, fontWeight: 800 }}>
+                          🎯 {badge.howToEarn}
+                        </Txt>
+                        <Txt size={10.5} color={isDark ? "#94a3b8" : "#64748b"} style={{ display: "block", marginTop: 2, lineHeight: 1.3 }}>
                           {badge.desc}
                         </Txt>
 
-                        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 3 }}>
+                        {/* Mini Progress Bar */}
+                        <div style={{ width: "100%", height: 5, background: isDark ? "#334155" : "#e2e8f0", borderRadius: 99, overflow: "hidden", marginTop: 8 }}>
+                          <div
+                            style={{
+                              width: `${badge.progressPct}%`,
+                              height: "100%",
+                              background: isUnlocked ? "#10b981" : "linear-gradient(90deg, #2EC4B6, #B8A0FF)",
+                              borderRadius: 99,
+                              transition: "width 0.35s ease"
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
                           {isUnlocked ? (
                             <>
                               <span style={{ fontSize: 10 }}>🌟</span>
                               <Txt size={9.5} weight={900} color="#10b981" style={{ textTransform: "uppercase" }}>
-                                GOT {badge.unlockedDate}!
+                                UNLOCKED • {badge.unlockedLabel}
                               </Txt>
                             </>
                           ) : (
                             <>
                               <Lock size={10} style={{ color: "#94a3b8" }} />
                               <Txt size={9.5} weight={800} color="#94a3b8" style={{ textTransform: "uppercase" }}>
-                                LOCKED
+                                LOCKED ({badge.progressPct}% DONE)
                               </Txt>
                             </>
                           )}

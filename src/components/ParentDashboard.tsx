@@ -21,6 +21,7 @@ import { calculateStudyAnalytics } from "../utils/timeTracker";
 import { supabase } from "../utils/supabaseClient";
 import { CLATSLogo } from "./CLATSLogo";
 import { computeEffectiveStreak } from "../utils/streak";
+import { evaluateChildBadges } from "../utils/badges";
 import {
   Sun,
   Moon,
@@ -414,25 +415,15 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     { name: "Responsible Tech Use", value: completedCount === 0 ? 0 : Math.min(100, Math.round(50 + completedCount * 9)), color: "#FFD166" },
   ] : [];
 
-  const achievements: Array<{ name: string; emoji: string; desc: string }> = [];
-  if (child) {
-    if (completedCount >= 1) {
-      achievements.push({ name: "AI Explorer", emoji: "🤖", desc: "First lesson completed" });
-    }
-    if (completedCount >= 3) {
-      achievements.push({ name: "Primary Innovator", emoji: "💡", desc: "Completed 3 lessons" });
-    }
-    if (childXp >= 100) {
-      achievements.push({ name: "XP Champion", emoji: "🏆", desc: "Earned 100+ total XP" });
-    }
-    const hasQuizPass = quizResultsList.some((q) => q.score >= 80);
-    if (hasQuizPass) {
-      achievements.push({ name: "Quiz Champion", emoji: "🎯", desc: "Scored 80%+ on any quiz" });
-    }
-    if (streakDays >= 5) {
-      achievements.push({ name: "5 Day Streak", emoji: "🔥", desc: "Active 5 day streak" });
-    }
-  }
+  const achievements: Array<{ name: string; emoji: string; desc: string }> = child
+    ? evaluateChildBadges(child)
+        .filter((b) => b.unlocked)
+        .map((b) => ({
+          name: b.name,
+          emoji: b.emoji,
+          desc: b.howToEarn
+        }))
+    : [];
 
   // State flags for conditional UI layout
   const isState1 = children.length === 0;

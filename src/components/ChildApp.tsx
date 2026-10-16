@@ -26,6 +26,7 @@ import { ChildChat } from "./ChildChat";
 import { CURRICULUM } from "../data/curriculum";
 import { PaywallModal } from "./PaywallModal";
 import { computeEffectiveStreak, recordDailyActivityStreak } from "../utils/streak";
+import { evaluateChildBadges, UNIFIED_BADGE_MAP } from "../utils/badges";
 
 interface ChildAppProps {
   child: Child;
@@ -409,26 +410,30 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     const finalBestStreak = streakUpdate.best_streak;
     const finalLastActive = streakUpdate.last_active_at;
 
+    const previouslyUnlockedIds = new Set(
+      evaluateChildBadges(child)
+        .filter((b) => b.unlocked)
+        .map((b) => b.id)
+    );
     const currentBadges = child.badges || [];
-    const badgesToUnlock: string[] = [];
-    
-    const tryUnlock = (badgeId: string) => {
-      if (!currentBadges.includes(badgeId) && !badgesToUnlock.includes(badgeId)) {
-        badgesToUnlock.push(badgeId);
-      }
+
+    const candidateChild: Child = {
+      ...child,
+      completed: freshCompleted,
+      stars: freshStars,
+      xp: freshXP,
+      quizResults: freshQuizResults,
+      streak: finalStreak,
+      streak_count: finalStreak,
+      best_streak: finalBestStreak,
+      last_active_at: finalLastActive,
+      badges: currentBadges
     };
 
-    if (currentCompletedCount >= 1) tryUnlock("bdg-ai-newbie");
-    if (freshXP >= 250) tryUnlock("bdg-cyber-shield");
-    if (freshXP >= 500) tryUnlock("bdg-prompt-pro");
-    if (freshXP >= 1000) tryUnlock("badge_bronze_scholar");
-    
-    if (quizResult && quizResult.score === 100 && !priorQuizResults[lessonId]) {
-      tryUnlock("badge_flawless_victory");
-    }
-    if (finalStreak >= 3) {
-      tryUnlock("badge_3_day_spark");
-    }
+    const evaluatedAfter = evaluateChildBadges(candidateChild);
+    const badgesToUnlock = evaluatedAfter
+      .filter((b) => b.unlocked && !previouslyUnlockedIds.has(b.id) && !currentBadges.includes(b.id))
+      .map((b) => b.id);
 
     if (parent && parent.email && isPass) {
       try {
@@ -458,19 +463,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     }
 
     // Combine existing badges with newly unlocked ones
-    const newBadgesList = [...(child.badges || []), ...badgesToUnlock];
+    const newBadgesList = Array.from(new Set([...currentBadges, ...badgesToUnlock]));
 
     // Persist changes (onUpdateChild automatically syncs to /api/supabase/sync or /api/supabase/b2b/manage-student)
     const updated: Child = {
-      ...child,
-      completed: freshCompleted,
-      stars: freshStars,
-      xp: freshXP,
-      quizResults: freshQuizResults,
-      streak: finalStreak,
-      streak_count: finalStreak,
-      best_streak: finalBestStreak,
-      last_active_at: finalLastActive,
+      ...candidateChild,
       badges: newBadgesList
     };
 
@@ -481,43 +478,41 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     const freshXP = (child.xp || 0) + amount;
     const streakUpdate = recordDailyActivityStreak(child);
 
+    const previouslyUnlockedIds = new Set(
+      evaluateChildBadges(child)
+        .filter((b) => b.unlocked)
+        .map((b) => b.id)
+    );
     const currentBadges = child.badges || [];
-    const newlyUnlocked: string[] = [];
-    if (freshXP >= 250 && !currentBadges.includes("bdg-cyber-shield")) newlyUnlocked.push("bdg-cyber-shield");
-    if (freshXP >= 500 && !currentBadges.includes("bdg-prompt-pro")) newlyUnlocked.push("bdg-prompt-pro");
-    if (freshXP >= 1000 && !currentBadges.includes("badge_bronze_scholar")) newlyUnlocked.push("badge_bronze_scholar");
-    if (streakUpdate.streak_count >= 3 && !currentBadges.includes("badge_3_day_spark")) newlyUnlocked.push("badge_3_day_spark");
 
-    if (newlyUnlocked.length > 0) {
-      setCelebrationQueue(prev => [...prev, ...newlyUnlocked]);
-    }
-
-    const newBadgesList = [...currentBadges, ...newlyUnlocked];
-
-    const updated: Child = {
+    const candidateChild: Child = {
       ...child,
       xp: freshXP,
       streak: streakUpdate.streak_count,
       streak_count: streakUpdate.streak_count,
       best_streak: streakUpdate.best_streak,
       last_active_at: streakUpdate.last_active_at,
+      badges: currentBadges
+    };
+
+    const newlyUnlocked = evaluateChildBadges(candidateChild)
+      .filter((b) => b.unlocked && !previouslyUnlockedIds.has(b.id) && !currentBadges.includes(b.id))
+      .map((b) => b.id);
+
+    if (newlyUnlocked.length > 0) {
+      setCelebrationQueue(prev => [...prev, ...newlyUnlocked]);
+    }
+
+    const newBadgesList = Array.from(new Set([...currentBadges, ...newlyUnlocked]));
+
+    const updated: Child = {
+      ...candidateChild,
       badges: newBadgesList
     };
     onUpdateChild(updated);
   };
 
-
-
-
-
-  const BADGE_MAP: Record<string, { title: string, icon: string }> = {
-    "bdg-ai-newbie": { title: "AI Newbie", icon: "🌱" },
-    "bdg-cyber-shield": { title: "Cyber Shield", icon: "🛡️" },
-    "bdg-prompt-pro": { title: "Prompt Pro", icon: "💬" },
-    "badge_bronze_scholar": { title: "Bronze Scholar", icon: "🏆" },
-    "badge_flawless_victory": { title: "Flawless Victory", icon: "🎯" },
-    "badge_3_day_spark": { title: "3-Day Spark", icon: "🔥" },
-  };
+  const BADGE_MAP = UNIFIED_BADGE_MAP;
 
   return (
     <div className="tropical-bg" style={{ minHeight: "100vh", paddingBottom: 88, position: "relative", overflowX: "hidden" }}>
@@ -977,7 +972,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               {BADGE_MAP[celebrationQueue[0]]?.title || "Mystery Badge"}
             </p>
             <p className="text-sm text-slate-500 mt-2 font-bold mb-8">
-              Great job! You earned a new reward.
+              {BADGE_MAP[celebrationQueue[0]]?.desc || "Great job! You earned a new reward."}
             </p>
             
             <button

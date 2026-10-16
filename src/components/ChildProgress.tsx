@@ -47,6 +47,7 @@ import {
   getClaimedStreakMilestones,
   saveClaimedStreakMilestones
 } from "../utils/streak";
+import { evaluateChildBadges, evaluateAdventureStickers } from "../utils/badges";
 
 interface ChildProgressScreenProps {
   child: Child;
@@ -211,26 +212,12 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
   const activeFocus = findCurrentFocus();
 
-  // STICKER SHEETS FOR TINY AGES 6-10
-  const adventureStickers = [
-    { id: "koala", emoji: "🐨", name: "Playful Koala", desc: "Unlock by beginning your adventure!", unlocked: true, color: "from-amber-400 to-yellow-500" },
-    { id: "whale", emoji: "🐳", name: "Ocean Explorer", desc: "Earned by completing 1+ lessons!", unlocked: completedCount >= 1, color: "from-teal-400 to-emerald-500" },
-    { id: "dinotech", emoji: "Rex", name: "Dino-Coder", desc: "Earned by completing 2+ lessons!", unlocked: completedCount >= 2, color: "from-purple-400 to-violet-600" },
-    { id: "leader_lion", emoji: "🦁", name: "Leader Lion", desc: "Earned by keeping learning streaks!", unlocked: streak >= 5, color: "from-rose-400 to-red-500" },
-    { id: "rocket", emoji: "🚀", name: "Apex Rocket", desc: "Unlock on gaining 500+ XP!", unlocked: currentXP >= 500, color: "from-blue-400 to-indigo-600" },
-    { id: "star_badge2", emoji: "⭐", name: "Super Star", desc: "Unlock with 5+ Stars!", unlocked: totalStars >= 5, color: "from-[#FFD166] to-amber-500" },
-  ];
+  // STICKER SHEETS FOR AGES 6-10 (Unified Sequenced Stickers)
+  const adventureStickers = evaluateAdventureStickers(child);
   const earnedStickersCount = adventureStickers.filter(s => s.unlocked).length;
 
-  // BADGES FOR AGES 11-13
-  const badgesData = [
-    { id: "first-completed", name: "First Lesson Completed", desc: "Complete your first lesson and set sail.", unlocked: completedCount >= 1, icon: "🏅", color: "text-[#2EC4B6] border-[#2EC4B6]" },
-    { id: "quiz-champ", name: "Quiz Champion", desc: "Score 100% on any futuristic lesson quiz.", unlocked: perfectQuizzes > 0, icon: "🏆", color: "text-[#FFD166] border-[#FFD166]" },
-    { id: "ai-explorer", name: "AI Explorer Badge", desc: "Complete 2+ AI Academy modules or lessons.", unlocked: completedAiLessonsCount >= 2, icon: "🤖", color: "text-indigo-400 border-indigo-400" },
-    { id: "streak-consistent", name: "Consistency Star", desc: "Maintain a learning streak of 7+ days.", unlocked: streak >= 7, icon: "🔥", color: "text-rose-500 border-rose-400" },
-    { id: "future-thinker", name: "Future Thinker", desc: "Amass a balance of 500+ XP in your wallet.", unlocked: currentXP >= 500, icon: "🌟", color: "text-amber-400 border-amber-300" },
-    { id: "smart-learner", name: "Smart Learner", desc: "Complete 5 lessons total in curriculum.", unlocked: completedCount >= 5, icon: "🧩", color: "text-[#B8A0FF] border-[#B8A0FF]" }
-  ];
+  // UNIFIED 8-STEP BADGES SEQUENCE
+  const badgesData = evaluateChildBadges(child);
   const earnedBadgesCount = badgesData.filter(b => b.unlocked).length;
 
   // CERTIFICATES Log
@@ -693,9 +680,12 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                       className={`p-3.5 rounded-2xl border text-center transition-transform hover:scale-105 duration-350 ${
                         stick.unlocked
                           ? (isDark ? "bg-slate-855 border-slate-700" : "bg-gradient-to-br from-amber-50/20 to-yellow-50/50 border-[#FFD166]")
-                          : "border-dashed border-slate-200 dark:border-slate-800 opacity-45"
+                          : "border-dashed border-slate-200 dark:border-slate-800 opacity-70"
                       }`}
                     >
+                      <div className="text-[9px] font-black uppercase tracking-wider text-[#2EC4B6] mb-1">
+                        Step {stick.step}
+                      </div>
                       <div className={`w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center text-3xl shadow-sm ${
                         stick.unlocked ? `bg-gradient-to-br ${stick.color} text-white` : "bg-slate-100 dark:bg-slate-850 grayscale"
                       }`}>
@@ -704,16 +694,19 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                       <div className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">
                         {stick.name}
                       </div>
+                      <div className="text-[9.5px] font-bold text-[#2EC4B6] mt-0.5 leading-tight">
+                        {stick.howToEarn}
+                      </div>
                       <div className="text-[9px] text-slate-400 mt-1 leading-tight">
                         {stick.desc}
                       </div>
                       {stick.unlocked ? (
                         <div className="text-[10px] text-emerald-500 font-extrabold mt-1.5 flex items-center justify-center gap-1 uppercase">
-                          <Check size={8} strokeWidth={4} /> GOT IT!
+                          <Check size={8} strokeWidth={4} /> GOT IT ({stick.progressText})
                         </div>
                       ) : (
                         <div className="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center justify-center gap-1 uppercase">
-                          <Lock size={8} /> Lock
+                          <Lock size={8} /> {stick.progressText}
                         </div>
                       )}
                     </div>
@@ -898,10 +891,10 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <div>
                   <h3 className="text-xl font-black text-[#B8A0FF] flex items-center gap-2">
-                    <span>🏅</span> My Badges & Achievements
+                    <span>🏅</span> My Badges & Achievements (Steps 1–8)
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Solve quizzes and climb high levels in CLATS to collect unique credentials of honor.
+                    Follow the step-by-step badge sequence below—each badge shows your live progress and how to unlock it.
                   </p>
                 </div>
                 <span className="bg-[#B8A0FF]/10 text-[#B8A0FF] text-xs px-3 py-1 rounded-full font-black">
@@ -917,24 +910,35 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                       key={badge.id}
                       className={`p-4 rounded-2xl border flex items-start gap-3 transition-all ${
                         unlocked 
-                          ? "bg-[#FFD166]/5 border-[#FFD166]/40 text-slate-800 dark:text-white"
-                          : "border-slate-100 dark:border-slate-850 text-slate-400 opacity-50 select-none"
+                          ? "bg-[#FFD166]/10 border-[#FFD166]/60 text-slate-800 dark:text-white"
+                          : "border-slate-200 dark:border-slate-800 text-slate-500 opacity-80"
                       }`}
                     >
-                      <div className="text-3xl shrink-0 leading-none">{badge.icon}</div>
-                      <div>
+                      <div className={`text-3xl shrink-0 leading-none ${!unlocked ? "grayscale opacity-50" : ""}`}>{badge.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-[#2EC4B6]">
+                            Step {badge.step}
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-400">
+                            {badge.progressCurrent}/{badge.progressTarget} {badge.progressUnit}
+                          </span>
+                        </div>
                         <h4 className="text-xs font-black leading-tight mb-1">{badge.name}</h4>
+                        <p className="text-[10px] font-extrabold text-[#2EC4B6] leading-tight mb-1">
+                          🎯 {badge.howToEarn}
+                        </p>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
                           {badge.desc}
                         </p>
                         <div className="mt-2 flex items-center gap-1 text-[9px] font-black uppercase">
                           {unlocked ? (
-                            <span className="text-[#FFD166] flex items-center gap-0.5">
-                              <CheckCircle size={10} /> Got It!
+                            <span className="text-emerald-500 flex items-center gap-0.5">
+                              <CheckCircle size={10} /> Unlocked ({badge.unlockedLabel})
                             </span>
                           ) : (
                             <span className="text-slate-400 flex items-center gap-0.5">
-                              <Lock size={10} /> Locked
+                              <Lock size={10} /> Locked • {badge.progressPct}%
                             </span>
                           )}
                         </div>
