@@ -17,6 +17,7 @@ import { Card, Heading, Txt, Chip, Btn } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { companionVoice } from "../utils/audio";
 import { ChildWelcomeScreen } from "./ChildWelcome";
+import { ChildExplorerHome } from "./ChildExplorerHome";
 import { SagaMap } from "./SagaMap";
 import { ChildProgressScreen } from "./ChildProgress";
 import { LessonContent } from "./LessonContent";
@@ -652,38 +653,62 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
       {/* Screen 1: Course Selection / Child Hub */}
       {activeTab === "home" && (
-        <ChildWelcomeScreen
-          child={child}
-          slotUsed={slotUsed}
-          slotLimit={slotLimit}
-          onEnterAIPathway={(acadId) => {
-            setSelectedAcademyId(acadId || "academy-1");
-            setActiveTab("map");
-          }}
-          onResume={() => {
-            const course = CURRICULUM[child.ageGroup || "early explorers"];
-            if (!course || !course.modules) return;
-        
-            for (const mod of course.modules) {
-              for (const les of mod.lessons) {
-                if (!child.completed?.[les.id]) {
-                  setSelModule(mod);
-                  setSelLesson(les);
-                  setActiveTab("lesson");
-                  return;
+        isYoungExplorer ? (
+          <ChildExplorerHome
+            child={child}
+            slotUsed={slotUsed}
+            slotLimit={slotLimit}
+            onSelectLesson={(mod, les) => {
+              setSelModule(mod);
+              setSelLesson(les);
+              setActiveTab("lesson");
+            }}
+            onEnterWorld={(acadId) => {
+              setSelectedAcademyId(acadId || "academy-1");
+              setActiveTab("map");
+            }}
+            onPlayGame={(_gameId) => {
+              setActiveTab("games");
+            }}
+            onOpenChat={() => setActiveTab("chat")}
+            onOpenRewards={() => setActiveTab("rewards")}
+            lang={lang}
+            theme={theme}
+          />
+        ) : (
+          <ChildWelcomeScreen
+            child={child}
+            slotUsed={slotUsed}
+            slotLimit={slotLimit}
+            onEnterAIPathway={(acadId) => {
+              setSelectedAcademyId(acadId || "academy-1");
+              setActiveTab("map");
+            }}
+            onResume={() => {
+              const course = CURRICULUM[child.ageGroup || "early explorers"];
+              if (!course || !course.modules) return;
+          
+              for (const mod of course.modules) {
+                for (const les of mod.lessons) {
+                  if (!child.completed?.[les.id]) {
+                    setSelModule(mod);
+                    setSelLesson(les);
+                    setActiveTab("lesson");
+                    return;
+                  }
                 }
               }
-            }
-            // If all completed, restart the first one
-            if (course.modules[0] && course.modules[0].lessons[0]) {
-              setSelModule(course.modules[0]);
-              setSelLesson(course.modules[0].lessons[0]);
-              setActiveTab("lesson");
-            }
-          }}
-          lang={lang}
-          theme={theme}
-        />
+              // If all completed, restart the first one
+              if (course.modules[0] && course.modules[0].lessons[0]) {
+                setSelModule(course.modules[0]);
+                setSelLesson(course.modules[0].lessons[0]);
+                setActiveTab("lesson");
+              }
+            }}
+            lang={lang}
+            theme={theme}
+          />
+        )
       )}
 
       {/* The Saga Map */}
