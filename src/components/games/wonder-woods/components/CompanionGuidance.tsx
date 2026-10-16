@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { KobeAvatar } from "../../../KobeAvatar";
 import { companionVoice } from "../../../../utils/audio";
@@ -6,6 +6,8 @@ import { companionVoice } from "../../../../utils/audio";
 interface CompanionGuidanceProps {
   companion: "kobe" | "chibi";
   speechText: string;
+  fullNarrationText?: string;
+  autoSpeak?: boolean;
   lang?: string;
   className?: string;
 }
@@ -13,21 +15,47 @@ interface CompanionGuidanceProps {
 export const CompanionGuidance: React.FC<CompanionGuidanceProps> = ({
   companion,
   speechText,
+  fullNarrationText,
+  autoSpeak = true,
   lang = "en",
   className = ""
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const textToRead = fullNarrationText || speechText;
+
+  const triggerSpeech = (text: string, force: boolean = false) => {
+    if (!force && !companionVoice.isNarrationEnabled("early explorers")) {
+      return;
+    }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setIsPlaying(true);
+    companionVoice.speakTTS(text, companion, "early explorers", lang);
+    const estimatedSecs = Math.max(2.5, Math.ceil(text.split(" ").length / 2.4));
+    timerRef.current = setTimeout(() => setIsPlaying(false), estimatedSecs * 1000);
+  };
+
+  // Automatically speak when speechText or fullNarrationText updates
+  useEffect(() => {
+    if (!autoSpeak) return;
+    const startTimer = setTimeout(() => {
+      triggerSpeech(textToRead, false);
+    }, 220);
+
+    return () => {
+      clearTimeout(startTimer);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [textToRead, companion, lang, autoSpeak]);
 
   const handleSpeak = () => {
     if (isPlaying) {
+      if (timerRef.current) clearTimeout(timerRef.current);
       companionVoice.stop();
       setIsPlaying(false);
     } else {
-      setIsPlaying(true);
-      companionVoice.speakTTS(speechText, companion, "early explorers", lang);
-      // Auto-reset state after speaking
-      const estimatedSecs = Math.max(2, Math.ceil(speechText.split(" ").length / 2.5));
-      setTimeout(() => setIsPlaying(false), estimatedSecs * 1000);
+      triggerSpeech(textToRead, true);
     }
   };
 
@@ -36,7 +64,7 @@ export const CompanionGuidance: React.FC<CompanionGuidanceProps> = ({
   return (
     <div className={`flex items-center gap-3 sm:gap-4 max-w-xl mx-auto w-full px-2 ${className}`}>
       {/* Companion Avatar */}
-      <div className="flex-shrink-0 cursor-pointer" onClick={handleSpeak} title={`Listen to ${companionName}`}>
+      <div className="flex-shrink-0 cursor-pointer" onClick={handleSpeak} title={`Listen to ${companionName} read everything`}>
         <KobeAvatar 
           size={52} 
           character={companion} 
@@ -67,12 +95,13 @@ export const CompanionGuidance: React.FC<CompanionGuidanceProps> = ({
               ? "bg-amber-400 text-slate-950 animate-pulse ring-2 ring-amber-300" 
               : "bg-emerald-500 hover:bg-emerald-400 text-slate-950"
           }`}
-          title="Listen to instruction"
+          title="Read out quest, sequence items, and options"
         >
           {isPlaying ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          <span className="hidden sm:inline">{isPlaying ? "Stop" : "Listen"}</span>
+          <span className="hidden sm:inline">{isPlaying ? "Stop" : "Read All"}</span>
         </button>
       </div>
     </div>
   );
 };
+

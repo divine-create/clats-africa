@@ -4,7 +4,7 @@ import { ArrowLeft, RotateCcw, Eye, Sparkles, Check, HelpCircle, Star, Search, U
 import { MeadowLevelConfig, PatternItem, SequenceSlotData, RuleSelectionOption } from "../types";
 import { TactileTile } from "./TactileTile";
 import { CompanionGuidance } from "./CompanionGuidance";
-import { sfx } from "../../../../utils/audio";
+import { sfx, companionVoice } from "../../../../utils/audio";
 
 interface ChallengeWorkspaceProps {
   level: MeadowLevelConfig;
@@ -26,6 +26,7 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
   // Mistakes and Progressive Guidance
   const [mistakesCount, setMistakesCount] = useState<number>(0);
   const [companionSpeech, setCompanionSpeech] = useState<string>(level.companionVoicePrompt);
+  const [companionFullNarration, setCompanionFullNarration] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>(level.successExplanation);
 
@@ -54,10 +55,63 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
   const [selectedRuleType, setSelectedRuleType] = useState<"AB" | "AAB" | "ABC">("AB");
   const [archwayError, setArchwayError] = useState<boolean>(false);
 
+  // Helper to build comprehensive read-aloud narration for the level (quest + items + options)
+  const buildInitialLevelNarration = (lvl: MeadowLevelConfig): string => {
+    const prompt = lvl.companionVoicePrompt;
+
+    if (lvl.mode === "sequence_fill" && lvl.sequence) {
+      const seqLabels = lvl.sequence.slots
+        .map(s => (s.isMissing ? "Empty Space" : (s.prefilledItem?.label || "Empty Space")))
+        .join(", ");
+      const choiceLabels = lvl.sequence.choices.map(c => c.label).join(", ");
+      return `${prompt} Listen to the pattern: ${seqLabels}. Your options are: ${choiceLabels}.`;
+    }
+
+    if (lvl.mode === "category_sort" && lvl.classification) {
+      const binLabels = lvl.classification.bins
+        .map(b => `${b.name} (${b.ruleDescription})`)
+        .join(", and ");
+      const firstItem = lvl.classification.items[0]?.label || "";
+      const allItems = lvl.classification.items.map(i => i.label).join(", ");
+      return `${prompt} The sorting baskets are: ${binLabels}. The items to sort are: ${allItems}. First up is ${firstItem}!`;
+    }
+
+    if (lvl.mode === "rule_selection" && lvl.ruleSelection) {
+      const seqLabels = lvl.ruleSelection.visualSequence.map(i => i.label).join(", ");
+      const optLabels = lvl.ruleSelection.options
+        .map((o, idx) => `Option ${idx + 1}: ${o.text}`)
+        .join(". ");
+      return `${prompt} The pattern trail shows: ${seqLabels}. Choose the rule that explains this sequence. ${optLabels}`;
+    }
+
+    if (lvl.mode === "odd_one_out" && lvl.oddOneOut) {
+      const seqLabels = lvl.oddOneOut.items.map(i => i.label).join(", ");
+      return `${prompt} Listen to the items on the trail: ${seqLabels}. Tap the sneaky object that breaks the pattern!`;
+    }
+
+    if (lvl.mode === "trial_hybrid" && lvl.trialHybrid) {
+      const gateLabels = lvl.trialHybrid.step1Slots
+        .map(s => (s.isMissing ? "Empty Space" : (s.prefilledItem?.label || "Empty Space")))
+        .join(", ");
+      const choiceLabels = lvl.trialHybrid.step1Choices.map(c => c.label).join(", ");
+      return `${prompt} Step 1: The gate lock shows: ${gateLabels}. Your rune options are: ${choiceLabels}.`;
+    }
+
+    return prompt;
+  };
+
+  // Speak a short phrase or item pronunciation directly
+  const speakImmediate = (text: string) => {
+    if (companionVoice.isNarrationEnabled("early explorers")) {
+      companionVoice.speakTTS(text, companion, "early explorers", lang);
+    }
+  };
+
   // Reset and initialize per level
   useEffect(() => {
     setMistakesCount(0);
     setCompanionSpeech(level.companionVoicePrompt);
+    setCompanionFullNarration(buildInitialLevelNarration(level));
     setIsSuccess(false);
     setSuccessMessage(level.successExplanation);
     setErrorSlotIndex(null);
@@ -97,27 +151,36 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
     }
   }, [level]);
 
-  // Handle mistake tracking and progressive hints
-  const registerMistake = (fallbackHint?: string) => {
+  // Handle mistake tracking and progressive hints (reads out what was chosen, that it's wrong, and why!)
+  const registerMistake = (fallbackHint?: string, chosenLabel?: string) => {
     const nextMistakes = mistakesCount + 1;
     setMistakesCount(nextMistakes);
     sfx.play("error");
 
-    if (nextMistakes === 1) {
-      setCompanionSpeech(level.hintLevel1 || fallbackHint || "Look closely at the repeating pieces.");
-    } else {
-      setCompanionSpeech(level.hintLevel2 || fallbackHint || "Remember the secret rhythm we discovered!");
-    }
+    const hintReason = nextMistakes === 1
+      ? (level.hintLevel1 || fallbackHint || "Look closely at the repeating pieces.")
+      : (level.hintLevel2 || fallbackHint || "Remember the secret rhythm we discovered!");
+
+    const displayMsg = chosenLabel
+      ? `Not quite, ${chosenLabel} doesn't fit here! ${hintReason}`
+      : hintReason;
+
+    const spokenMsg = chosenLabel
+      ? `You picked ${chosenLabel}. That is not quite right. Why? ${hintReason}`
+      : `Not quite right! ${hintReason}`;
+
+    setCompanionSpeech(displayMsg);
+    setCompanionFullNarration(spokenMsg);
   };
 
   // Provide manual hint on demand
   const handleRequestHint = () => {
     sfx.playTap();
-    if (companionSpeech === level.hintLevel1) {
-      setCompanionSpeech(level.hintLevel2 || level.hintLevel1);
-    } else {
-      setCompanionSpeech(level.hintLevel1 || level.companionVoicePrompt);
-    }
+    const nextHint = companionSpeech === level.hintLevel1
+      ? (level.hintLevel2 || level.hintLevel1)
+      : (level.hintLevel1 || level.companionVoicePrompt);
+    setCompanionSpeech(nextHint);
+    setCompanionFullNarration(`Here is a helpful clue: ${nextHint}`);
   };
 
   // Calculate earned stars
@@ -127,14 +190,22 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
     return 1;
   };
 
-  const triggerCompletion = (customSuccessMsg?: string) => {
+  const triggerCompletion = (customSuccessMsg?: string, chosenLabel?: string) => {
     const stars = calculateStars();
+    const explanation = customSuccessMsg || level.successExplanation;
     if (customSuccessMsg) setSuccessMessage(customSuccessMsg);
     setIsSuccess(true);
     sfx.play("success");
+
+    const spokenVictory = chosenLabel
+      ? `You picked ${chosenLabel}! That is right! ${explanation}`
+      : `That is right! ${explanation}`;
+    setCompanionSpeech(explanation);
+    setCompanionFullNarration(spokenVictory);
+
     setTimeout(() => {
       onCompleteLevel(stars);
-    }, 2400);
+    }, 2800);
   };
 
   // -------------------------------------------------------------
@@ -155,15 +226,19 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
       // Check if all missing slots are filled
       const stillMissing = updated.some(s => s.isMissing && !s.filledItem);
       if (!stillMissing) {
-        triggerCompletion();
+        triggerCompletion(level.successExplanation, choice.label);
       } else {
-        // Move target to next missing slot
+        // Move target to next missing slot and announce right answer + next slot
         const nextMissing = updated.findIndex(s => s.isMissing && !s.filledItem);
         setSelectedSlotIndex(nextMissing !== -1 ? nextMissing : null);
+        const choiceLabels = level.sequence?.choices.map(c => c.label).join(", ") || "";
+        const msg = `Great job! ${choice.label} is right! Now what belongs in the next empty space?`;
+        setCompanionSpeech(msg);
+        setCompanionFullNarration(`${msg} Your options are: ${choiceLabels}.`);
       }
     } else {
       setErrorSlotIndex(targetSlotIndex);
-      registerMistake();
+      registerMistake(undefined, choice.label);
       setTimeout(() => setErrorSlotIndex(null), 800);
     }
   };
@@ -184,10 +259,18 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
       setBinCounts(prev => ({ ...prev, [binId]: (prev[binId] || 0) + 1 }));
 
       if (remaining.length === 0) {
-        triggerCompletion();
+        triggerCompletion(level.successExplanation, `${item.label} in ${bin.name}`);
+      } else {
+        const nextItem = remaining[0];
+        const msg = `That's right! ${item.label} belongs in ${bin.name}! Next up is ${nextItem.label}.`;
+        setCompanionSpeech(msg);
+        setCompanionFullNarration(msg);
       }
     } else {
-      registerMistake("Check which basket matches this item's features!");
+      registerMistake(
+        `${item.label} does not belong in ${bin.name} (${bin.ruleDescription}). Check the other basket!`,
+        `${item.label} in ${bin.name}`
+      );
     }
   };
 
@@ -204,11 +287,9 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
     });
 
     if (option.isCorrect) {
-      setCompanionSpeech(option.explanation);
-      triggerCompletion(option.explanation);
+      triggerCompletion(option.explanation, option.text);
     } else {
-      setCompanionSpeech(option.explanation);
-      registerMistake(option.explanation);
+      registerMistake(option.explanation, option.text);
     }
   };
 
@@ -224,10 +305,16 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
         sfx.play("pop");
         setIdentifiedIntruderIndex(index);
         setOddOneStep("choose_replacement");
-        setCompanionSpeech("You caught the sneaky intruder! Now choose which woodland item belongs in this spot.");
+        const replacementNames = level.oddOneOut.replacementChoices.map(c => c.label).join(", ");
+        const msg = `That's right! ${item.label} broke the pattern! Now choose which woodland item belongs in this spot.`;
+        setCompanionSpeech(msg);
+        setCompanionFullNarration(`${msg} Your options are: ${replacementNames}.`);
       } else {
         // Tapped a correct pattern item by mistake
-        registerMistake("That item fits our flower-leaf rhythm! Look for the one that breaks the pattern.");
+        registerMistake(
+          `${item.label} fits our Pink Flower, Green Leaf repeating rhythm! Look for the item that breaks the rule.`,
+          item.label
+        );
       }
     }
   };
@@ -242,9 +329,12 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
         updated[identifiedIntruderIndex] = choice;
       }
       setRepairedItems(updated);
-      triggerCompletion(level.successExplanation);
+      triggerCompletion(level.successExplanation, choice.label);
     } else {
-      registerMistake("Look at the flower before and after this slot. Which item matches the rhythm?");
+      registerMistake(
+        "Look at the Pink Flower before and after this slot. Green Leaf is needed to complete the Pink Flower, Green Leaf rhythm!",
+        choice.label
+      );
     }
   };
 
@@ -260,12 +350,18 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
       sfx.play("pop");
       sfx.play("success");
       setGateSlots(prev => prev.map((s, idx) => idx === slotIndex ? { ...s, filledItem: choice } : s));
-      setCompanionSpeech("The gate lock clicks open! Now awaken the archway by crafting your own repeating sequence!");
+      const paletteNames = level.trialHybrid.step2Palette.map(p => p.label).join(", ");
+      const msg = `That's right! ${choice.label} unlocks the gate! Now awaken the archway by crafting your own 6-stone repeating sequence!`;
+      setCompanionSpeech(msg);
+      setCompanionFullNarration(`${msg} Your available runes are: ${paletteNames}.`);
       setTimeout(() => {
         setTrialStep("archway_create");
       }, 1000);
     } else {
-      registerMistake("Observe the gate lock sequence carefully. Amber Sun, Emerald Leaf...");
+      registerMistake(
+        "Observe the gate lock sequence carefully: Amber Sun, Green Leaf, Blue Drop. Which rune comes after Green Leaf?",
+        choice.label
+      );
     }
   };
 
@@ -279,18 +375,24 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
     updated[nextEmptyIndex] = item;
     setCreatedSlots(updated);
 
-    // If all 6 slots are filled, validate pattern rule
+    // If all 6 slots are filled, validate pattern rule; otherwise pronounce the placed rune!
     if (nextEmptyIndex === createdSlots.length - 1) {
       validateArchwayPattern(updated as PatternItem[]);
+    } else {
+      speakImmediate(item.label);
     }
   };
 
   const handleRemoveArchwayRune = (index: number) => {
     if (isSuccess || !createdSlots[index]) return;
     sfx.playTap();
+    const removed = createdSlots[index];
     const updated = [...createdSlots];
     updated[index] = null;
     setCreatedSlots(updated);
+    if (removed) {
+      speakImmediate(`Removed ${removed.label}`);
+    }
   };
 
   const handleClearArchway = () => {
@@ -340,14 +442,20 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
       isValid = true;
     }
 
+    const builtSequenceNames = items.map(i => i.label).join(", ");
     if (isValid) {
-      triggerCompletion(level.successExplanation);
+      triggerCompletion(
+        `${level.successExplanation} Your sequence was: ${builtSequenceNames}!`
+      );
     } else {
       setArchwayError(true);
-      registerMistake(`Make sure your stones follow the ${selectedRuleType} repeating pattern rhythm!`);
+      registerMistake(
+        `Your sequence was ${builtSequenceNames}. Make sure all 6 stones repeat the ${selectedRuleType} pattern rule! Tap any stone to swap it.`
+      );
       setTimeout(() => setArchwayError(false), 1200);
     }
   };
+
 
   return (
     <div className="w-full h-full flex flex-col justify-between items-center p-4 sm:p-6 bg-gradient-to-b from-[#091522] via-[#0E2232] to-[#07131D] text-white rounded-3xl overflow-hidden relative min-h-[560px]">
@@ -407,6 +515,7 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
       <CompanionGuidance 
         companion={companion} 
         speechText={companionSpeech} 
+        fullNarrationText={companionFullNarration}
         lang={lang} 
         className="z-20 my-2"
       />
@@ -432,6 +541,10 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
                       if (slot.isMissing && !slot.filledItem) {
                         sfx.playTap();
                         setSelectedSlotIndex(idx);
+                        speakImmediate("Empty space");
+                      } else if (slot.filledItem) {
+                        sfx.playTap();
+                        speakImmediate(slot.filledItem.label);
                       }
                     }}
                     onDragOver={(e) => slot.isMissing && e.preventDefault()}
@@ -449,15 +562,16 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
                               ? "border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(251,191,36,0.5)] cursor-pointer"
                               : "border-amber-400/60 bg-amber-400/10 cursor-pointer hover:bg-amber-400/20"
                           }`
-                        : ""
+                        : "cursor-pointer"
                     }`}
+                    title={slot.filledItem ? `Tap to hear: ${slot.filledItem.label}` : "Empty pattern space"}
                   >
                     {slot.filledItem ? (
                       <TactileTile 
                         item={slot.filledItem} 
                         size="md" 
                         state={slot.isMissing ? "correct" : "idle"}
-                        disabled
+                        onClick={() => speakImmediate(slot.filledItem!.label)}
                       />
                     ) : (
                       <span className="text-2xl font-black text-amber-300/70 select-none">
@@ -537,7 +651,7 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
                     item={item}
                     size={idx === 0 ? "md" : "sm"}
                     state={idx === 0 ? "selected" : "idle"}
-                    disabled={idx !== 0}
+                    onClick={() => speakImmediate(item.label)}
                   />
                 ))}
               </div>
@@ -554,12 +668,12 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
             <div className="w-full bg-slate-900/90 border-2 border-amber-400/40 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col items-center backdrop-blur-md">
               <div className="flex items-center gap-2 text-amber-300 text-xs font-black uppercase tracking-wider mb-3">
                 <Search size={15} />
-                <span>Detective Pattern Trail</span>
+                <span>Detective Pattern Trail (Tap any tile to hear its name)</span>
               </div>
               <div className="flex flex-wrap justify-center items-center gap-2.5 sm:gap-3.5">
                 {level.ruleSelection.visualSequence.map((item, idx) => (
                   <div key={idx} className="relative flex flex-col items-center">
-                    <TactileTile item={item} size="sm" disabled />
+                    <TactileTile item={item} size="sm" onClick={() => speakImmediate(item.label)} />
                     <span className="text-[9px] font-bold text-slate-400 mt-0.5">#{idx + 1}</span>
                   </div>
                 ))}
@@ -709,7 +823,7 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
                       }`}
                     >
                       {slot.filledItem ? (
-                        <TactileTile item={slot.filledItem} size="md" disabled />
+                        <TactileTile item={slot.filledItem} size="md" onClick={() => speakImmediate(slot.filledItem!.label)} />
                       ) : (
                         <span className="text-2xl font-black text-amber-300/70">?</span>
                       )}

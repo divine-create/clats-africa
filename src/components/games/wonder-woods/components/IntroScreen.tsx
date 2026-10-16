@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "motion/react";
-import { Play, Sparkles, Compass, MapPin, ArrowRight } from "lucide-react";
+import { Play, Sparkles, Compass, MapPin, ArrowRight, Volume2 } from "lucide-react";
 import { MascotImage } from "../../../Onboarding";
-import { sfx } from "../../../../utils/audio";
+import { sfx, companionVoice } from "../../../../utils/audio";
 
 interface IntroScreenProps {
   companion: "kobe" | "chibi";
@@ -21,6 +21,19 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
 }) => {
   const hasProgress = unlockedLevel > 1 || totalStars > 0;
   const companionName = companion === "chibi" ? "Chibi" : "Kobe";
+
+  const introSpeech = hasProgress
+    ? `Welcome back to Pattern Quest: Wonder Woods! I am ${companionName}. You have earned ${totalStars} stars so far, and Meadow Level ${unlockedLevel} is ready! Tap Continue Adventure to play!`
+    : `Welcome to Pattern Quest: Wonder Woods! I am ${companionName}, your woodland guide. Embark on an enchanted woodland journey! Discover secret repeating rhythms, classify creatures, and master the ancient Pattern Engine! Tap Start Adventure to begin!`;
+
+  useEffect(() => {
+    if (companionVoice.isNarrationEnabled("early explorers")) {
+      const timer = setTimeout(() => {
+        companionVoice.speakTTS(introSpeech, companion, "early explorers", "en");
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [companion, hasProgress, totalStars, unlockedLevel]);
 
   const handleStart = () => {
     sfx.play("pop");
@@ -43,15 +56,27 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
           </span>
         </div>
 
-        {onExit && (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onExit}
-            className="text-xs font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-950/40 border border-slate-700 hover:border-rose-500/40 px-3 py-1.5 rounded-full transition"
+            onClick={() => companionVoice.speakTTS(introSpeech, companion, "early explorers", "en")}
+            className="text-xs font-black text-emerald-300 hover:text-emerald-200 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 px-3 py-1.5 rounded-full transition flex items-center gap-1"
+            title="Listen to Intro"
           >
-            Back to Arcade
+            <Volume2 size={14} />
+            <span>Listen</span>
           </button>
-        )}
+
+          {onExit && (
+            <button
+              type="button"
+              onClick={onExit}
+              className="text-xs font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-950/40 border border-slate-700 hover:border-rose-500/40 px-3 py-1.5 rounded-full transition"
+            >
+              Back to Arcade
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Hero Presentation */}
@@ -61,7 +86,9 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
-          className="relative mb-4"
+          className="relative mb-4 cursor-pointer"
+          onClick={() => companionVoice.speakTTS(introSpeech, companion, "early explorers", "en")}
+          title={`Tap to hear ${companionName}`}
         >
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-300 p-1 shadow-2xl flex items-center justify-center">
             <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center overflow-hidden p-2">
@@ -69,7 +96,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
             </div>
           </div>
           <div className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full text-[10px] font-black border-2 border-white shadow-md">
-            Guide {companionName}
+            🔊 Guide {companionName}
           </div>
         </motion.div>
 

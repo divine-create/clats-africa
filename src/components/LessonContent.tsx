@@ -8,9 +8,9 @@ import { Child, Lesson, Language, QuizQuestion } from "../types";
 import { C, F, AGE_META } from "../utils/config";
 import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
-import { sfx, companionVoice } from "../utils/audio";
+import { sfx, companionVoice, gameMusic } from "../utils/audio";
 import confetti from "canvas-confetti";
-import { Play, Pause, Settings, Gauge, Maximize, Minimize, HelpCircle, Sparkles, Mic, Volume2 } from "lucide-react";
+import { Play, Pause, Settings, Gauge, Maximize, Minimize, HelpCircle, Sparkles, Mic, Volume2, Music } from "lucide-react";
 import { KobeLessonSidekick } from "./KobeLessonSidekick";
 
 interface LessonContentProps {
@@ -498,20 +498,58 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
   // Multi-choice dynamic syllabus quiz resolver
   const activeQuiz: { q: string; opts: string[]; ans: number; expl: string }[] = (lesson?.quiz && lesson.quiz.length > 0)
-    ? lesson.quiz.map((qObj) => ({
-        q: qObj.q[lang] || qObj.q.en || "",
-        opts: qObj.opts[lang] || qObj.opts.en || [],
-        ans: qObj.ans,
-        expl: "Excellent thinking! You understand the key concepts of this digital lesson."
-      }))
+    ? lesson.quiz.map((qObj) => {
+        const qText = qObj.q[lang] || qObj.q.en || "";
+        const optsArr = qObj.opts[lang] || qObj.opts.en || [];
+        const correctOpt = optsArr[qObj.ans] || "";
+        const rawExpl = (qObj as any).expl
+          ? (typeof (qObj as any).expl === "string" ? (qObj as any).expl : (qObj as any).expl[lang] || (qObj as any).expl.en)
+          : `Because "${correctOpt}" is the key concept that answers "${qText}" in our lesson on ${lesson?.title?.[lang] || lesson?.title?.en || "technology"}!`;
+        return {
+          q: qText,
+          opts: optsArr,
+          ans: qObj.ans,
+          expl: rawExpl
+        };
+      })
     : [
         {
           q: "What was the most important thing you learned in this lesson?",
           opts: ["How technology can help us", "How to play games all day", "Nothing useful"],
           ans: 0,
-          expl: "Correct! The goal is to understand how these concepts help improve our world."
+          expl: "Because technology is designed to help us solve real problems and improve our world!"
         }
       ];
+
+  const buildQuizQuestionNarration = (qIdx: number): string => {
+    const currentQ = activeQuiz[qIdx];
+    if (!currentQ) return "";
+    const optsNarration = currentQ.opts
+      .map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
+      .join(". ");
+    return `Question ${qIdx + 1} of ${activeQuiz.length}: ${currentQ.q} Your options are: ${optsNarration}.`;
+  };
+
+  // Auto-read quiz question & options when entering quiz or advancing to next question, and play subtle quiz music
+  useEffect(() => {
+    if (learningStep === "quiz") {
+      gameMusic.startTheme("quiz_quest");
+      if (voiceAssistActive) {
+        const timer = setTimeout(() => {
+          speakText(buildQuizQuestionNarration(currentQuizIndex));
+        }, 450);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      gameMusic.stop();
+    }
+  }, [learningStep, currentQuizIndex, voiceAssistActive]);
+
+  useEffect(() => {
+    return () => {
+      gameMusic.stop();
+    };
+  }, []);
 
   // Micro-activity verification triggering
   const handleVerifyActivity = () => {
@@ -532,7 +570,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     } else {
       sfx.playBuzzer();
       setToolFeedback(`❌ Keep training your brain! "${itemName}" isn't correct for this puzzle challenge. Let's try another card.`);
-      speakText(`Nice try! Think about that again.`);
+      speakText(`Nice try! ${itemName} is not correct for this challenge. Think about that again.`);
     }
   };
 
@@ -567,26 +605,34 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     }, 2200);
   };
 
-  // Select Quiz Option trigger
+  // Select Quiz Option trigger (reads out right/wrong + why!)
   const handleSelectQuizOption = (optIndex: number) => {
     if (quizIsAnswered) return;
     sfx.playTap();
     setQuizSelectedOption(optIndex);
     setQuizIsAnswered(true);
 
-    const isCorrect = optIndex === activeQuiz[currentQuizIndex].ans;
+    const currentQ = activeQuiz[currentQuizIndex];
+    const isCorrect = optIndex === currentQ.ans;
     const freshCorrectList = [...correctAnswersList];
     freshCorrectList[currentQuizIndex] = isCorrect;
     setCorrectAnswersList(freshCorrectList);
 
+    const chosenLetter = String.fromCharCode(65 + optIndex);
+    const chosenText = currentQ.opts[optIndex] || "";
+    const correctLetter = String.fromCharCode(65 + currentQ.ans);
+    const correctText = currentQ.opts[currentQ.ans] || "";
+
     if (isCorrect) {
       sfx.playCoin();
-      setQuizFeedback(activeQuiz[currentQuizIndex].expl);
-      speakText("Wonderful answer! That is correct!");
+      const feedbackMsg = `Correct! Option ${chosenLetter} ("${chosenText}") is right! Why? ${currentQ.expl}`;
+      setQuizFeedback(feedbackMsg);
+      speakText(`You chose Option ${chosenLetter}, ${chosenText}. That is right! ${currentQ.expl}`);
     } else {
       sfx.playBuzzer();
-      setQuizFeedback(`Look closer: The correct answer was option ${String.fromCharCode(65 + activeQuiz[currentQuizIndex].ans)}. Keep your head high, let's learn as we go!`);
-      speakText("Nice try! The correct choice is option " + String.fromCharCode(65 + activeQuiz[currentQuizIndex].ans));
+      const feedbackMsg = `Not quite! You chose Option ${chosenLetter} ("${chosenText}"), but the correct answer is Option ${correctLetter}: "${correctText}". Why? ${currentQ.expl}`;
+      setQuizFeedback(feedbackMsg);
+      speakText(`You chose Option ${chosenLetter}, ${chosenText}. That is not quite right. The correct answer is Option ${correctLetter}, ${correctText}. ${currentQ.expl}`);
     }
   };
 
@@ -1117,42 +1163,69 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 ))}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
                 <Heading size={21 * getFontSizeMultiplier()} color={getTextColor()} style={{ lineHeight: 1.4, textAlign: "left", flex: 1, margin: 0 }}>
                   {activeQuiz[currentQuizIndex].q}
                 </Heading>
-                <button
-                  onClick={() => {
-                    sfx.playTap();
-                    const currentQ = activeQuiz[currentQuizIndex];
-                    const optsText = Array.isArray(currentQ.opts)
-                      ? currentQ.opts.join(", ")
-                      : (currentQ.opts as any)?.en?.join?.(", ") || "";
-                    setSidekickHintPrompt(
-                      `I am answering this quiz question in "${lesson?.title?.en || "our lesson"}": "${currentQ.q}". The choices are: ${optsText}. Can you give me a gentle, encouraging Socratic hint without spoiling the answer?`
-                    );
-                    setSidekickOpen(true);
-                  }}
-                  style={{
-                    background: colorMode === "night" ? "rgba(245,158,11,0.22)" : "#fef3c7",
-                    border: "1.5px solid #f59e0b",
-                    borderRadius: 16,
-                    padding: "7px 12px",
-                    color: "#b45309",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    flexShrink: 0
-                  }}
-                  className="hover:scale-105 active:scale-95"
-                  title="Ask Kobe for a helpful hint"
-                >
-                  <HelpCircle size={14} color="#f59e0b" />
-                  <span>Ask Kobe for a Hint</span>
-                </button>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => {
+                      sfx.playTap();
+                      companionVoice.speakTTS(buildQuizQuestionNarration(currentQuizIndex), companion, child.ageGroup, lang);
+                    }}
+                    style={{
+                      background: colorMode === "night" ? "rgba(46,196,182,0.2)" : "#e0f2fe",
+                      border: "1.5px solid #0284c7",
+                      borderRadius: 16,
+                      padding: "7px 12px",
+                      color: colorMode === "night" ? "#5eead4" : "#0369a1",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                    title="Read question and all options aloud"
+                  >
+                    <Volume2 size={14} />
+                    <span>Read Question & Options</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      sfx.playTap();
+                      const currentQ = activeQuiz[currentQuizIndex];
+                      const optsText = Array.isArray(currentQ.opts)
+                        ? currentQ.opts.join(", ")
+                        : (currentQ.opts as any)?.en?.join?.(", ") || "";
+                      setSidekickHintPrompt(
+                        `I am answering this quiz question in "${lesson?.title?.en || "our lesson"}": "${currentQ.q}". The choices are: ${optsText}. Can you give me a gentle, encouraging Socratic hint without spoiling the answer?`
+                      );
+                      setSidekickOpen(true);
+                    }}
+                    style={{
+                      background: colorMode === "night" ? "rgba(245,158,11,0.22)" : "#fef3c7",
+                      border: "1.5px solid #f59e0b",
+                      borderRadius: 16,
+                      padding: "7px 12px",
+                      color: "#b45309",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      flexShrink: 0
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                    title="Ask Kobe for a helpful hint"
+                  >
+                    <HelpCircle size={14} color="#f59e0b" />
+                    <span>Ask Kobe for a Hint</span>
+                  </button>
+                </div>
               </div>
 
               {/* Multiple Choice Options */}

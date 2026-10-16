@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight, Shield, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { companionVoice, gameMusic, sfx } from '@/utils/audio';
 
 interface Round {
   category: string;
@@ -85,7 +86,9 @@ const ROUNDS: Round[] = [
 
 export const DeepfakeDetective = ({ onBack }: { onBack: () => void }) => {
   const { isDark, activeChild } = useApp();
-  const companionName = activeChild?.companion === "kobe" ? "Kobe" : "Chibi";
+  const companion = activeChild?.companion === "chibi" ? "chibi" : "kobe";
+  const companionName = companion === "kobe" ? "Kobe" : "Chibi";
+  const ageGroup = activeChild?.ageGroup || "early explorers";
 
   const [phase, setPhase] = useState<"intro" | "playing" | "results">("intro");
   const [roundIndex, setRoundIndex] = useState(0);
@@ -99,20 +102,56 @@ export const DeepfakeDetective = ({ onBack }: { onBack: () => void }) => {
   const currentRound = ROUNDS[roundIndex];
   const totalRounds = ROUNDS.length;
 
+  useEffect(() => {
+    gameMusic.startTheme("quiz_quest");
+    return () => {
+      gameMusic.stop();
+      companionVoice.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase === "playing" && !showFeedback && currentRound && companionVoice.isNarrationEnabled(ageGroup)) {
+      const timer = setTimeout(() => {
+        companionVoice.speakTTS(
+          `Round ${roundIndex + 1}: ${currentRound.category}. Which one is the AI fake? Option A: ${currentRound.optionA} Option B: ${currentRound.optionB}`,
+          companion,
+          ageGroup,
+          "en"
+        );
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, roundIndex, showFeedback, currentRound, companion, ageGroup]);
+
   const handleChoice = (choice: "A" | "B") => {
     const isCorrect = choice === currentRound.fakeIs;
     setLastCorrect(isCorrect);
     setAnswers(prev => [...prev, isCorrect]);
 
     if (isCorrect) {
+      sfx.playCoin();
       setScore(s => s + (currentRound.difficulty === "Easy" ? 10 : currentRound.difficulty === "Medium" ? 20 : 30));
       setStreak(s => {
         const ns = s + 1;
         if (ns > bestStreak) setBestStreak(ns);
         return ns;
       });
+      companionVoice.speakTTS(
+        `You picked Option ${choice}. That is right! Option ${choice} is the fake! Why? ${currentRound.explanation}`,
+        companion,
+        ageGroup,
+        "en"
+      );
     } else {
+      sfx.playBuzzer();
       setStreak(0);
+      companionVoice.speakTTS(
+        `You picked Option ${choice}. Not quite right! Option ${currentRound.fakeIs} was the fake. Why? ${currentRound.explanation}`,
+        companion,
+        ageGroup,
+        "en"
+      );
     }
     setShowFeedback(true);
   };

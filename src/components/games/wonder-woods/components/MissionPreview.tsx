@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Play, RotateCcw, FastForward, Sparkles, Eye, Lightbulb } from "lucide-react";
+import { Play, RotateCcw, FastForward, Sparkles, Eye, Lightbulb, Volume2 } from "lucide-react";
 import { MissionPreviewConfig, PatternItem } from "../types";
 import { TactileTile } from "./TactileTile";
-import { sfx } from "../../../../utils/audio";
+import { sfx, companionVoice } from "../../../../utils/audio";
 
 interface MissionPreviewProps {
   preview: MissionPreviewConfig;
   levelNumber: number;
   levelTitle: string;
   companion?: "kobe" | "chibi";
+  lang?: string;
   onPlay: () => void;
   onSkip?: () => void;
 }
@@ -19,6 +20,7 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
   levelNumber,
   levelTitle,
   companion = "kobe",
+  lang = "en",
   onPlay,
   onSkip
 }) => {
@@ -26,6 +28,21 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
   const [stepIndex, setStepIndex] = useState(0);
   const [isCompletedCycle, setIsCompletedCycle] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  const buildPreviewNarration = () => {
+    const itemsText = preview.demonstrationItems.map(i => i.label).join(", ");
+    return `Mission Demo, Level ${levelNumber}: ${preview.title}. ${preview.explanation} Listen to the pattern: ${itemsText}. See how the pattern repeats? Now it's your turn to play!`;
+  };
+
+  // Speak preview narration automatically on mount
+  useEffect(() => {
+    if (companionVoice.isNarrationEnabled("early explorers")) {
+      const timer = setTimeout(() => {
+        companionVoice.speakTTS(buildPreviewNarration(), companion, "early explorers", lang);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [preview, levelNumber, companion, lang]);
 
   // Check user prefers-reduced-motion
   useEffect(() => {
@@ -73,6 +90,12 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
     sfx.play("pop");
     setStepIndex(0);
     setIsCompletedCycle(false);
+    companionVoice.speakTTS(buildPreviewNarration(), companion, "early explorers", lang);
+  };
+
+  const handleListen = () => {
+    sfx.playTap();
+    companionVoice.speakTTS(buildPreviewNarration(), companion, "early explorers", lang);
   };
 
   return (
@@ -88,6 +111,17 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Read Aloud button */}
+          <button
+            type="button"
+            onClick={handleListen}
+            className="p-2 px-3 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 rounded-full transition text-xs font-black flex items-center gap-1 shadow-md"
+            title="Read out mission rule and pattern items"
+          >
+            <Volume2 size={14} />
+            <span className="hidden sm:inline">Read Demo</span>
+          </button>
+
           {/* Replay action */}
           <button
             type="button"
@@ -153,8 +187,8 @@ export const MissionPreview: React.FC<MissionPreviewProps> = ({
                     <TactileTile 
                       item={item} 
                       size="md" 
-                      disabled 
                       state={isHighlight ? "selected" : "idle"}
+                      onClick={() => companionVoice.speakTTS(item.label, companion, "early explorers", lang)}
                     />
 
                     {/* Glowing beacon for highlight target */}

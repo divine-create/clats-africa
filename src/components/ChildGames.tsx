@@ -459,16 +459,55 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
     }
   ];
 
+  const buildArcadeQuestNarration = (gameId: string, stepIdx: number) => {
+    const currentQuests =
+      gameId === "ai-sorting" ? sortingQuests :
+      gameId === "smart-machine" ? matchingQuests :
+      trainingQuests;
+    const quest = currentQuests[stepIdx] as any;
+    if (!quest) return "";
+    const subject = quest.item || quest.tool || quest.animal || "";
+    const optsText = (quest.options || []).map((o: string, idx: number) => `Option ${idx + 1}: ${o}`).join(". ");
+    return `${subject}. ${quest.instructions} Your options are: ${optsText}.`;
+  };
+
+  useEffect(() => {
+    if (activeGameModal && ["ai-sorting", "smart-machine", "train-robot"].includes(activeGameModal) && !isGameCompleted) {
+      const narration = buildArcadeQuestNarration(activeGameModal, gameStep);
+      if (narration) {
+        const timer = setTimeout(() => {
+          companionVoice.speakTTS(narration, child.companion || "kobe", child.ageGroup, lang);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeGameModal, gameStep, isGameCompleted]);
+
   const handleQuestSelect = (questIndex: number, choiceIndex: number, currentQuests: any[]) => {
     setSelectedAnswer(choiceIndex);
     const quest = currentQuests[questIndex];
+    const chosenOpt = quest.options[choiceIndex] || "";
+    const correctOpt = quest.options[quest.correctIndex] || "";
+
     if (choiceIndex === quest.correctIndex) {
       sfx.playCoin();
       setGameScore(prev => prev + 1);
       setGameFeedback(`🎉 Correct! ${quest.explanation}`);
+      companionVoice.speakTTS(
+        `You chose ${chosenOpt}. That is right! ${quest.explanation}`,
+        child.companion || "kobe",
+        child.ageGroup,
+        lang
+      );
     } else {
       sfx.playBuzzer();
-      setGameFeedback(`💡 Keep practicing! The correct answer is: ${quest.options[quest.correctIndex]}`);
+      setGameFeedback(`💡 Not quite! The correct answer is: ${correctOpt}. Why? ${quest.explanation}`);
+      companionVoice.speakTTS(
+        `You chose ${chosenOpt}. That is not quite right. The correct answer is ${correctOpt}. Why? ${quest.explanation}`,
+        child.companion || "kobe",
+        child.ageGroup,
+        lang
+      );
     }
   };
 

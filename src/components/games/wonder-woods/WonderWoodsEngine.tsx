@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Music, Volume2, VolumeX } from "lucide-react";
 import { MeadowLevelConfig, RegionId, WonderWoodsProgress } from "./types";
 import { MEADOW_LEVELS } from "./data/meadowLevels";
 import { IntroScreen } from "./components/IntroScreen";
@@ -8,7 +9,7 @@ import { MissionBoard } from "./components/MissionBoard";
 import { MissionPreview } from "./components/MissionPreview";
 import { ChallengeWorkspace } from "./components/ChallengeWorkspace";
 import { FeedbackModal } from "./components/FeedbackModal";
-import { sfx } from "../../../utils/audio";
+import { sfx, gameMusic, companionVoice } from "../../../utils/audio";
 
 export interface WonderWoodsEngineProps {
   onExit?: () => void;
@@ -36,6 +37,32 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
   const [lastEarnedStars, setLastEarnedStars] = useState<number>(3);
   const [isCurrentLevelReplay, setIsCurrentLevelReplay] = useState<boolean>(false);
+
+  // Audio controls state (Background Song & Companion Voice Read-Aloud)
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(() => gameMusic.isMusicEnabled());
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => companionVoice.isNarrationEnabled("early explorers"));
+
+  // Switch subtle background song to match current screen and level phase
+  useEffect(() => {
+    if (!musicEnabled) {
+      gameMusic.stop(false);
+      return;
+    }
+    if (currentScreen === "preview" || currentScreen === "gameplay") {
+      const levelTheme = gameMusic.getThemeForMeadowLevel(activeLevel.id);
+      gameMusic.startTheme(levelTheme);
+    } else {
+      gameMusic.startTheme("wonder_woods_hub");
+    }
+  }, [currentScreen, activeLevel.id, musicEnabled]);
+
+  // Stop music and speech cleanly when exiting Wonder Woods
+  useEffect(() => {
+    return () => {
+      gameMusic.stop();
+      companionVoice.stop();
+    };
+  }, []);
 
   // Per-child persistence
   const storageKey = `clats_wonder_woods_progress_${childId}`;
@@ -202,8 +229,66 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
     }
   };
 
+  const handleToggleMusic = () => {
+    sfx.playTap();
+    const next = gameMusic.toggleMusic();
+    setMusicEnabled(next);
+  };
+
+  const handleToggleVoice = () => {
+    sfx.playTap();
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    companionVoice.setNarrationEnabled("early explorers", next);
+    if (!next) {
+      companionVoice.stop();
+    } else {
+      companionVoice.speakTTS("Companion voice narration is on!", companion, "early explorers", lang);
+    }
+  };
+
   return (
     <div className="w-full h-full min-h-[620px] max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl relative bg-[#090E17] border-4 border-slate-800 flex flex-col">
+      {/* Persistent Subtle Music & Voice Control Strip */}
+      <div className="w-full bg-slate-950/90 border-b border-slate-800/80 px-4 py-1.5 flex items-center justify-between text-[11px] z-30">
+        <div className="flex items-center gap-2 text-slate-400 font-bold truncate">
+          <Music size={13} className={musicEnabled ? "text-emerald-400 animate-pulse" : "text-slate-600"} />
+          <span className="truncate">
+            {musicEnabled ? `Song: ${gameMusic.getActiveTrackName()}` : "Music Muted"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleToggleMusic}
+            className={`px-2.5 py-1 rounded-full font-black flex items-center gap-1 transition border ${
+              musicEnabled
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
+                : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+            }`}
+            title="Toggle background woodland music"
+          >
+            <Music size={12} />
+            <span>{musicEnabled ? "Music: ON" : "Music: OFF"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleVoice}
+            className={`px-2.5 py-1 rounded-full font-black flex items-center gap-1 transition border ${
+              voiceEnabled
+                ? "bg-amber-400/20 text-amber-300 border-amber-400/40 hover:bg-amber-400/30"
+                : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+            }`}
+            title="Toggle automatic companion voice reading"
+          >
+            {voiceEnabled ? <Volume2 size={12} /> : <VolumeX size={12} />}
+            <span>{voiceEnabled ? "Auto-Read: ON" : "Auto-Read: OFF"}</span>
+          </button>
+        </div>
+      </div>
+
       <AnimatePresence mode="wait">
         {/* 1. INTRO SCREEN */}
         {currentScreen === "intro" && (
@@ -283,6 +368,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
               levelNumber={activeLevel.id}
               levelTitle={activeLevel.title}
               companion={companion}
+              lang={lang}
               onPlay={() => setCurrentScreen("gameplay")}
               onSkip={() => setCurrentScreen("gameplay")}
             />
@@ -319,6 +405,8 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
           starsEarned={lastEarnedStars}
           isGrandFinale={activeLevel.id === 10}
           isReplay={isCurrentLevelReplay}
+          companion={companion}
+          lang={lang}
           onNext={handleNextFromFeedback}
           onReplay={() => {
             setShowFeedbackModal(false);
@@ -329,3 +417,4 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
     </div>
   );
 };
+

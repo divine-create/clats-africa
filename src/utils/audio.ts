@@ -457,6 +457,13 @@ class CompanionVoice {
           const audio = new Audio(audioSrc);
           this.activeAudio = audio;
           audio.volume = 1.0;
+          gameMusic.setDucked(true);
+          audio.onended = () => {
+            gameMusic.setDucked(false);
+          };
+          audio.onerror = () => {
+            gameMusic.setDucked(false);
+          };
           await audio.play();
           return;
         }
@@ -534,16 +541,19 @@ class CompanionVoice {
       utterance.rate = 0.95;
 
       utterance.onstart = () => {
+        gameMusic.setDucked(true);
         callbacks?.onStart?.();
       };
 
       utterance.onend = () => {
+        gameMusic.setDucked(false);
         this.activeUtterance = null;
         (window as any).__clats_speech_utterance = null;
         callbacks?.onEnd?.();
       };
 
       utterance.onerror = (e) => {
+        gameMusic.setDucked(false);
         console.warn("SpeechSynthesis utterance error:", e);
         this.activeUtterance = null;
         (window as any).__clats_speech_utterance = null;
@@ -553,6 +563,7 @@ class CompanionVoice {
       window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
     } catch (err) {
+      gameMusic.setDucked(false);
       console.warn("Browser SpeechSynthesis fallback error:", err);
       callbacks?.onError?.(err);
     }
@@ -570,8 +581,261 @@ class CompanionVoice {
     if (typeof window !== "undefined") {
       (window as any).__clats_speech_utterance = null;
     }
+    gameMusic.setDucked(false);
   }
 }
 
+export type MusicThemeId =
+  | "wonder_woods_hub"
+  | "meadow_spot"
+  | "meadow_match"
+  | "meadow_classify"
+  | "meadow_discover"
+  | "meadow_trial"
+  | "quiz_quest";
+
+interface MelodyDefinition {
+  name: string;
+  tempoMs: number;
+  waveType: OscillatorType;
+  notes: number[]; // Frequencies in Hz (0 = rest)
+  bassNotes: number[];
+  baseGain: number;
+}
+
+const MELODY_LIBRARY: Record<MusicThemeId, MelodyDefinition> = {
+  // Enchanted Woodland Overture (Intro, World Map, Mission Board)
+  wonder_woods_hub: {
+    name: "Enchanted Woodland Overture",
+    tempoMs: 550,
+    waveType: "sine",
+    notes: [523.25, 659.25, 783.99, 659.25, 880.0, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 0],
+    bassNotes: [261.63, 0, 261.63, 0, 220.0, 0, 196.0, 0, 174.61, 0, 196.0, 0, 261.63, 0, 261.63, 0],
+    baseGain: 0.022
+  },
+  // Levels 1–2 (SPOT: Firefly Glow & Stream Stepping Stones)
+  meadow_spot: {
+    name: "Firefly Dusk Lullaby",
+    tempoMs: 600,
+    waveType: "sine",
+    notes: [392.0, 493.88, 587.33, 783.99, 659.25, 587.33, 493.88, 0, 392.0, 440.0, 493.88, 587.33, 493.88, 440.0, 392.0, 0],
+    bassNotes: [196.0, 0, 0, 0, 220.0, 0, 0, 0, 196.0, 0, 0, 0, 146.83, 0, 0, 0],
+    baseGain: 0.022
+  },
+  // Levels 3–5 (MATCH: Blooming Garden, Woodland Trio, Pebble Rhythm)
+  meadow_match: {
+    name: "Blooming Meadow Dance",
+    tempoMs: 460,
+    waveType: "triangle",
+    notes: [349.23, 440.0, 523.25, 440.0, 587.33, 523.25, 440.0, 392.0, 349.23, 392.0, 440.0, 523.25, 392.0, 440.0, 349.23, 0],
+    bassNotes: [174.61, 0, 261.63, 0, 293.66, 0, 261.63, 0, 233.08, 0, 261.63, 0, 174.61, 0, 174.61, 0],
+    baseGain: 0.018
+  },
+  // Levels 6–7 (CLASSIFY & APPLY: Size Sorters & Dual Feature)
+  meadow_classify: {
+    name: "Curious Collector's Groove",
+    tempoMs: 480,
+    waveType: "sine",
+    notes: [440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0, 392.0, 440.0, 0, 523.25, 0, 659.25, 587.33, 523.25, 0],
+    bassNotes: [220.0, 0, 261.63, 0, 293.66, 0, 196.0, 0, 220.0, 0, 261.63, 0, 196.0, 0, 220.0, 0],
+    baseGain: 0.022
+  },
+  // Levels 8–9 (DISCOVER: Detective Rule & Sneaky Intruder)
+  meadow_discover: {
+    name: "Woodland Detective Mystery",
+    tempoMs: 520,
+    waveType: "sine",
+    notes: [440.0, 0, 523.25, 493.88, 440.0, 0, 329.63, 0, 440.0, 523.25, 659.25, 587.33, 523.25, 493.88, 440.0, 0],
+    bassNotes: [220.0, 0, 0, 0, 164.81, 0, 0, 0, 220.0, 0, 0, 0, 196.0, 0, 220.0, 0],
+    baseGain: 0.020
+  },
+  // Level 10 (CREATE / TRIAL: Pattern Keeper's Grand Trial)
+  meadow_trial: {
+    name: "Ancient Archway Symphony",
+    tempoMs: 480,
+    waveType: "triangle",
+    notes: [523.25, 659.25, 783.99, 1046.5, 987.77, 783.99, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 523.25, 659.25, 783.99, 0],
+    bassNotes: [261.63, 0, 392.0, 0, 220.0, 0, 329.63, 0, 174.61, 0, 196.0, 0, 261.63, 0, 261.63, 0],
+    baseGain: 0.020
+  },
+  // Quiz & Arcade Quest Thinking Melody
+  quiz_quest: {
+    name: "Thinking Cap Melody",
+    tempoMs: 620,
+    waveType: "sine",
+    notes: [523.25, 0, 659.25, 587.33, 523.25, 0, 392.0, 0, 440.0, 523.25, 587.33, 0, 523.25, 493.88, 523.25, 0],
+    bassNotes: [261.63, 0, 0, 0, 196.0, 0, 0, 0, 220.0, 0, 0, 0, 196.0, 0, 261.63, 0],
+    baseGain: 0.018
+  }
+};
+
+class GameMusicController {
+  private ctx: AudioContext | null = null;
+  private intervalId: ReturnType<typeof setInterval> | null = null;
+  private currentTheme: MusicThemeId | null = null;
+  private stepIndex: number = 0;
+  private isDucked: boolean = false;
+  private customAudio: HTMLAudioElement | null = null;
+  private customTracks: Partial<Record<MusicThemeId, string>> = {};
+  private MUSIC_STORAGE_KEY = "clats_game_music_enabled_v1";
+
+  isMusicEnabled(): boolean {
+    if (typeof window === "undefined") return true;
+    const stored = localStorage.getItem(this.MUSIC_STORAGE_KEY);
+    if (stored !== null) return stored === "true";
+    return true;
+  }
+
+  setMusicEnabled(enabled: boolean) {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(this.MUSIC_STORAGE_KEY, String(enabled));
+    if (!enabled) {
+      this.stop();
+    } else if (this.currentTheme) {
+      const themeToRestart = this.currentTheme;
+      this.currentTheme = null;
+      this.startTheme(themeToRestart);
+    }
+  }
+
+  toggleMusic(): boolean {
+    const next = !this.isMusicEnabled();
+    this.setMusicEnabled(next);
+    return next;
+  }
+
+  // Allow custom MP3 URLs if user configures custom songs per theme
+  setCustomTrack(theme: MusicThemeId, url: string) {
+    this.customTracks[theme] = url;
+  }
+
+  getThemeForMeadowLevel(levelId: number): MusicThemeId {
+    if (levelId <= 2) return "meadow_spot";
+    if (levelId <= 5) return "meadow_match";
+    if (levelId <= 7) return "meadow_classify";
+    if (levelId <= 9) return "meadow_discover";
+    return "meadow_trial";
+  }
+
+  getActiveTrackName(): string {
+    if (!this.currentTheme) return "Woodland Harmony";
+    return MELODY_LIBRARY[this.currentTheme]?.name || "Woodland Harmony";
+  }
+
+  setDucked(ducked: boolean) {
+    this.isDucked = ducked;
+    if (this.customAudio) {
+      this.customAudio.volume = ducked ? 0.05 : 0.18;
+    }
+  }
+
+  startTheme(theme: MusicThemeId) {
+    if (typeof window === "undefined") return;
+    if (this.currentTheme === theme && (this.intervalId !== null || this.customAudio !== null)) {
+      return;
+    }
+
+    this.stop(false);
+    this.currentTheme = theme;
+
+    if (!this.isMusicEnabled()) return;
+
+    // If a custom MP3 track is configured for this theme, play it looped
+    const customUrl = this.customTracks[theme];
+    if (customUrl) {
+      try {
+        const audio = new Audio(customUrl);
+        audio.loop = true;
+        audio.volume = this.isDucked ? 0.05 : 0.18;
+        this.customAudio = audio;
+        audio.play().catch(() => {});
+        return;
+      } catch {}
+    }
+
+    const melody = MELODY_LIBRARY[theme] || MELODY_LIBRARY.wonder_woods_hub;
+    this.stepIndex = 0;
+
+    const playNextNote = () => {
+      if (!this.isMusicEnabled()) return;
+      if ((window as any).__CLATS_SOUND_ENABLED__ === false) return;
+
+      try {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (this.ctx.state === "suspended") {
+          this.ctx.resume().catch(() => {});
+        }
+        if (this.ctx.state !== "running") return;
+
+        const now = this.ctx.currentTime;
+        const idx = this.stepIndex % melody.notes.length;
+        const noteFreq = melody.notes[idx];
+        const bassFreq = melody.bassNotes[idx % melody.bassNotes.length];
+        this.stepIndex++;
+
+        // Volume multiplier drops gently when companion is speaking
+        const duckMultiplier = this.isDucked ? 0.25 : 1.0;
+        const targetGain = melody.baseGain * duckMultiplier;
+        const noteDuration = (melody.tempoMs / 1000) * 0.9;
+
+        if (noteFreq > 0) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = melody.waveType;
+          osc.frequency.setValueAtTime(noteFreq, now);
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(targetGain, now + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + noteDuration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + noteDuration);
+        }
+
+        if (bassFreq > 0) {
+          const bassOsc = this.ctx.createOscillator();
+          const bassGain = this.ctx.createGain();
+          bassOsc.type = "sine";
+          bassOsc.frequency.setValueAtTime(bassFreq, now);
+
+          bassGain.gain.setValueAtTime(0.001, now);
+          bassGain.gain.linearRampToValueAtTime(targetGain * 0.7, now + 0.05);
+          bassGain.gain.exponentialRampToValueAtTime(0.0008, now + noteDuration * 1.4);
+
+          bassOsc.connect(bassGain);
+          bassGain.connect(this.ctx.destination);
+          bassOsc.start(now);
+          bassOsc.stop(now + noteDuration * 1.4);
+        }
+      } catch {
+        // Ignore AudioContext autoplay restrictions until user interacts
+      }
+    };
+
+    playNextNote();
+    this.intervalId = setInterval(playNextNote, melody.tempoMs);
+  }
+
+  stop(clearCurrentTheme: boolean = true) {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+    if (this.customAudio) {
+      this.customAudio.pause();
+      this.customAudio = null;
+    }
+    if (clearCurrentTheme) {
+      this.currentTheme = null;
+    }
+  }
+}
+
+export const gameMusic = new GameMusicController();
 export const companionVoice = new CompanionVoice();
 export const sfx = new AudioSynth();
+

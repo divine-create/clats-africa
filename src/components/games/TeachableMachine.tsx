@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowRight, Brain, Zap, CheckCircle2, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Brain, Zap, CheckCircle2, XCircle, Volume2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { companionVoice, gameMusic, sfx } from '@/utils/audio';
 
 // --- TRAINING DATA ---
 interface DataItem {
@@ -42,7 +43,9 @@ type Phase = "intro" | "training" | "thinking" | "testing" | "results";
 
 export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
   const { isDark, activeChild } = useApp();
-  const companionName = activeChild?.companion === "kobe" ? "Kobe" : "Chibi";
+  const companion = activeChild?.companion === "chibi" ? "chibi" : "kobe";
+  const companionName = companion === "kobe" ? "Kobe" : "Chibi";
+  const ageGroup = activeChild?.ageGroup || "early explorers";
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [trainingIndex, setTrainingIndex] = useState(0);
@@ -50,6 +53,32 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
   const [testIndex, setTestIndex] = useState(0);
   const [testResults, setTestResults] = useState<{ item: DataItem; aiGuess: number; correct: boolean }[]>([]);
   const [showTestFeedback, setShowTestFeedback] = useState(false);
+
+  useEffect(() => {
+    gameMusic.startTheme("quiz_quest");
+    return () => {
+      gameMusic.stop();
+      companionVoice.stop();
+    };
+  }, []);
+
+  // Auto-read current training item and bucket options
+  useEffect(() => {
+    if (phase === "training") {
+      const item = TRAINING_ITEMS[trainingIndex];
+      if (item && companionVoice.isNarrationEnabled(ageGroup)) {
+        const timer = setTimeout(() => {
+          companionVoice.speakTTS(
+            `Item ${trainingIndex + 1}: ${item.label}. Which category does ${item.label} belong to? Your options are: Animals, Technology, or Nature.`,
+            companion,
+            ageGroup,
+            "en"
+          );
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [phase, trainingIndex, companion, ageGroup]);
 
   // Count how many items the child correctly placed in each bucket during training
   const getBucketAccuracy = () => {
@@ -79,6 +108,29 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
 
   // TRAINING: child sorts an item
   const handleTrainChoice = (bucketIndex: number) => {
+    const currentItem = TRAINING_ITEMS[trainingIndex];
+    const chosenBucket = BUCKETS[bucketIndex].name;
+    const correctBucket = BUCKETS[currentItem.correctBucket].name;
+    const isCorrect = bucketIndex === currentItem.correctBucket;
+
+    if (isCorrect) {
+      sfx.playCoin();
+      companionVoice.speakTTS(
+        `You sorted ${currentItem.label} into ${chosenBucket}. That is right! ${currentItem.label} belongs in ${correctBucket}!`,
+        companion,
+        ageGroup,
+        "en"
+      );
+    } else {
+      sfx.playBuzzer();
+      companionVoice.speakTTS(
+        `You sorted ${currentItem.label} into ${chosenBucket}. Careful! ${currentItem.label} actually belongs in ${correctBucket}!`,
+        companion,
+        ageGroup,
+        "en"
+      );
+    }
+
     const newChoices = [...trainingChoices, bucketIndex];
     setTrainingChoices(newChoices);
 
@@ -101,6 +153,15 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
     setTestResults(prev => [...prev, { item, aiGuess, correct }]);
     setShowTestFeedback(true);
 
+    if (companionVoice.isNarrationEnabled(ageGroup)) {
+      const guessedBucket = BUCKETS[aiGuess].name;
+      const rightBucket = BUCKETS[item.correctBucket].name;
+      const msg = correct
+        ? `Testing ${item.label}: AI guessed ${guessedBucket}. AI got it right! Why? Because you trained the ${rightBucket} category accurately!`
+        : `Testing ${item.label}: AI guessed ${guessedBucket}, which is wrong! It should be ${rightBucket}. Why? Because the training examples for ${rightBucket} had mistakes!`;
+      companionVoice.speakTTS(msg, companion, ageGroup, "en");
+    }
+
     setTimeout(() => {
       setShowTestFeedback(false);
       if (testIndex < TEST_ITEMS.length - 1) {
@@ -108,7 +169,7 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
       } else {
         setPhase("results");
       }
-    }, 2200);
+    }, 2800);
   };
 
   // Start testing on mount of test phase

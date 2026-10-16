@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { motion } from "motion/react";
 import confetti from "canvas-confetti";
 import { Star, Award, ArrowRight, RotateCcw, Sparkles } from "lucide-react";
-import { sfx } from "../../../../utils/audio";
+import { sfx, companionVoice } from "../../../../utils/audio";
 
 interface FeedbackModalProps {
   levelTitle: string;
@@ -11,6 +11,8 @@ interface FeedbackModalProps {
   starsEarned?: number;
   isGrandFinale?: boolean;
   isReplay?: boolean;
+  companion?: "kobe" | "chibi";
+  lang?: string;
   onNext: () => void;
   onReplay?: () => void;
 }
@@ -22,6 +24,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   starsEarned = 3,
   isGrandFinale = false,
   isReplay = false,
+  companion = "kobe",
+  lang = "en",
   onNext,
   onReplay
 }) => {
@@ -32,7 +36,17 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
       spread: isGrandFinale ? 100 : 70,
       origin: { y: 0.6 }
     });
-  }, [isGrandFinale]);
+
+    if (companionVoice.isNarrationEnabled("early explorers")) {
+      const msg = isGrandFinale
+        ? `Meadow Archway Restored! You earned ${starsEarned} stars and unlocked the Pattern Meadow Master badge! Butterfly Grove is now unlocked on your World Map!`
+        : `Mission Complete! You earned ${starsEarned} stars on ${levelTitle} and mastered ${subrule}!`;
+      const timer = setTimeout(() => {
+        companionVoice.speakTTS(msg, companion, "early explorers", lang);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isGrandFinale, levelTitle, subrule, starsEarned, companion, lang]);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, ShieldAlert, AlertTriangle, CheckCircle2, ArrowRight, MousePointerClick } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { companionVoice, gameMusic, sfx } from '@/utils/audio';
 
 // --- SCENARIOS ---
 const SCENARIOS = [
@@ -55,6 +56,9 @@ const SCENARIOS = [
 
 export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
   const { isDark, activeChild } = useApp();
+  const companion = activeChild?.companion === "chibi" ? "chibi" : "kobe";
+  const companionName = companion === "kobe" ? "Kobe" : "Chibi";
+  const ageGroup = activeChild?.ageGroup || "early explorers";
   
   const [deck, setDeck] = useState([...SCENARIOS].sort(() => Math.random() - 0.5));
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -67,19 +71,41 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
   
   const currentCard = deck[currentIndex];
-  
-  const companionName = activeChild?.companion === "kobe" ? "Kobe" : "Chibi";
 
   const [gameOver, setGameOver] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+
+  useEffect(() => {
+    gameMusic.startTheme("quiz_quest");
+    return () => {
+      gameMusic.stop();
+      companionVoice.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!gameOver && !showFeedback && currentCard && companionVoice.isNarrationEnabled(ageGroup)) {
+      const timer = setTimeout(() => {
+        companionVoice.speakTTS(
+          `Message ${currentIndex + 1} from ${currentCard.sender}. Subject: ${currentCard.subject}. "${currentCard.body}" Is this message a Phishing Scam or Safe?`,
+          companion,
+          ageGroup,
+          "en"
+        );
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, gameOver, showFeedback, currentCard, companion, ageGroup]);
 
   const handleChoice = (chosePhishing: boolean) => {
     if (!currentCard) return;
     
     const isCorrect = chosePhishing === currentCard.isPhishing;
     setLastAnswerCorrect(isCorrect);
+    const chosenLabel = chosePhishing ? "Phishing Scam" : "Safe Message";
     
     if (isCorrect) {
+      sfx.playCoin();
       setScore(s => s + 10);
       setCorrectCount(c => c + 1);
       setStreak(s => {
@@ -88,13 +114,26 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
         return newStreak;
       });
       setShowFeedback(true);
+      companionVoice.speakTTS(
+        `You chose ${chosenLabel}. That is right! ${currentCard.explanation}`,
+        companion,
+        ageGroup,
+        "en"
+      );
       
       setTimeout(() => {
         advanceCard();
-      }, 1500);
+      }, 2800);
     } else {
+      sfx.playBuzzer();
       setStreak(0);
       setShowFeedback(true);
+      companionVoice.speakTTS(
+        `You chose ${chosenLabel}. That is not quite right! Why? ${currentCard.explanation}`,
+        companion,
+        ageGroup,
+        "en"
+      );
     }
   };
 
