@@ -177,6 +177,98 @@ class AudioSynth {
     }
   }
 
+  playCheer() {
+    try {
+      if (!this.isSoundEnabled()) return;
+      const ctx = this.init();
+      const now = ctx.currentTime;
+
+      // 1. Celebratory Party Horn / Brass Fanfare (C5 -> E5 -> G5 -> C6 -> E6 + triumphant chord)
+      const fanfare = [
+        { freq: 523.25, start: 0.0, dur: 0.14 },  // C5
+        { freq: 659.25, start: 0.11, dur: 0.14 }, // E5
+        { freq: 783.99, start: 0.22, dur: 0.14 }, // G5
+        { freq: 1046.50, start: 0.34, dur: 0.55 }, // C6
+        { freq: 1318.51, start: 0.42, dur: 0.65 }  // E6
+      ];
+      fanfare.forEach(({ freq, start, dur }) => {
+        const osc = ctx.createOscillator();
+        const sub = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "triangle";
+        sub.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + start);
+        sub.frequency.setValueAtTime(freq * 0.5, now + start);
+
+        gain.gain.setValueAtTime(0.001, now + start);
+        gain.gain.linearRampToValueAtTime(0.11, now + start + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+
+        osc.connect(gain);
+        sub.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + start);
+        sub.start(now + start);
+        osc.stop(now + start + dur + 0.02);
+        sub.stop(now + start + dur + 0.02);
+      });
+
+      // 2. Synthesized Crowd Cheer & Applause Swell (formant-filtered noise + rhythmic claps)
+      const bufferDuration = 1.65;
+      const sampleRate = ctx.sampleRate;
+      const bufferSize = Math.floor(sampleRate * bufferDuration);
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        // Pink-ish warm noise shaping
+        b0 = 0.99765 * b0 + white * 0.0990460;
+        b1 = 0.96300 * b1 + white * 0.2965164;
+        b2 = 0.57000 * b2 + white * 1.0526913;
+        // Add subtle applause modulation bursts
+        const clapMod = 0.65 + 0.35 * Math.sin(i * 0.018) * Math.sin(i * 0.0043);
+        data[i] = ((b0 + b1 + b2 + white * 0.18) * 0.12) * clapMod;
+      }
+
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+
+      // Vocal "Yay/Woo!" formant filters
+      const formant1 = ctx.createBiquadFilter();
+      formant1.type = "bandpass";
+      formant1.frequency.setValueAtTime(750, now);
+      formant1.frequency.linearRampToValueAtTime(1050, now + 0.5);
+      formant1.Q.setValueAtTime(2.2, now);
+
+      const formant2 = ctx.createBiquadFilter();
+      formant2.type = "bandpass";
+      formant2.frequency.setValueAtTime(1650, now);
+      formant2.frequency.linearRampToValueAtTime(2150, now + 0.6);
+      formant2.Q.setValueAtTime(2.5, now);
+
+      const cheerGain = ctx.createGain();
+      cheerGain.gain.setValueAtTime(0.001, now);
+      cheerGain.gain.linearRampToValueAtTime(0.18, now + 0.22);
+      cheerGain.gain.setValueAtTime(0.16, now + 0.75);
+      cheerGain.gain.exponentialRampToValueAtTime(0.001, now + bufferDuration);
+
+      noiseSource.connect(formant1);
+      noiseSource.connect(formant2);
+      formant1.connect(cheerGain);
+      formant2.connect(cheerGain);
+      cheerGain.connect(ctx.destination);
+
+      noiseSource.start(now);
+      noiseSource.stop(now + bufferDuration);
+    } catch (e) {
+      // Fallback to levelUp if buffer creation fails
+      this.playLevelUp();
+    }
+  }
+
   play(type: string = "tap") {
     switch (type) {
       case "pop":
@@ -190,6 +282,9 @@ class AudioSynth {
       case "buzzer":
       case "error":
         this.playBuzzer();
+        break;
+      case "cheer":
+        this.playCheer();
         break;
       case "levelup":
       case "reward":
@@ -435,8 +530,19 @@ class CompanionVoice {
     this.speakTTS(text, character, ageGroup, language);
   }
 
+  // Excited celebratory voice announcement (higher energy, pitch, and enthusiasm)
+  async speakExcited(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
+    return this.speakTTS(text, character, ageGroup, language, { excited: true });
+  }
+
   // Sovereign YarnGPT speech synthesizer with instant zero-latency browser speech fallback
-  async speakTTS(text: string, character: "kobe" | "chibi", ageGroup: string, language: string = "en") {
+  async speakTTS(
+    text: string,
+    character: "kobe" | "chibi",
+    ageGroup: string,
+    language: string = "en",
+    options?: { excited?: boolean }
+  ) {
     try {
       this.stop();
 
@@ -457,6 +563,9 @@ class CompanionVoice {
           const audio = new Audio(audioSrc);
           this.activeAudio = audio;
           audio.volume = 1.0;
+          if (options?.excited) {
+            audio.playbackRate = 1.07;
+          }
           gameMusic.setDucked(true);
           audio.onended = () => {
             gameMusic.setDucked(false);
@@ -469,10 +578,10 @@ class CompanionVoice {
         }
       }
       // If server TTS was not configured or failed, immediately fallback to browser speech synthesis
-      this.playBrowserSpeech(text, character, language);
+      this.playBrowserSpeech(text, character, language, undefined, options);
     } catch (e) {
       console.warn("CompanionVoice speakTTS (YarnGPT) offline fallback:", e);
-      this.playBrowserSpeech(text, character, language);
+      this.playBrowserSpeech(text, character, language, undefined, options);
     }
   }
 
@@ -485,7 +594,8 @@ class CompanionVoice {
       onStart?: () => void;
       onEnd?: () => void;
       onError?: (err: any) => void;
-    }
+    },
+    options?: { excited?: boolean }
   ) {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       callbacks?.onError?.("SpeechSynthesis not supported");
@@ -537,8 +647,13 @@ class CompanionVoice {
         utterance.lang = "en-US";
       }
 
-      utterance.pitch = character === "chibi" ? 1.2 : 0.95;
-      utterance.rate = 0.95;
+      if (options?.excited) {
+        utterance.pitch = character === "chibi" ? 1.35 : 1.14;
+        utterance.rate = 1.05;
+      } else {
+        utterance.pitch = character === "chibi" ? 1.2 : 0.95;
+        utterance.rate = 0.95;
+      }
 
       utterance.onstart = () => {
         gameMusic.setDucked(true);

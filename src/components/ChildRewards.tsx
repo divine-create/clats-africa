@@ -24,6 +24,13 @@ import {
 import { MascotImage } from "./Onboarding";
 import { CURRICULUM } from "../data/curriculum";
 import { downloadCertificateImage } from "../utils/pdfGenerator";
+import {
+  computeEffectiveStreak,
+  getCurrentWeekStreakDays,
+  STREAK_MILESTONES,
+  getClaimedStreakMilestones,
+  saveClaimedStreakMilestones
+} from "../utils/streak";
 
 interface ChildRewardsProps {
   child: Child;
@@ -71,20 +78,13 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   const resolvedCompletedCount = Object.keys(child.completed || {}).length;
 
-  // 2. Playful Gamified States
-  const streak = child.streak_count || 0;
-  const bestStreak = child.best_streak || child.streak_count || 0;
+  // 2. Dynamic Streak & Best Streak from centralized engine
+  const { streak, bestStreak } = computeEffectiveStreak(child);
 
-  // Keep track of claimed rewards in localStorage
-  const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() => {
-    if (resolvedCompletedCount === 0) return [];
-    try {
-      const val = localStorage.getItem(`clats_claimed_milestones_${child.id}`);
-      return val ? JSON.parse(val) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Keep track of claimed rewards in unified localStorage
+  const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() =>
+    getClaimedStreakMilestones(child.id, Math.max(1, resolvedCompletedCount, streak))
+  );
 
   // Certificate Interaction States
   const [selectedCertificate, setSelectedCertificate] = useState<any | null>(null);
@@ -357,12 +357,10 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
       sfx.playTap();
       return;
     }
-    sfx.playLevelUp();
+    sfx.playCheer();
     const nextClaimed = [...claimedMilestones, id];
     setClaimedMilestones(nextClaimed);
-    try {
-      localStorage.setItem(`clats_claimed_milestones_${child.id}`, JSON.stringify(nextClaimed));
-    } catch (e) {}
+    saveClaimedStreakMilestones(child.id, nextClaimed);
 
     if (onUpdateChild) {
       onUpdateChild({
@@ -372,17 +370,8 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
     }
   };
 
-  // Calendar Days representation
-  const calendarDays: MilestoneDay[] = Array.from({ length: 7 }, (_, i) => {
-    const todayIndex = 6;
-    const isToday = i === todayIndex;
-    const isCompleted = i > (todayIndex - streak) && i <= todayIndex;
-    return {
-      dayName: ["M", "T", "W", "T", "F", "S", "S"][i],
-      isCompleted,
-      isToday
-    };
-  });
+  // Real Monday-Sunday current week calendar (no hardcoded todayIndex = 6)
+  const calendarDays: MilestoneDay[] = getCurrentWeekStreakDays(child);
 
   return (
     <div
@@ -1236,104 +1225,49 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                   🎁 Streak Milestones
                 </Txt>
                 
-                {/* 3 Days Milestone */}
-                <div 
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    background: isDark ? "#0f172a" : "#f8fafc",
-                    borderRadius: 14,
-                    border: "1px solid rgba(239, 68, 68, 0.1)"
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>🎁</span>
-                    <div>
-                      <Txt size={12.5} weight={800}>3 Days Streak</Txt>
-                      <Txt size={10.5} color="#ca8a04" style={{ display: "block" }}>+20 XP Bonus</Txt>
+                {STREAK_MILESTONES.map((milestone) => {
+                  const isClaimed = claimedMilestones.includes(milestone.id);
+                  const isEligible = streak >= milestone.days;
+                  return (
+                    <div
+                      key={milestone.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 12px",
+                        background: isDark ? "#0f172a" : "#f8fafc",
+                        borderRadius: 14,
+                        border: "1px solid rgba(239, 68, 68, 0.1)",
+                        opacity: isEligible || isClaimed ? 1 : 0.75
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, textAlign: "left" }}>
+                        <span style={{ fontSize: 18 }}>{isClaimed ? "🏆" : isEligible ? "🎁" : "🔓"}</span>
+                        <div>
+                          <Txt size={12.5} weight={800}>{milestone.title}</Txt>
+                          <Txt size={10.5} color="#ca8a04" style={{ display: "block" }}>{milestone.subtitle}</Txt>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleClaimMilestone(milestone.id, milestone.xp)}
+                        disabled={isClaimed || !isEligible}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: 10,
+                          border: "none",
+                          fontSize: 11,
+                          fontWeight: 900,
+                          cursor: isClaimed || !isEligible ? "not-allowed" : "pointer",
+                          background: isClaimed ? "#10b98122" : isEligible ? "#FFD166" : "#cbd5e1",
+                          color: isClaimed ? "#10b981" : "#1e293b",
+                        }}
+                      >
+                        {isClaimed ? "✓ Claimed" : isEligible ? "CLAIM!" : `🔒 ${streak}/${milestone.days}d`}
+                      </button>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => handleClaimMilestone("3-Days-Reward", 20)}
-                    disabled={claimedMilestones.includes("3-Days-Reward") || streak < 3}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: 10,
-                      border: "none",
-                      fontSize: 11,
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      background: claimedMilestones.includes("3-Days-Reward") ? "#10b98122" : streak >= 3 ? "#FFD166" : "#cbd5e1",
-                      color: claimedMilestones.includes("3-Days-Reward") ? "#10b981" : "#1e293b",
-                    }}
-                  >
-                    {claimedMilestones.includes("3-Days-Reward") ? "✓ Claimed" : streak >= 3 ? "CLAIM!" : "🔒 Lock"}
-                  </button>
-                </div>
-
-                {/* 7 Days Milestone */}
-                <div 
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    textAlign: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    background: isDark ? "#0f172a" : "#f8fafc",
-                    borderRadius: 14,
-                    border: "1px solid rgba(239, 68, 68, 0.1)"
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>🎁</span>
-                    <div>
-                      <Txt size={12.5} weight={800}>7 Days Streak</Txt>
-                      <Txt size={10.5} color="#ca8a04" style={{ display: "block" }}>+50 XP Bonus</Txt>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleClaimMilestone("7-Days-Reward", 50)}
-                    disabled={claimedMilestones.includes("7-Days-Reward") || streak < 7}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: 10,
-                      border: "none",
-                      fontSize: 11,
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      background: claimedMilestones.includes("7-Days-Reward") ? "#10b98122" : streak >= 7 ? "#FFD166" : "#cbd5e1",
-                      color: claimedMilestones.includes("7-Days-Reward") ? "#10b981" : "#1e293b",
-                    }}
-                  >
-                    {claimedMilestones.includes("7-Days-Reward") ? "✓ Claimed" : streak >= 7 ? "CLAIM!" : "🔒 Lock"}
-                  </button>
-                </div>
-
-                {/* 14 Days Milestone */}
-                <div 
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    background: isDark ? "#0f172a" : "#f8fafc",
-                    borderRadius: 14,
-                    opacity: streak >= 14 ? 1 : 0.65
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>🔓</span>
-                    <div>
-                      <Txt size={12.5} color={streak >= 14 ? undefined : "#94a3b8"} weight={800}>14 Days Streak</Txt>
-                      <Txt size={10.5} color="#94a3b8" style={{ display: "block" }}>+100 XP Quantum Chest</Txt>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 11.5, fontWeight: 900, color: "#94a3b8" }}>
-                    🔒 locked
-                  </span>
-                </div>
+                  );
+                })}
               </div>
             </div>
 

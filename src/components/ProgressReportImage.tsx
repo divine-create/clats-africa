@@ -12,6 +12,7 @@
 import React from 'react';
 import { Parent, Child } from '../types';
 import { calculateStudyAnalytics } from '../utils/timeTracker';
+import { computeEffectiveStreak } from '../utils/streak';
 
 function getActiveAcademyLabel(child: Child): string {
   const completedCount = Object.keys(child.completed || {}).length;
@@ -350,7 +351,7 @@ function ChildReport({ child, parent, sessions, liveDate, logoBase64, aiInsight 
               { label: 'XP Earned', value: `${child.xp || 0}`, icon: '⚡' },
               { label: 'Lessons Done', value: `${completedCount}`, icon: '✅' },
               { label: 'Quiz Avg', value: `${quizAverage}%`, icon: '🧠' },
-              { label: 'Streak', value: `${child.streak || 0} days`, icon: '🔥' },
+              { label: 'Streak', value: `${computeEffectiveStreak(child).streak} days`, icon: '🔥' },
             ].map((stat, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>

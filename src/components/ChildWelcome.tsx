@@ -10,6 +10,7 @@ import { CURRICULUM } from "../data/curriculum";
 import { Card, Heading, Txt, Chip, XPBar } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
+import { computeEffectiveStreak } from "../utils/streak";
 import {
   Sparkles,
   Flame,
@@ -50,9 +51,9 @@ export const ChildWelcomeScreen: React.FC<ChildWelcomeScreenProps> = ({
   const remain = Math.max(0, slotLimit - slotUsed);
   const limitOn = slotLimit > 0;
 
-  // Calculate dynamic streak based on completed lessons
+  // Calculate dynamic streak from centralized streak engine
   const solvedCount = Object.keys(child.completed || {}).length;
-  const computedStreak = child.streak_count || 0;
+  const { streak: computedStreak } = computeEffectiveStreak(child);
 
   // Let's compute active pathway progress for Artificial Intelligence
   const aiCourse = CURRICULUM[child.ageGroup];

@@ -66,26 +66,35 @@ export default function ChildAppPage() {
   }, [parent, activeChild, router]);
 
   const handleChildUpdate = (updatedChild: any) => {
-    setActiveChild(updatedChild);
+    const resolvedStreak = Math.max(Number(updatedChild.streak_count) || 0, Number(updatedChild.streak) || 0);
+    const resolvedBestStreak = Math.max(Number(updatedChild.best_streak) || 0, resolvedStreak);
+    const normalizedChild = {
+      ...updatedChild,
+      streak: resolvedStreak,
+      streak_count: resolvedStreak,
+      best_streak: resolvedBestStreak
+    };
+
+    setActiveChild(normalizedChild);
 
     // B2B student — sync progress directly to their own record
-    if ((updatedChild as any).isB2B) {
+    if ((normalizedChild as any).isB2B) {
       try {
         fetch("/api/supabase/b2b/manage-student", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "update_progress",
-            studentId: updatedChild.id,
-            xp: updatedChild.xp,
-            completed: updatedChild.completed,
-            completed_lessons: updatedChild.completedLessons,
-            stars: updatedChild.stars,
-            quiz_results: updatedChild.quizResults,
-            streak_count: updatedChild.streak,
-            best_streak: updatedChild.best_streak,
-            last_active_at: updatedChild.last_active_at,
-            badges: updatedChild.badges,
+            studentId: normalizedChild.id,
+            xp: normalizedChild.xp,
+            completed: normalizedChild.completed,
+            completed_lessons: normalizedChild.completedLessons || normalizedChild.completed,
+            stars: normalizedChild.stars,
+            quiz_results: normalizedChild.quizResults,
+            streak_count: resolvedStreak,
+            best_streak: resolvedBestStreak,
+            last_active_at: normalizedChild.last_active_at,
+            badges: normalizedChild.badges,
           })
         });
       } catch (e) {
@@ -94,28 +103,27 @@ export default function ChildAppPage() {
       return;
     }
 
-    // Regular parent-linked child
-    if (!parent) return;
-    const updatedChildren = (parent.children ?? []).map((c: any) =>
-      (c.id ?? c.name) === (updatedChild.id ?? updatedChild.name) ? updatedChild : c
-    );
-    const updatedParent = { ...parent, children: updatedChildren };
-    setParent(updatedParent);
+    // Regular parent-linked child or directly logged-in child
+    if (parent) {
+      const updatedChildren = (parent.children ?? []).map((c: any) =>
+        (c.id ?? c.name) === (normalizedChild.id ?? normalizedChild.name) ? normalizedChild : c
+      );
+      const updatedParent = { ...parent, children: updatedChildren };
+      setParent(updatedParent);
+    }
 
-    // Persist child state back to Supabase
-    if (parent.email) {
-      try {
-        fetch("/api/supabase/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            parentEmail: parent.email,
-            children: [updatedChild]
-          })
-        });
-      } catch (e) {
-        console.error("Failed to sync child update to Supabase:", e);
-      }
+    // Persist child state back to Supabase (works both with parent.email and direct child login)
+    try {
+      fetch("/api/supabase/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parentEmail: parent?.email || normalizedChild.parentEmail || normalizedChild.parent_email || undefined,
+          children: [normalizedChild]
+        })
+      });
+    } catch (e) {
+      console.error("Failed to sync child update to Supabase:", e);
     }
   };
 

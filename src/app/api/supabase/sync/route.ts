@@ -10,10 +10,11 @@ function getSupabaseClient() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { parentEmail, parentName, parentPassword, children, tutorial_completed } = await req.json();
+    const body = await req.json();
+    const { parentEmail, parentName, parentPassword, children, tutorial_completed } = body;
 
-    if (!parentEmail) {
-      return NextResponse.json({ ok: false, msg: "parentEmail required" }, { status: 400 });
+    if (!parentEmail && (!Array.isArray(children) || children.length === 0)) {
+      return NextResponse.json({ ok: false, msg: "parentEmail or children array required" }, { status: 400 });
     }
 
     const sb = getSupabaseClient();
@@ -21,35 +22,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, msg: "Supabase not configured." });
     }
 
-    const { data: existing } = await sb
-      .from("clats_parents")
-      .select("email")
-      .eq("email", parentEmail.toLowerCase().trim())
-      .maybeSingle();
+    if (parentEmail) {
+      const { data: existing } = await sb
+        .from("clats_parents")
+        .select("email")
+        .eq("email", parentEmail.toLowerCase().trim())
+        .maybeSingle();
 
-    if (!existing) {
-      return NextResponse.json({ ok: false, code: "ACCOUNT_DELETED" }, { status: 404 });
-    }
+      if (!existing) {
+        return NextResponse.json({ ok: false, code: "ACCOUNT_DELETED" }, { status: 404 });
+      }
 
-    const updatePayload: any = {};
-    if (parentName) updatePayload.name = parentName;
-    if (parentPassword) updatePayload.password = parentPassword;
-    if (tutorial_completed !== undefined) updatePayload.tutorial_completed = tutorial_completed;
+      const updatePayload: any = {};
+      if (parentName) updatePayload.name = parentName;
+      if (parentPassword) updatePayload.password = parentPassword;
+      if (tutorial_completed !== undefined) updatePayload.tutorial_completed = tutorial_completed;
 
-    if (Object.keys(updatePayload).length > 0) {
-      const { error: parentUpdateErr } = await sb.from("clats_parents").update(updatePayload).eq("email", parentEmail.toLowerCase().trim());
-      if (parentUpdateErr) {
-        throw new Error(`Failed to update parent row: ${parentUpdateErr.message}`);
+      if (Object.keys(updatePayload).length > 0) {
+        const { error: parentUpdateErr } = await sb.from("clats_parents").update(updatePayload).eq("email", parentEmail.toLowerCase().trim());
+        if (parentUpdateErr) {
+          throw new Error(`Failed to update parent row: ${parentUpdateErr.message}`);
+        }
       }
     }
 
     if (Array.isArray(children)) {
       for (const kid of children) {
+        const resolvedStreak = Math.max(Number(kid.streak_count) || 0, Number(kid.streak) || 0);
+        const resolvedBestStreak = Math.max(Number(kid.best_streak) || 0, resolvedStreak);
+
         const kidPayload: any = {
           id: kid.id,
-          parent_email: parentEmail.toLowerCase().trim(),
           name: kid.name,
-          username: kid.username || kid.name.toLowerCase().replace(/\s+/g, "_"),
+          username: kid.username || (kid.name ? kid.name.toLowerCase().replace(/\s+/g, "_") : undefined),
           age_group: kid.ageGroup || kid.age_group,
           avatar: kid.avatar,
           pin: kid.pin,
@@ -59,15 +64,27 @@ export async function POST(req: NextRequest) {
           stars: kid.stars || {},
           quiz_results: kid.quizResults || kid.quiz_results || {},
           companion: kid.companion || "kobe",
-          child_tutorial_completed: kid.child_tutorial_completed
+          child_tutorial_completed: kid.child_tutorial_completed,
+          streak_count: resolvedStreak,
+          best_streak: resolvedBestStreak,
+          last_active_at: kid.last_active_at || null,
+          badges: Array.isArray(kid.badges) ? kid.badges : []
         };
 
-        let payloadToSync = kidPayload;
+        if (parentEmail) {
+          kidPayload.parent_email = parentEmail.toLowerCase().trim();
+        } else if (kid.parentEmail || kid.parent_email) {
+          kidPayload.parent_email = (kid.parentEmail || kid.parent_email).toLowerCase().trim();
+        }
+
+        let payloadToSync = { ...kidPayload };
         let retryCount = 0;
         let childErr: any = null;
 
-        while (retryCount < 3) {
-          const { error } = await sb.from("clats_children").upsert([payloadToSync], { onConflict: "id" });
+        while (retryCount < 6) {
+          const { error } = parentEmail || payloadToSync.parent_email
+            ? await sb.from("clats_children").upsert([payloadToSync], { onConflict: "id" })
+            : await sb.from("clats_children").update(payloadToSync).eq("id", kid.id);
           if (!error) {
             childErr = null;
             break; // Success

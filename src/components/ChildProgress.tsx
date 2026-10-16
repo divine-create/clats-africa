@@ -39,6 +39,14 @@ import {
   Info
 } from "lucide-react";
 import { downloadCertificateImage } from "../utils/pdfGenerator";
+import {
+  computeEffectiveStreak,
+  getChildActivityDateSet,
+  toLocalDateStr,
+  getCalendarDaysDiff,
+  getClaimedStreakMilestones,
+  saveClaimedStreakMilestones
+} from "../utils/streak";
 
 interface ChildProgressScreenProps {
   child: Child;
@@ -127,23 +135,13 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const progressInLevel = currentXP - xpMin;
   const lProgressPct = currentLevelBand.level === 7 ? 100 : Math.min(100, Math.max(0, (progressInLevel / range) * 100));
 
-  // Streak state
-  const streak = child.streak_count || 0;
-  const bestStreak = child.best_streak || child.streak_count || 0;
+  // Streak state from centralized streak engine
+  const { streak, bestStreak, lastActiveAt } = computeEffectiveStreak(child);
 
   // Track claimed reward milestones to prevent multiple claims
-  const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() => {
-    if (completedCount === 0) return [];
-    try {
-      if (typeof window !== 'undefined') {
-        const val = localStorage.getItem(`clats_profile_claims_${child.id}`);
-        return val ? JSON.parse(val) : [];
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  });
+  const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() =>
+    getClaimedStreakMilestones(child.id, Math.max(1, completedCount, streak))
+  );
 
   // Chosen Avatar frame & decoration stored in local Fallback
   const [selectedFrame, setSelectedFrame] = useState<string>(() => {
@@ -268,10 +266,10 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
     if (streak < requiredDays) return;
     if (claimedMilestones.includes(id)) return;
 
-    if (soundEnabled) sfx.playLevelUp();
+    if (soundEnabled) sfx.playCheer();
     const nextClaims = [...claimedMilestones, id];
     setClaimedMilestones(nextClaims);
-    localStorage.setItem(`clats_profile_claims_${child.id}`, JSON.stringify(nextClaims));
+    saveClaimedStreakMilestones(child.id, nextClaims);
 
     if (onUpdateChild) {
       onUpdateChild({
@@ -347,6 +345,9 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth(); // 0-indexed
   const currentDay = now.getDate();
+  const todayStr = toLocalDateStr(now)!;
+  const activityDateSet = getChildActivityDateSet(child);
+  const anchorDateStr = toLocalDateStr(lastActiveAt) || (streak > 0 ? todayStr : null);
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -358,16 +359,16 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   // Generate calendar dates representing the real-world current month based on actual completion dates or active streaks!
   const calendarDays = Array.from({ length: daysInMonth }, (_, i) => {
     const dayNum = i + 1;
-    
-    // Check if the student completed any lesson on this date
     const dateStrPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-    
-    const completedOnThisDay = Object.values(child.quizResults || {}).some((q: any) => {
-      return q.completedAt && q.completedAt.startsWith(dateStrPrefix);
-    });
+    const completedOnThisDay = activityDateSet.has(dateStrPrefix);
 
-    // Also count days within the current active streak ending today
-    const withinStreak = dayNum <= currentDay && dayNum >= currentDay - streak + 1 && streak > 0;
+    let withinStreak = false;
+    if (streak > 0 && anchorDateStr) {
+      const diffFromAnchor = getCalendarDaysDiff(dateStrPrefix, anchorDateStr);
+      if (diffFromAnchor >= 0 && diffFromAnchor < streak) {
+        withinStreak = true;
+      }
+    }
 
     return { 
       day: dayNum, 

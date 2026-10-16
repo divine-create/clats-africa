@@ -685,9 +685,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       const isPassed = score >= 50;
 
       const xpToAward = isPassed ? (score === 100 ? 50 : 35) : 10;
-      const alreadyCompleted = child.completed && child.completed[lesson?.id || "lesson-u"];
-      const actualXpEarned = (isPassed && !alreadyCompleted) ? xpToAward : 0;
-      setEarnedXpState(actualXpEarned);
+      setEarnedXpState(xpToAward);
 
       onLessonComplete(
         lesson?.id || "lesson-u",
@@ -707,35 +705,84 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const activeProgressProgress =
     learningStep === "video" ? 33 : learningStep === "quiz" ? 66 : 100;
 
-  useEffect(() => {
-    if (learningStep === "reward" && isLastLessonInModule) {
-      // Fire confetti celebration for module completion
-      const duration = 3000;
-      const end = Date.now() + duration;
+  const buildExcitedStarsSpeech = (xpAmount: number, scorePct: number): string => {
+    const nextActionText = isLastLessonInModule
+      ? "You can choose to retake the quiz, or move on to the next module!"
+      : "You can choose to retake the quiz, or move to the next lesson!";
+    return `Woohoo! Hurray, ${child.name}! I am so excited for you! You completed the lesson quiz with a score of ${scorePct} percent, and you just got ${xpAmount} X P from this lesson quiz! ${nextActionText}`;
+  };
 
-      const frame = () => {
+  const triggerPartyStreamersAndCheer = (xpAmount: number, scorePct: number) => {
+    // 1. Play celebratory cheer & party horn sound
+    sfx.playCheer();
+
+    // 2. Fire party streamers & confetti bursts across the screen
+    const streamerColors = ["#2EC4B6", "#FFD166", "#FF6B6B", "#c084fc", "#10b981", "#38bdf8", "#f97316"];
+    try {
+      confetti({
+        particleCount: 65,
+        spread: 80,
+        origin: { y: 0.25 },
+        colors: streamerColors,
+        scalar: 1.15,
+        drift: 0.4
+      });
+    } catch {}
+
+    const duration = isLastLessonInModule ? 3200 : 2200;
+    const end = Date.now() + duration;
+    let rafId: number;
+
+    const frame = () => {
+      try {
         confetti({
-          particleCount: 5,
+          particleCount: 4,
           angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ['#2EC4B6', '#FFD166', '#c084fc', '#f43f5e']
+          spread: 58,
+          origin: { x: 0, y: 0.55 },
+          colors: streamerColors,
+          scalar: 1.1
         });
         confetti({
-          particleCount: 5,
+          particleCount: 4,
           angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ['#2EC4B6', '#FFD166', '#c084fc', '#f43f5e']
+          spread: 58,
+          origin: { x: 1, y: 0.55 },
+          colors: streamerColors,
+          scalar: 1.1
         });
+      } catch {}
 
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      };
-      frame();
+      if (Date.now() < end) {
+        rafId = requestAnimationFrame(frame);
+      }
+    };
+    rafId = requestAnimationFrame(frame);
+
+    // 3. Companion excitedly announces the XP earned and choices (Retake Quiz or Next Lesson)
+    const speechTimer = setTimeout(() => {
+      companionVoice.speakExcited(
+        buildExcitedStarsSpeech(xpAmount, scorePct),
+        companion,
+        child.ageGroup,
+        lang
+      );
+    }, 350);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      clearTimeout(speechTimer);
+    };
+  };
+
+  useEffect(() => {
+    if (learningStep === "reward") {
+      const countCorrect = correctAnswersList.filter(Boolean).length;
+      const pctScore = Math.round((countCorrect / activeQuiz.length) * 100);
+      const xpAmount = earnedXpState > 0 ? earnedXpState : (pctScore >= 50 ? (pctScore === 100 ? 50 : 35) : 10);
+      return triggerPartyStreamersAndCheer(xpAmount, pctScore);
     }
-  }, [learningStep, isLastLessonInModule]);
+  }, [learningStep]);
 
   return (
     <div
@@ -1369,51 +1416,296 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         )}
 
         {/* -------------------------------------------------------------
-            STAGE D: COMPLETED QUESTS REWARDS CELEBRATION
+            STAGE D: COMPLETED QUESTS REWARDS CELEBRATION (STARS SCREEN)
            ------------------------------------------------------------- */}
         {learningStep === "reward" && (() => {
           const countCorrect = correctAnswersList.filter(Boolean).length;
           const pctScore = Math.round((countCorrect / activeQuiz.length) * 100);
           
           const isModuleChallenge = lesson?.title?.en?.toLowerCase().includes("challenge");
-          const xpGained = earnedXpState;
-          
+          const xpGained = earnedXpState > 0 ? earnedXpState : (pctScore >= 50 ? (pctScore === 100 ? 50 : 35) : 10);
+
+          const handleRetakeQuiz = () => {
+            companionVoice.stop();
+            sfx.playTap();
+            setLearningStep("quiz");
+            setCurrentQuizIndex(0);
+            setQuizSelectedOption(null);
+            setQuizFeedback("");
+            setQuizIsAnswered(false);
+            setCorrectAnswersList([]);
+          };
+
+          const handleMoveToNextLesson = () => {
+            companionVoice.stop();
+            if (isLastLessonInModule) {
+              sfx.playLevelUp();
+              if (isNextModuleLocked) {
+                if (onShowPaywall) onShowPaywall();
+              } else if (onNextModule) {
+                onNextModule();
+              } else {
+                onClose();
+              }
+            } else if (onNextLesson) {
+              sfx.playTap();
+              onNextLesson();
+              setLearningStep("video");
+              setCurrentSlideIndex(0);
+              setSelectedTools([]);
+              setToolFeedback("");
+              setCurrentQuizIndex(0);
+              setQuizSelectedOption(null);
+              setQuizFeedback("");
+              setQuizIsAnswered(false);
+              setCorrectAnswersList([]);
+            } else {
+              sfx.playTap();
+              onClose();
+            }
+          };
+
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 18, textAlign: "center" }}>
+              <style>{`
+                @keyframes streamerWave {
+                  0%, 100% { transform: translateY(0px) rotate(-4deg) scaleY(1); }
+                  50% { transform: translateY(8px) rotate(5deg) scaleY(1.06); }
+                }
+                @keyframes streamerDrop {
+                  0% { transform: translateY(-18px) rotate(0deg); opacity: 0.95; }
+                  50% { transform: translateY(6px) rotate(8deg); opacity: 1; }
+                  100% { transform: translateY(-18px) rotate(-6deg); opacity: 0.95; }
+                }
+                @keyframes partyPopBounce {
+                  0%, 100% { transform: scale(1) rotate(-6deg); }
+                  50% { transform: scale(1.16) rotate(8deg); }
+                }
+              `}</style>
+
               <div
                 className="playful-card"
                 style={{
-                  background: "#f0fdfa",
+                  background: colorMode === "night" ? "#0f172a" : "#f0fdfa",
                   borderColor: "#2EC4B6",
                   borderBottom: `8px solid #208a80`,
                   borderRadius: 32,
-                  padding: "40px 24px"
+                  padding: "44px 24px 36px",
+                  position: "relative",
+                  overflow: "hidden"
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  <KobeAvatar size={100} character={companion} ageGroup={child.ageGroup} expression={"celebrating"} />
+                {/* FESTIVE PARTY STREAMERS & RIBBONS OVERLAY */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 96,
+                    pointerEvents: "none",
+                    display: "flex",
+                    justifyContent: "space-around",
+                    alignItems: "flex-start",
+                    overflow: "hidden",
+                    zIndex: 1
+                  }}
+                >
+                  {[
+                    { color: "#FF6B6B", height: 74, delay: "0s" },
+                    { color: "#FFD166", height: 88, delay: "0.2s" },
+                    { color: "#2EC4B6", height: 68, delay: "0.4s" },
+                    { color: "#c084fc", height: 84, delay: "0.15s" },
+                    { color: "#38bdf8", height: 72, delay: "0.35s" },
+                    { color: "#10b981", height: 86, delay: "0.1s" },
+                    { color: "#f97316", height: 76, delay: "0.3s" },
+                    { color: "#ec4899", height: 90, delay: "0.25s" },
+                    { color: "#FFD166", height: 70, delay: "0.45s" },
+                    { color: "#2EC4B6", height: 82, delay: "0.05s" }
+                  ].map((s, idx) => (
+                    <svg
+                      key={idx}
+                      width="24"
+                      height={s.height}
+                      viewBox="0 0 24 90"
+                      style={{
+                        animation: `streamerWave 2.2s ease-in-out ${s.delay} infinite`,
+                        transformOrigin: "top center",
+                        filter: "drop-shadow(0 3px 4px rgba(0,0,0,0.12))"
+                      }}
+                    >
+                      <path
+                        d="M12 0 Q 22 18, 8 36 T 16 72 T 10 90"
+                        fill="none"
+                        stroke={s.color}
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  ))}
                 </div>
 
-                <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
+                {/* Party Popper Corner Badges */}
+                <div
+                  style={{
+                     display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    position: "relative",
+                    zIndex: 2,
+                    marginBottom: 8
+                  }}
+                >
+                  <span style={{ fontSize: 32, display: "inline-block", animation: "partyPopBounce 1.6s ease-in-out infinite" }}>
+                    🎉🎊
+                  </span>
+                  <button
+                    onClick={() => triggerPartyStreamersAndCheer(xpGained, pctScore)}
+                    style={{
+                      background: colorMode === "night" ? "#1e293b" : "#ffffff",
+                      border: "2px solid #f59e0b",
+                      borderRadius: 20,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      color: "#d97706",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 4px 10px rgba(245, 158, 11, 0.2)"
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                    title="Replay cheer sound, party streamers, and excited companion voice"
+                  >
+                    <span>🥳</span>
+                    <span>Replay Cheer & Streamers</span>
+                  </button>
+                  <span style={{ fontSize: 32, display: "inline-block", animation: "partyPopBounce 1.6s ease-in-out 0.3s infinite" }}>
+                    🎊🎉
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 14, position: "relative", zIndex: 2 }}>
+                  <KobeAvatar size={104} character={companion} ageGroup={child.ageGroup} expression={"celebrating"} pulse />
+                </div>
+
+                <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 8, marginBottom: 8, position: "relative", zIndex: 2 }}>
                   <Chip color={"#c084fc"} bg={"rgba(192, 132, 252, 0.15)"}>
-                    {isModuleChallenge ? "🏆 MODULE COMPLETE!" : "🌟 LESSON COMPLETE!"}
+                    {isModuleChallenge ? "🏆 MODULE COMPLETE!" : "🌟 LESSON QUIZ COMPLETE!"}
                   </Chip>
                 </div>
 
-                <Heading size={32} color={colorMode === "night" ? "#f8fafc" : "#0f172a"} style={{ marginBottom: 12 }}>
-                  {xpGained > 0 ? `You earned +${xpGained} XP` : "Quiz Completed Again!"}
+                <Heading size={32} color={colorMode === "night" ? "#f8fafc" : "#0f172a"} style={{ marginBottom: 12, position: "relative", zIndex: 2 }}>
+                  🎉 You Earned +{xpGained} XP! 🎉
                 </Heading>
 
-                <Txt size={16.5} color={colorMode === "night" ? "#cbd5e1" : "#334155"} style={{ display: "block", marginBottom: 24, lineHeight: 1.5, fontWeight: 700 }}>
-                  {xpGained > 0 
-                    ? "Great job! You checked your knowledge and earned XP. You can now advance to the next step in your learning journey!"
-                    : "Great job! You've already mastered this quiz before, so no new XP was added today, but practicing is always great for your brain!"
-                  }
-                </Txt>
+                {/* EXCITED COMPANION VOICE ANNOUNCEMENT SPEECH BUBBLE */}
+                <div
+                  style={{
+                    background: colorMode === "night"
+                      ? "linear-gradient(135deg, rgba(46,196,182,0.22), rgba(251,191,36,0.14))"
+                      : "linear-gradient(135deg, #ffffff, #fefce8)",
+                    border: "2.5px solid #2EC4B6",
+                    borderRadius: 24,
+                    padding: "18px 20px",
+                    marginBottom: 22,
+                    textAlign: "left",
+                    boxShadow: "0 8px 22px rgba(46, 196, 182, 0.15)",
+                    position: "relative",
+                    zIndex: 2
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                    <Txt size={12.5} weight={950} color="#0d9488" style={{ textTransform: "uppercase", fontFamily: F.mono }}>
+                      🥳 {compLabel} is Cheering for You!
+                    </Txt>
+                    <button
+                      onClick={() => {
+                        sfx.playCheer();
+                        companionVoice.speakExcited(
+                          buildExcitedStarsSpeech(xpGained, pctScore),
+                          companion,
+                          child.ageGroup,
+                          lang
+                        );
+                      }}
+                      style={{
+                        background: "#e0f2fe",
+                        border: "1.5px solid #0284c7",
+                        borderRadius: 14,
+                        padding: "4px 10px",
+                        fontSize: 11.5,
+                        fontWeight: 800,
+                        color: "#0369a1",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5
+                      }}
+                    >
+                      <Volume2 size={13} /> Hear {compLabel}
+                    </button>
+                  </div>
+                  <Txt size={16} color={colorMode === "night" ? "#f8fafc" : "#0f172a"} style={{ display: "block", lineHeight: 1.5, fontWeight: 800 }}>
+                    "{buildExcitedStarsSpeech(xpGained, pctScore)}"
+                  </Txt>
+                </div>
+
+                {/* QUICK CHOICE BUTTONS RIGHT UNDER COMPANION ANNOUNCEMENT */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                    gap: 12,
+                    marginBottom: 24,
+                    position: "relative",
+                    zIndex: 2
+                  }}
+                >
+                  <button
+                    onClick={handleRetakeQuiz}
+                    style={{
+                      background: colorMode === "night" ? "#1e293b" : "#ffffff",
+                      color: colorMode === "night" ? "#f8fafc" : "#0f172a",
+                      border: "2.5px solid #f59e0b",
+                      borderRadius: 20,
+                      padding: "16px 20px",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      boxShadow: "0 5px 0 #d97706"
+                    }}
+                    className="hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    🔄 Retake Quiz
+                  </button>
+
+                  <button
+                    onClick={handleMoveToNextLesson}
+                    style={{
+                      background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 20,
+                      padding: "16px 20px",
+                      fontSize: 16,
+                      fontWeight: 950,
+                      cursor: "pointer",
+                      boxShadow: "0 5px 0 #0f766e"
+                    }}
+                    className="hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    {isLastLessonInModule
+                      ? (isNextModuleLocked ? "⭐ Unlock Next Module" : "🚀 Move to Next Module →")
+                      : "🚀 Move to Next Lesson →"}
+                  </button>
+                </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
                   <div style={{ background: colorMode === "night" ? "#1e293b" : "#ffffff", border: colorMode === "night" ? "2px solid #334155" : "2px solid #cbd5e1", borderRadius: 18, padding: "12px" }}>
-                    <Txt size={11} color={colorMode === "night" ? "#94a3b8" : "#64748b"} style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>XP Earned</Txt>
+                    <Txt size={11} color={colorMode === "night" ? "#94a3b8" : "#64748b"} style={{ display: "block", fontFamily: F.mono, textTransform: "uppercase" }}>XP Earned from Quiz</Txt>
                     <Txt size={22} weight={950} color="#10b981">+{xpGained} XP</Txt>
                   </div>
 
@@ -1495,7 +1787,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       <KobeAvatar size={40} character={companion} ageGroup={child.ageGroup} expression={reflectionDone ? "celebrating" : "happy"} />
                       <div>
                         <Txt size={12} weight={900} color={reflectionDone ? "#059669" : "#d97706"} style={{ textTransform: "uppercase", display: "block" }}>
-                          🎙️ Kobe's 60-Second Reflection
+                          🎙️ {compLabel}'s 60-Second Reflection
                         </Txt>
                         <Txt size={14.5} weight={800} color={colorMode === "night" ? "#f8fafc" : "#0f172a"}>
                           {reflectionDone ? "Superstar Reflection Recorded!" : "What was the coolest thing you learned today?"}
@@ -1510,7 +1802,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   {!reflectionDone ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
                       <Txt size={12.5} color={colorMode === "night" ? "#cbd5e1" : "#475569"}>
-                        Tap a reflection below to share with Kobe and claim bonus XP:
+                        Tap a reflection below to share with {compLabel} and claim bonus XP:
                       </Txt>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {[
@@ -1522,13 +1814,13 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                           <button
                             key={idx}
                             onClick={() => {
-                              sfx.playLevelUp();
+                              sfx.playCheer();
                               confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
                               setReflectionDone(true);
                               setReflectionResponse(refChoice);
                               setReflectionBonusAwarded(true);
                               setEarnedXpState((prev) => prev + 10);
-                              companionVoice.speakTTS(`Wonderful reflection, ${child.name}! You are a true technology champion!`, companion, child.ageGroup, lang);
+                              companionVoice.speakExcited(`Wonderful reflection, ${child.name}! You just earned 10 bonus X P! You are a true technology champion!`, companion, child.ageGroup, lang);
                             }}
                             style={{
                               background: colorMode === "night" ? "#1e293b" : "#ffffff",
@@ -1560,97 +1852,35 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {isLastLessonInModule ? (
-                  isNextModuleLocked ? (
-                    <button
-                      onClick={() => {
-                        sfx.playLevelUp();
-                        if (onShowPaywall) onShowPaywall();
-                      }}
-                      style={{
-                        width: "100%",
-                        background: `linear-gradient(135deg, #fbbf24, #d97706)`,
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: 20,
-                        padding: "20px 24px",
-                        fontSize: 18,
-                        fontWeight: 950,
-                        cursor: "pointer",
-                        boxShadow: "0 6px 0 #b45309",
-                        marginBottom: 8
-                      }}
-                    >
-                      <span style={{ fontSize: 24, marginRight: 8, verticalAlign: "middle" }}>⭐</span>
-                      UNLOCK NEXT MODULE
-                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle} (Premium Zone)</div>}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        sfx.playLevelUp();
-                        if (onNextModule) onNextModule();
-                      }}
-                      style={{
-                        width: "100%",
-                        background: `linear-gradient(135deg, #2EC4B6, #14b8a6)`,
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: 20,
-                        padding: "20px 24px",
-                        fontSize: 18,
-                        fontWeight: 950,
-                        cursor: "pointer",
-                        boxShadow: "0 6px 0 #0f766e",
-                        marginBottom: 8
-                      }}
-                    >
-                      START NEXT MODULE 🚀
-                      {nextModuleTitle && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>{nextModuleTitle}</div>}
-                    </button>
-                  )
-                ) : (
-                  onNextLesson && (
-                    <button
-                      onClick={() => {
-                        sfx.playTap();
-                        onNextLesson();
-                        setLearningStep("video");
-                        setCurrentSlideIndex(0);
-                        setSelectedTools([]);
-                        setToolFeedback("");
-                        setCurrentQuizIndex(0);
-                        setQuizSelectedOption(null);
-                        setQuizFeedback("");
-                        setQuizIsAnswered(false);
-                      }}
-                      style={{
-                        width: "100%",
-                        background: `linear-gradient(135deg, #FFD166, #e6bb5c)`,
-                        color: "#1e293b",
-                        border: "none",
-                        borderRadius: 20,
-                        padding: "16px 24px",
-                        fontSize: 18,
-                        fontWeight: 950,
-                        cursor: "pointer"
-                      }}
-                    >
-                      CONTINUE TO NEXT LESSON →
-                    </button>
-                  )
-                )}
+                <button
+                  onClick={handleMoveToNextLesson}
+                  style={{
+                    width: "100%",
+                    background: isLastLessonInModule && isNextModuleLocked
+                      ? `linear-gradient(135deg, #fbbf24, #d97706)`
+                      : `linear-gradient(135deg, #FFD166, #e6bb5c)`,
+                    color: isLastLessonInModule && isNextModuleLocked ? "#ffffff" : "#1e293b",
+                    border: "none",
+                    borderRadius: 20,
+                    padding: "18px 24px",
+                    fontSize: 18,
+                    fontWeight: 950,
+                    cursor: "pointer",
+                    boxShadow: "0 6px 0 #d97706"
+                  }}
+                >
+                  {isLastLessonInModule
+                    ? (isNextModuleLocked ? "⭐ UNLOCK NEXT MODULE" : "START NEXT MODULE 🚀")
+                    : "MOVE TO NEXT LESSON →"}
+                  {isLastLessonInModule && nextModuleTitle && (
+                    <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>
+                      {nextModuleTitle}{isNextModuleLocked ? " (Premium Zone)" : ""}
+                    </div>
+                  )}
+                </button>
                 
                 <button
-                  onClick={() => {
-                    sfx.playTap();
-                    setLearningStep("quiz");
-                    setCurrentQuizIndex(0);
-                    setQuizSelectedOption(null);
-                    setQuizFeedback("");
-                    setQuizIsAnswered(false);
-                    setCorrectAnswersList([]);
-                  }}
+                  onClick={handleRetakeQuiz}
                   style={{
                     width: "100%",
                     background: `transparent`,
@@ -1661,15 +1891,18 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     fontSize: 16,
                     fontWeight: 800,
                     cursor: "pointer",
-                    marginTop: 8,
-                    marginBottom: 8
+                    marginTop: 4,
+                    marginBottom: 4
                   }}
                 >
-                  RETRY QUIZ 🔄
+                  RETAKE QUIZ 🔄
                 </button>
 
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    companionVoice.stop();
+                    onClose();
+                  }}
                   style={{
                     width: "100%",
                     background: colorMode === "night" ? "#1e293b" : "#ffffff",

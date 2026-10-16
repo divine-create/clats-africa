@@ -25,6 +25,7 @@ import { ChildRewards } from "./ChildRewards";
 import { ChildChat } from "./ChildChat";
 import { CURRICULUM } from "../data/curriculum";
 import { PaywallModal } from "./PaywallModal";
+import { computeEffectiveStreak, recordDailyActivityStreak } from "../utils/streak";
 
 interface ChildAppProps {
   child: Child;
@@ -340,6 +341,21 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     }
   }, [slotUsed, slotLimit, lang]);
 
+  // Ensure child.streak and child.streak_count stay synchronized and reflect active/expired status
+  useEffect(() => {
+    const status = computeEffectiveStreak(child);
+    const currentCount = child.streak_count ?? child.streak ?? 0;
+    const currentBest = child.best_streak ?? 0;
+    if (status.streak !== currentCount || status.bestStreak !== currentBest || child.streak !== status.streak || child.streak_count !== status.streak) {
+      onUpdateChild({
+        ...child,
+        streak: status.streak,
+        streak_count: status.streak,
+        best_streak: status.bestStreak
+      });
+    }
+  }, [child.id]);
+
   const handleLessonComplete = async (
     lessonId: string,
     starsEarned: number,
@@ -364,7 +380,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       ? { ...child.stars, [lessonId]: starsEarned }
       : { ...child.stars };
 
-    const actualXpEarned = (isPass && !alreadyCompleted) ? xpEarned : 0;
+    const actualXpEarned = (isPass && !alreadyCompleted) ? xpEarned : (isPass ? Math.min(xpEarned, 15) : xpEarned);
     const freshXP = (child.xp || 0) + actualXpEarned;
 
     const priorQuizResults = child.quizResults || {};
@@ -383,37 +399,15 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
     const currentCompletedCount = Object.keys(freshCompleted).length;
 
-    // Calculate streak locally first so we can award streak badges
-    let finalStreak = child.streak_count || 0;
-    let finalLastActive = child.last_active_at || "";
-
-    if (isPass) {
-      const todayStr = new Date().toISOString().split("T")[0];
-      if (!child.last_active_at) {
-        finalStreak = 1;
-        finalLastActive = todayStr;
-      } else {
-        const lastActiveStr = child.last_active_at.split("T")[0];
-        if (lastActiveStr === todayStr) {
-          finalLastActive = todayStr;
-        } else {
-          const d1 = new Date(lastActiveStr);
-          const d2 = new Date(todayStr);
-          d1.setUTCHours(0, 0, 0, 0);
-          d2.setUTCHours(0, 0, 0, 0);
-          const daysDiff = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysDiff === 1) {
-            finalStreak = (child.streak_count || 0) + 1;
-            finalLastActive = todayStr;
-          } else if (daysDiff > 1) {
-            finalStreak = 1;
-            finalLastActive = todayStr;
-          } else {
-            finalLastActive = todayStr;
-          }
-        }
-      }
-    }
+    // Record daily learning activity and compute updated streak
+    const streakUpdate = recordDailyActivityStreak({
+      ...child,
+      completed: freshCompleted,
+      quizResults: freshQuizResults
+    });
+    const finalStreak = streakUpdate.streak_count;
+    const finalBestStreak = streakUpdate.best_streak;
+    const finalLastActive = streakUpdate.last_active_at;
 
     const currentBadges = child.badges || [];
     const badgesToUnlock: string[] = [];
@@ -436,62 +430,25 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       tryUnlock("badge_3_day_spark");
     }
 
-    if (parent && parent.email) {
+    if (parent && parent.email && isPass) {
       try {
-        const transRes = await fetch("/api/supabase/progress/transaction", {
+        await fetch("/api/supabase/notifications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            parent_email: parent.email,
             child_id: child.id,
-            lesson_id: lessonId,
-            quiz_score: quizResult ? quizResult.score : null,
-            xp_earned: actualXpEarned,
-            completed: isPass,
-            total_questions: quizResult ? quizResult.totalQuestions : null,
-            stars_earned: (isPass && starsEarned > currentStars) ? starsEarned : currentStars,
-            badges_unlocked_ids: badgesToUnlock
+            type: quizResult ? "quiz_completed" : "lesson_completed",
+            title: quizResult ? "Quiz Result 🎯" : "Lesson Completed! 🎉",
+            message: quizResult
+              ? `${child.name} scored ${quizResult.score}% on their latest quiz!`
+              : `${child.name} successfully finished a lesson.`,
+            icon: quizResult && quizResult.score >= 80 ? "⭐" : (quizResult ? "💡" : "🏅"),
+            badge_color: quizResult ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"
           })
         });
-        if (transRes.ok) {
-          const resData = await transRes.json();
-          console.log("[SYNC] Synced progress atomically via transaction:", resData);
-
-          if (resData.streak_count !== undefined) {
-            finalStreak = resData.streak_count;
-          }
-          if (resData.last_active_at !== undefined) {
-            finalLastActive = resData.last_active_at;
-          }
-        }
       } catch (e) {
-        console.warn("[SYNC] Fallback to client-side caching due to transient database error:", e);
-      }
-
-      // Trigger database notification for parent dashboard. This is
-      // deliberately independent of the /progress/transaction call above --
-      // that route doesn't exist in this app (every call to it 404s), so
-      // nesting the notification inside `if (transRes.ok)` meant it could
-      // never fire at all.
-      if (isPass) {
-        try {
-          await fetch("/api/supabase/notifications", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              parent_email: parent.email,
-              child_id: child.id,
-              type: quizResult ? "quiz_completed" : "lesson_completed",
-              title: quizResult ? "Quiz Result 🎯" : "Lesson Completed! 🎉",
-              message: quizResult
-                ? `${child.name} scored ${quizResult.score}% on their latest quiz!`
-                : `${child.name} successfully finished a lesson.`,
-              icon: quizResult && quizResult.score >= 80 ? "⭐" : (quizResult ? "💡" : "🏅"),
-              badge_color: quizResult ? "bg-amber-50 text-amber-600" : "bg-teal-50 text-teal-600"
-            })
-          });
-        } catch (e) {
-          console.warn("[SYNC] Failed to push notification:", e);
-        }
+        console.warn("[SYNC] Failed to push notification:", e);
       }
     }
 
@@ -503,15 +460,16 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     // Combine existing badges with newly unlocked ones
     const newBadgesList = [...(child.badges || []), ...badgesToUnlock];
 
-    // Persist changes
-    const updated = {
+    // Persist changes (onUpdateChild automatically syncs to /api/supabase/sync or /api/supabase/b2b/manage-student)
+    const updated: Child = {
       ...child,
       completed: freshCompleted,
       stars: freshStars,
       xp: freshXP,
       quizResults: freshQuizResults,
+      streak: finalStreak,
       streak_count: finalStreak,
-      best_streak: Math.max(finalStreak, child.best_streak || 0),
+      best_streak: finalBestStreak,
       last_active_at: finalLastActive,
       badges: newBadgesList
     };
@@ -521,12 +479,14 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
   const handleAddGamesXP = async (amount: number) => {
     const freshXP = (child.xp || 0) + amount;
-    
+    const streakUpdate = recordDailyActivityStreak(child);
+
     const currentBadges = child.badges || [];
     const newlyUnlocked: string[] = [];
     if (freshXP >= 250 && !currentBadges.includes("bdg-cyber-shield")) newlyUnlocked.push("bdg-cyber-shield");
     if (freshXP >= 500 && !currentBadges.includes("bdg-prompt-pro")) newlyUnlocked.push("bdg-prompt-pro");
     if (freshXP >= 1000 && !currentBadges.includes("badge_bronze_scholar")) newlyUnlocked.push("badge_bronze_scholar");
+    if (streakUpdate.streak_count >= 3 && !currentBadges.includes("badge_3_day_spark")) newlyUnlocked.push("badge_3_day_spark");
 
     if (newlyUnlocked.length > 0) {
       setCelebrationQueue(prev => [...prev, ...newlyUnlocked]);
@@ -534,28 +494,13 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
     const newBadgesList = [...currentBadges, ...newlyUnlocked];
 
-    // Sync to database
-    if (parent) {
-      try {
-        await fetch("/api/supabase/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            child_id: child.id,
-            parent_id: parent.id,
-            xp_earned: amount,
-            stars_earned: 0,
-            badges_unlocked_ids: newlyUnlocked
-          })
-        });
-      } catch (e) {
-        console.warn("[SYNC] Failed to sync game XP:", e);
-      }
-    }
-
-    const updated = {
+    const updated: Child = {
       ...child,
       xp: freshXP,
+      streak: streakUpdate.streak_count,
+      streak_count: streakUpdate.streak_count,
+      best_streak: streakUpdate.best_streak,
+      last_active_at: streakUpdate.last_active_at,
       badges: newBadgesList
     };
     onUpdateChild(updated);
@@ -781,12 +726,27 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
       {/* Active Lesson Interactive Learning Video & Quiz Portal */}
       {activeTab === "lesson" && (() => {
-        const isLastLesson = selModule && selLesson && selModule.lessons.findIndex((l) => l.id === selLesson.id) === selModule.lessons.length - 1;
         const course = CURRICULUM[child.ageGroup || "early explorers"];
-        let nextModule = null;
+        const resolvedModule =
+          selModule ||
+          course?.modules?.find((m) => m.lessons.some((les) => les.id === selLesson?.id)) ||
+          course?.modules?.[0] ||
+          null;
+        const lessonIdx =
+          resolvedModule && selLesson
+            ? resolvedModule.lessons.findIndex((l) => l.id === selLesson.id)
+            : -1;
+        const isLastLesson = Boolean(
+          resolvedModule &&
+          selLesson &&
+          lessonIdx !== -1 &&
+          lessonIdx === resolvedModule.lessons.length - 1
+        );
+
+        let nextModule: any = null;
         let nextModIdx = -1;
-        if (selModule && course && course.modules) {
-          const modIdx = course.modules.findIndex(m => m.id === selModule.id);
+        if (resolvedModule && course && course.modules) {
+          const modIdx = course.modules.findIndex((m) => m.id === resolvedModule.id);
           if (modIdx !== -1 && modIdx + 1 < course.modules.length) {
             nextModule = course.modules[modIdx + 1];
             nextModIdx = modIdx + 1;
@@ -806,12 +766,16 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               setActiveTab("map");
             }}
             onNextLesson={!isLastLesson ? () => {
-              if (selModule && selLesson) {
-                const idx = selModule.lessons.findIndex((l) => l.id === selLesson.id);
-                if (idx !== -1 && idx + 1 < selModule.lessons.length) {
-                  setSelLesson(selModule.lessons[idx + 1]);
+              if (resolvedModule && selLesson) {
+                const idx = resolvedModule.lessons.findIndex((l) => l.id === selLesson.id);
+                if (idx !== -1 && idx + 1 < resolvedModule.lessons.length) {
+                  setSelModule(resolvedModule);
+                  setSelLesson(resolvedModule.lessons[idx + 1]);
+                  return;
                 }
               }
+              setSelLesson(null);
+              setActiveTab("map");
             } : undefined}
             isLastLessonInModule={isLastLesson}
             isNextModuleLocked={isNextModuleLocked}
@@ -819,7 +783,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             nextModuleTitle={nextModule?.title?.en}
             onNextModule={nextModule ? () => {
               setSelModule(nextModule);
-              setActiveTab("map"); // take them to the next module's path map!
+              if (nextModule.lessons && nextModule.lessons.length > 0) {
+                setSelLesson(nextModule.lessons[0]);
+              } else {
+                setActiveTab("map");
+              }
             } : () => {
               // End of the entire curriculum!
               setActiveTab("rewards");

@@ -20,6 +20,7 @@ import { KobeAvatar } from "./KobeAvatar";
 import { calculateStudyAnalytics } from "../utils/timeTracker";
 import { supabase } from "../utils/supabaseClient";
 import { CLATSLogo } from "./CLATSLogo";
+import { computeEffectiveStreak } from "../utils/streak";
 import {
   Sun,
   Moon,
@@ -360,7 +361,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const courseProgressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   const childXp = child ? child.xp || 0 : 0;
-  const streakDays = child ? child.streak_count || 0 : 0;
+  const streakDays = child ? computeEffectiveStreak(child).streak : 0;
 
   const quizResultsList = child?.quizResults ? Object.values(child.quizResults) as Array<{ score: number }> : [];
   const quizAverage = quizResultsList.length > 0
@@ -821,7 +822,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 const isSelected = child?.id === c.id;
                 const cXp = c.xp || 0;
                 const cComp = Object.keys(c.completed || {}).length;
-                const cStreak = c.streak_count || 0;
+                const cStreak = computeEffectiveStreak(c).streak;
                 const cCourse = CURRICULUM[c.ageGroup];
                 const cTotalL = cCourse ? cCourse.modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : 10;
                 const cPct = cTotalL > 0 ? Math.round((cComp / cTotalL) * 100) : 0;

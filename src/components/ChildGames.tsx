@@ -17,6 +17,7 @@ import { DeepfakeDetective } from "./games/DeepfakeDetective";
 import WonderWoods from "./games/WonderWoods";
 import TheSignalLab from "./games/TheSignalLab";
 import TheIntelligenceLab from "./games/TheIntelligenceLab";
+import { computeEffectiveStreak } from "../utils/streak";
 
 interface ChildGamesProps {
   child: Child;
@@ -120,14 +121,8 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
   // Reactive tick to refresh game progression stats
   const [progressUpdateTick, setProgressUpdateTick] = useState(0);
 
-  // Keep a dynamic streak value for gamification
-  const [streak, setStreak] = useState(() => {
-    const completedCount = Object.keys(child.completed || {}).length;
-    if (completedCount === 0) return 0;
-    const val = localStorage.getItem(`clats_streak_${child.id}`);
-    if (val) return parseInt(val, 10);
-    return completedCount + 2;
-  });
+  // Use real child streak from centralized streak engine (no hardcoded completedCount + 2)
+  const { streak } = computeEffectiveStreak(child);
 
   // Mark academy listing with supported game content
   const academiesList = [

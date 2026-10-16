@@ -57,8 +57,10 @@ export async function POST(req: NextRequest) {
         companion: kid.companion || "kobe",
         child_tutorial_completed: kid.child_tutorial_completed || false,
         last_active_at: kid.last_active_at || null,
+        streak: kid.streak_count || 0,
         streak_count: kid.streak_count || 0,
         best_streak: kid.best_streak || 0,
+        badges: kid.badges || [],
         is_premium: kid.is_premium || false,
       }));
 
@@ -119,8 +121,10 @@ export async function POST(req: NextRequest) {
             companion: kid.companion || "kobe",
             child_tutorial_completed: kid.child_tutorial_completed || false,
             last_active_at: kid.last_active_at || null,
+            streak: kid.streak_count || 0,
             streak_count: kid.streak_count || 0,
             best_streak: kid.best_streak || 0,
+            badges: kid.badges || [],
             is_premium: kid.is_premium || false,
           };
           return NextResponse.json({ ok: true, type: "child", child });
