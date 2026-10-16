@@ -69,7 +69,8 @@ export function evaluateChildBadges(child: Child | null | undefined): EvaluatedB
       ? "p-m"
       : "j-m";
   const aiModules = modules.filter((m) => m.id.startsWith(prefix) || m.id.startsWith(oldPrefix));
-  const aiLessonsTarget = 2;
+  const totalAiLessonsInPathway = aiModules.reduce((acc, m) => acc + (m.lessons || []).length, 0);
+  const aiPathwayTarget = Math.max(1, totalAiLessonsInPathway);
   const completedAiLessonsCount =
     aiModules.length > 0
       ? aiModules.reduce(
@@ -77,6 +78,23 @@ export function evaluateChildBadges(child: Child | null | undefined): EvaluatedB
           0
         )
       : completedCount;
+
+  // Cybersecurity & Digital Citizenship lessons and games
+  const cyberPrefix =
+    child.ageGroup === "early explorers"
+      ? "t-a2"
+      : child.ageGroup === "future builders"
+      ? "p-a2"
+      : "j-a2";
+  const cyberModules = modules.filter((m) => m.id.startsWith(cyberPrefix));
+  const completedCyberLessons = cyberModules.reduce(
+    (acc, m) => acc + (m.lessons || []).filter((l: any) => Boolean(completedMap[l.id])).length,
+    0
+  );
+  const savedGames: string[] = (child as any).completedGames || [];
+  const cyberGamesCount = savedGames.filter((g) => g === "phishing-swipe" || g === "cyber-shield").length;
+  const calculatedCyberXP = completedCyberLessons * 100 + cyberGamesCount * 150;
+  const cyberXP = Math.min(500, Math.max(calculatedCyberXP, currentXP >= 500 && (completedCyberLessons > 0 || cyberGamesCount > 0) ? 500 : calculatedCyberXP));
 
   const hasSaved = (...ids: string[]) => ids.some((id) => savedBadges.includes(id));
 
@@ -117,12 +135,12 @@ export function evaluateChildBadges(child: Child | null | undefined): EvaluatedB
       name: "AI Explorer",
       icon: "🤖",
       emoji: "🤖",
-      desc: "Complete 2 lessons in the AI & Emerging Technologies pathway.",
-      howToEarn: "Step 3: Complete 2 AI Academy lessons",
-      unlocked: completedAiLessonsCount >= aiLessonsTarget || hasSaved("ai-explorer"),
+      desc: "Complete all lessons in the foundational AI & Emerging Technologies pathway.",
+      howToEarn: "Step 3: Finish the AI & Emerging Technologies pathway",
+      unlocked: completedAiLessonsCount >= aiPathwayTarget || hasSaved("ai-explorer"),
       unlockedLabel: "Step 3 Complete",
-      progressCurrent: Math.min(aiLessonsTarget, completedAiLessonsCount),
-      progressTarget: aiLessonsTarget,
+      progressCurrent: Math.min(aiPathwayTarget, completedAiLessonsCount),
+      progressTarget: aiPathwayTarget,
       progressUnit: "AI Lessons",
       color: "text-indigo-400 border-indigo-400"
     },
@@ -147,13 +165,13 @@ export function evaluateChildBadges(child: Child | null | undefined): EvaluatedB
       name: "Cyber Shield",
       icon: "🛡️",
       emoji: "🛡️",
-      desc: "Power up your digital armor by earning 250+ total XP.",
-      howToEarn: "Step 5: Earn 250 XP from lessons & games",
-      unlocked: currentXP >= 250 || hasSaved("bdg-cyber-shield"),
+      desc: "Power up your digital armor by earning 500 XP from cybersecurity & digital citizenship lessons and games.",
+      howToEarn: "Step 5: Earn 500 XP from Cybersecurity lessons & games",
+      unlocked: cyberXP >= 500 || hasSaved("bdg-cyber-shield"),
       unlockedLabel: "Step 5 Complete",
-      progressCurrent: Math.min(250, currentXP),
-      progressTarget: 250,
-      progressUnit: "XP",
+      progressCurrent: cyberXP,
+      progressTarget: 500,
+      progressUnit: "Cyber XP",
       color: "text-teal-400 border-teal-400"
     },
     {
@@ -177,12 +195,12 @@ export function evaluateChildBadges(child: Child | null | undefined): EvaluatedB
       name: "Smart Learner",
       icon: "🧩",
       emoji: "🧩",
-      desc: "Master the fundamentals by completing 5 curriculum lessons.",
-      howToEarn: "Step 7: Complete 5 lessons in total",
-      unlocked: completedCount >= 5 || hasSaved("smart-learner"),
+      desc: "Master the fundamentals by completing 20 curriculum lessons.",
+      howToEarn: "Step 7: Complete 20 curriculum lessons in total",
+      unlocked: completedCount >= 20 || hasSaved("smart-learner"),
       unlockedLabel: "Step 7 Complete",
-      progressCurrent: Math.min(5, completedCount),
-      progressTarget: 5,
+      progressCurrent: Math.min(20, completedCount),
+      progressTarget: 20,
       progressUnit: "Lessons",
       color: "text-[#B8A0FF] border-[#B8A0FF]"
     },
@@ -319,7 +337,7 @@ export const UNIFIED_BADGE_MAP: Record<string, { title: string; icon: string; de
   "ai-explorer": {
     title: "AI Explorer",
     icon: "🤖",
-    desc: "Step 3 Complete: You completed 2 AI Academy lessons!"
+    desc: "Step 3 Complete: You completed the foundational AI & Emerging Technologies pathway!"
   },
   "quiz-champ": {
     title: "Quiz Champion",
@@ -334,7 +352,7 @@ export const UNIFIED_BADGE_MAP: Record<string, { title: string; icon: string; de
   "bdg-cyber-shield": {
     title: "Cyber Shield",
     icon: "🛡️",
-    desc: "Step 5 Complete: You earned 250+ total XP!"
+    desc: "Step 5 Complete: You earned 500 XP across Cybersecurity lessons and games!"
   },
   "future-thinker": {
     title: "Future Thinker",
@@ -349,7 +367,7 @@ export const UNIFIED_BADGE_MAP: Record<string, { title: string; icon: string; de
   "smart-learner": {
     title: "Smart Learner",
     icon: "🧩",
-    desc: "Step 7 Complete: You completed 5 curriculum lessons!"
+    desc: "Step 7 Complete: You completed 20 curriculum lessons in total!"
   },
   "streak-consistent": {
     title: "Consistency Star",
