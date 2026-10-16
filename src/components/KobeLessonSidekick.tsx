@@ -14,7 +14,7 @@ import { Mic, MicOff, Volume2, Sparkles, X, Play, Pause, MessageCircle, Send, He
 import { Child, Lesson, Language, QuizQuestion } from "../types";
 import { C, F, AGE_META } from "../utils/config";
 import { KobeAvatar } from "./KobeAvatar";
-import { sfx } from "../utils/audio";
+import { sfx, companionVoice } from "../utils/audio";
 import { useApp } from "../context/AppContext";
 
 export type SovereignLang = Language;
@@ -148,21 +148,34 @@ export const KobeLessonSidekick: React.FC<KobeLessonSidekickProps> = ({
   const handleOpen = () => {
     sfx.playTap();
     setIsOpen(true);
-    if (onPauseMedia) onPauseMedia();
+    try {
+      if (onPauseMedia) onPauseMedia();
+    } catch (err) {
+      console.warn("Media pause ignored:", err);
+    }
   };
 
   const handleClose = () => {
     sfx.playTap();
     setIsOpen(false);
     if (audioPlayerRef.current) {
-      audioPlayerRef.current.pause();
+      try {
+        audioPlayerRef.current.pause();
+      } catch {}
       setIsPlayingAudio(false);
     }
+    try {
+      companionVoice.stop();
+    } catch {}
     if (onCloseExternal) onCloseExternal();
-    if (onResumeMedia) onResumeMedia();
+    try {
+      if (onResumeMedia) onResumeMedia();
+    } catch (err) {
+      console.warn("Media resume ignored:", err);
+    }
   };
 
-  // Play audio via YarnGPT
+  // Play audio via YarnGPT with Web Speech companionVoice fallback
   const playYarnVoice = async (text: string, targetLang: Language) => {
     try {
       if (audioPlayerRef.current) {
@@ -184,20 +197,23 @@ export const KobeLessonSidekick: React.FC<KobeLessonSidekickProps> = ({
       if (res.ok) {
         const data = await res.json();
         const url = data.audioBase64 || data.audioUrl;
-        if (url) {
+        if (url && typeof url === "string") {
           const audio = new Audio(url);
           audioPlayerRef.current = audio;
           audio.onended = () => setIsPlayingAudio(false);
-          audio.onerror = () => setIsPlayingAudio(false);
+          audio.onerror = () => {
+            setIsPlayingAudio(false);
+            companionVoice.speakTTS(text, child.companion || "kobe", child.ageGroup, targetLang);
+          };
           await audio.play();
-        } else {
-          setIsPlayingAudio(false);
+          return;
         }
-      } else {
-        setIsPlayingAudio(false);
       }
+      setIsPlayingAudio(false);
+      companionVoice.speakTTS(text, child.companion || "kobe", child.ageGroup, targetLang);
     } catch {
       setIsPlayingAudio(false);
+      companionVoice.speakTTS(text, child.companion || "kobe", child.ageGroup, targetLang);
     }
   };
 

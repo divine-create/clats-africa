@@ -297,59 +297,80 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
   // --- YOUTUBE NATIVE IFRAME API ---
   useEffect(() => {
-    if (learningStep !== "video" || !currentVideoData) return;
+    if (learningStep !== "video" || !currentVideoData) {
+      if (ytPlayerRef.current) {
+        try {
+          ytPlayerRef.current.destroy();
+        } catch {}
+        ytPlayerRef.current = null;
+      }
+      setIsVideoPlaying(false);
+      return;
+    }
 
     const loadYoutubeAPI = () => {
       if (!(window as any).YT) {
         const tag = document.createElement("script");
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName("script")[0];
-        if (firstScriptTag.parentNode) {
+        if (firstScriptTag && firstScriptTag.parentNode) {
           firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        } else if (document.head) {
+          document.head.appendChild(tag);
         }
       }
     };
 
     const initPlayer = () => {
       if (ytPlayerRef.current) {
-        ytPlayerRef.current.destroy();
+        try {
+          ytPlayerRef.current.destroy();
+        } catch {}
+        ytPlayerRef.current = null;
       }
-      ytPlayerRef.current = new (window as any).YT.Player(`youtube-player-${currentVideoData.embedId}`, {
-        height: '100%',
-        width: '100%',
-        videoId: currentVideoData.embedId,
-        playerVars: {
-          autoplay: 0,
-          controls: 1,
-          disablekb: 0,
-          modestbranding: 1,
-          rel: 0,
-          showinfo: 0,
-          fs: 0,
-          cc_load_policy: 0
-        },
-        events: {
-          'onReady': (event: any) => {
-            try {
-              event.target.unloadModule("captions");
-              event.target.unloadModule("cc");
-            } catch (e) {}
+      const containerId = `youtube-player-${currentVideoData.embedId}`;
+      if (!document.getElementById(containerId)) return;
+
+      try {
+        ytPlayerRef.current = new (window as any).YT.Player(containerId, {
+          height: '100%',
+          width: '100%',
+          videoId: currentVideoData.embedId,
+          playerVars: {
+            autoplay: 0,
+            controls: 1,
+            disablekb: 0,
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0,
+            fs: 0,
+            cc_load_policy: 0
           },
-          'onStateChange': (event: any) => {
-            try {
-              event.target.unloadModule("captions");
-              event.target.unloadModule("cc");
-            } catch (e) {}
-            if (event.data === (window as any).YT.PlayerState.PLAYING) {
-              setIsVideoPlaying(true);
-            } else if (event.data === (window as any).YT.PlayerState.PAUSED) {
-              setIsVideoPlaying(false);
-            } else if (event.data === (window as any).YT.PlayerState.ENDED) {
-              setWatchedFraction(1);
+          events: {
+            'onReady': (event: any) => {
+              try {
+                event.target?.unloadModule?.("captions");
+                event.target?.unloadModule?.("cc");
+              } catch (e) {}
+            },
+            'onStateChange': (event: any) => {
+              try {
+                event.target?.unloadModule?.("captions");
+                event.target?.unloadModule?.("cc");
+              } catch (e) {}
+              if (event.data === (window as any).YT?.PlayerState?.PLAYING) {
+                setIsVideoPlaying(true);
+              } else if (event.data === (window as any).YT?.PlayerState?.PAUSED) {
+                setIsVideoPlaying(false);
+              } else if (event.data === (window as any).YT?.PlayerState?.ENDED) {
+                setWatchedFraction(1);
+              }
             }
           }
-        }
-      });
+        });
+      } catch (e) {
+        ytPlayerRef.current = null;
+      }
     };
 
     (window as any).onYouTubeIframeAPIReady = initPlayer;
@@ -362,7 +383,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
     return () => {
       if (ytPlayerRef.current) {
-        ytPlayerRef.current.destroy();
+        try {
+          ytPlayerRef.current.destroy();
+        } catch {}
+        ytPlayerRef.current = null;
       }
     };
   }, [learningStep, currentVideoData?.embedId, subtitlesOn]);
@@ -372,9 +396,11 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     if (isVideoPlaying && ytPlayerRef.current) {
       interval = setInterval(() => {
         try {
-          if (ytPlayerRef.current && ytPlayerRef.current.getDuration) {
-            const duration = ytPlayerRef.current.getDuration();
-            const currentTime = ytPlayerRef.current.getCurrentTime();
+          const player = ytPlayerRef.current;
+          const iframe = player?.getIframe?.();
+          if (player && iframe && iframe.src && typeof player.getDuration === "function") {
+            const duration = player.getDuration();
+            const currentTime = player.getCurrentTime();
             if (duration > 0) {
               const fraction = currentTime / duration;
               if (fraction >= 0.8) {
@@ -394,22 +420,30 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   }, [isVideoPlaying]);
 
   const togglePlay = () => {
-    if (ytPlayerRef.current) {
-      if (isVideoPlaying) {
-        ytPlayerRef.current.pauseVideo();
-        setIsVideoPlaying(false);
-      } else {
-        ytPlayerRef.current.playVideo();
-        setIsVideoPlaying(true);
+    try {
+      const player = ytPlayerRef.current;
+      const iframe = player?.getIframe?.();
+      if (player && iframe && iframe.src) {
+        if (isVideoPlaying) {
+          player.pauseVideo?.();
+          setIsVideoPlaying(false);
+        } else {
+          player.playVideo?.();
+          setIsVideoPlaying(true);
+        }
       }
-    }
+    } catch {}
   };
 
   const changeSpeed = (rate: number) => {
-    if (ytPlayerRef.current && ytPlayerRef.current.setPlaybackRate) {
-      ytPlayerRef.current.setPlaybackRate(rate);
-      setPlaybackRate(rate);
-    }
+    try {
+      const player = ytPlayerRef.current;
+      const iframe = player?.getIframe?.();
+      if (player && iframe && iframe.src && typeof player.setPlaybackRate === "function") {
+        player.setPlaybackRate(rate);
+        setPlaybackRate(rate);
+      }
+    } catch {}
   };
   // ---------------------------------
 
@@ -1666,15 +1700,28 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         lang={lang}
         theme={colorMode === "night" ? "dark" : "light"}
         onPauseMedia={() => {
-          setIsVideoPlaying(false);
-          if (ytPlayerRef.current?.pauseVideo) {
-            ytPlayerRef.current.pauseVideo();
+          companionVoice.stop();
+          if (learningStep === "video") {
+            setIsVideoPlaying(false);
+            try {
+              const player = ytPlayerRef.current;
+              const iframe = player?.getIframe?.();
+              if (player && iframe && iframe.src && typeof player.pauseVideo === "function") {
+                player.pauseVideo();
+              }
+            } catch {}
           }
         }}
         onResumeMedia={() => {
-          setIsVideoPlaying(true);
-          if (ytPlayerRef.current?.playVideo) {
-            ytPlayerRef.current.playVideo();
+          if (learningStep === "video") {
+            try {
+              const player = ytPlayerRef.current;
+              const iframe = player?.getIframe?.();
+              if (player && iframe && iframe.src && typeof player.playVideo === "function") {
+                player.playVideo();
+                setIsVideoPlaying(true);
+              }
+            } catch {}
           }
         }}
         currentQuizQuestion={learningStep === "quiz" ? activeQuiz[currentQuizIndex] : null}
