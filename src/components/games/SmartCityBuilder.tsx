@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Child } from "../../types";
 import { Shield, Zap, Heart, RefreshCw, HelpCircle, Play, Sparkles } from "lucide-react";
+import { recordLearningEvent, recordSkillEvidence } from "../../utils/learningEvidence";
 
 interface SmartCityBuilderProps {
   child: Child;
@@ -91,6 +92,7 @@ const BUILDINGS: Building[] = [
 ];
 
 export const SmartCityBuilder: React.FC<SmartCityBuilderProps> = ({
+  child,
   isDark,
   onComplete,
   onClose,
@@ -99,6 +101,15 @@ export const SmartCityBuilder: React.FC<SmartCityBuilderProps> = ({
   const [grid, setGrid] = useState<(Building | null)[]>(Array(36).fill(null));
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
   const [showInstructions, setShowInstructions] = useState(true);
+
+  useEffect(() => {
+    recordLearningEvent({
+      childId: child?.id || "guest-child",
+      sourceType: "game",
+      sourceId: "game_smart_city_builder",
+      eventType: "activity_started"
+    });
+  }, [child?.id]);
 
   // Metrics (Start at bad levels, student needs to improve them)
   const [traffic, setTraffic] = useState(85); // Goal: <= 35
@@ -570,7 +581,35 @@ export const SmartCityBuilder: React.FC<SmartCityBuilderProps> = ({
             </p>
           </div>
           <button
-            onClick={() => onComplete(150)}
+            onClick={() => {
+              recordSkillEvidence({
+                childId: child?.id || "guest-child",
+                skillId: "systems.resource.tradeoffs",
+                sourceType: "game",
+                sourceId: "game_smart_city_builder",
+                demonstrated: true,
+                evidenceLevel: "mastered",
+                attemptCount: 1,
+                hintsUsed: 0,
+                notes: `City fixed successfully! Traffic: ${traffic}%, Pollution: ${pollution}%, Health: ${health}%, Tech: ${tech}%.`
+              });
+              recordLearningEvent({
+                childId: child?.id || "guest-child",
+                sourceType: "game",
+                sourceId: "game_smart_city_builder",
+                eventType: "activity_completed",
+                skillId: "systems.resource.tradeoffs",
+                success: true,
+                metadata: {
+                  traffic,
+                  pollution,
+                  health,
+                  tech,
+                  score: 100
+                }
+              });
+              onComplete(150);
+            }}
             style={{
               padding: "8px 20px",
               borderRadius: 10,

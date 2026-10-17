@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, ShieldAlert, AlertTriangle, CheckCircle2, ArrowRight, MousePointerClick } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { companionVoice, gameMusic, sfx } from '@/utils/audio';
+import { recordLearningEvent, recordSkillEvidence } from '@/utils/learningEvidence';
 
 // --- SCENARIOS ---
 const SCENARIOS = [
@@ -77,6 +78,12 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
 
   useEffect(() => {
     gameMusic.startTheme("quiz_quest");
+    recordLearningEvent({
+      childId: activeChild?.id || 'guest-child',
+      sourceType: 'game',
+      sourceId: 'game_phishing_swipe',
+      eventType: 'activity_started'
+    });
     return () => {
       gameMusic.stop();
       companionVoice.stop();
@@ -103,6 +110,22 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
     const isCorrect = chosePhishing === currentCard.isPhishing;
     setLastAnswerCorrect(isCorrect);
     const chosenLabel = chosePhishing ? "Phishing Scam" : "Safe Message";
+
+    recordLearningEvent({
+      childId: activeChild?.id || 'guest-child',
+      sourceType: 'game',
+      sourceId: 'game_phishing_swipe',
+      eventType: 'solution_validated',
+      skillId: 'cyber.phishing.detection',
+      success: isCorrect,
+      metadata: {
+        challengeId: `card_${currentCard.id}`,
+        isCorrect,
+        chosePhishing,
+        sender: currentCard.sender,
+        isPhishing: currentCard.isPhishing
+      }
+    });
     
     if (isCorrect) {
       sfx.playCoin();
@@ -148,6 +171,13 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
   };
 
   const restartGame = () => {
+    evidenceRecordedRef.current = false;
+    recordLearningEvent({
+      childId: activeChild?.id || 'guest-child',
+      sourceType: 'game',
+      sourceId: 'game_phishing_swipe',
+      eventType: 'activity_started'
+    });
     setDeck([...SCENARIOS].sort(() => Math.random() - 0.5));
     setCurrentIndex(0);
     setScore(0);
@@ -160,6 +190,46 @@ export const PhishingSwipe = ({ onBack }: { onBack: () => void }) => {
 
   const totalCards = deck.length;
   const accuracy = totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0;
+
+  const evidenceRecordedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (gameOver && !evidenceRecordedRef.current) {
+      evidenceRecordedRef.current = true;
+      const childId = activeChild?.id || 'guest-child';
+      const demonstrated = accuracy >= 70;
+      const perfLevel = accuracy >= 90 ? 'mastered' : (accuracy >= 70 ? 'demonstrated' : 'completed_with_support');
+
+      recordSkillEvidence({
+        childId,
+        skillId: 'cyber.phishing.detection',
+        sourceType: 'game',
+        sourceId: 'game_phishing_swipe',
+        demonstrated,
+        evidenceLevel: perfLevel,
+        attemptCount: 1,
+        hintsUsed: 0,
+        notes: `Scanned ${totalCards} messages with ${accuracy}% accuracy. Highest streak: ${highestStreak}.`
+      });
+
+      recordLearningEvent({
+        childId,
+        sourceType: 'game',
+        sourceId: 'game_phishing_swipe',
+        eventType: 'activity_completed',
+        skillId: 'cyber.phishing.detection',
+        success: demonstrated,
+        metadata: {
+          score,
+          correctCount,
+          totalCards,
+          accuracy,
+          highestStreak,
+          demonstrated
+        }
+      });
+    }
+  }, [gameOver, accuracy, score, totalCards, correctCount, highestStreak, activeChild?.id]);
 
   // GAME OVER SCREEN
   if (gameOver) {

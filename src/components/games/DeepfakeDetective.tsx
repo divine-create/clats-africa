@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowRight, Shield, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { companionVoice, gameMusic, sfx } from '@/utils/audio';
+import { recordLearningEvent, recordSkillEvidence } from '@/utils/learningEvidence';
 
 interface Round {
   category: string;
@@ -129,6 +130,22 @@ export const DeepfakeDetective = ({ onBack }: { onBack: () => void }) => {
     setLastCorrect(isCorrect);
     setAnswers(prev => [...prev, isCorrect]);
 
+    recordLearningEvent({
+      childId: activeChild?.id || 'guest-child',
+      sourceType: 'game',
+      sourceId: 'game_deepfake_detective',
+      eventType: 'solution_validated',
+      skillId: 'info.verification.fact_checking',
+      success: isCorrect,
+      metadata: {
+        challengeId: `round_${roundIndex + 1}_${currentRound.difficulty}`,
+        choice,
+        fakeIs: currentRound.fakeIs,
+        category: currentRound.category,
+        difficulty: currentRound.difficulty
+      }
+    });
+
     if (isCorrect) {
       sfx.playCoin();
       setScore(s => s + (currentRound.difficulty === "Easy" ? 10 : currentRound.difficulty === "Medium" ? 20 : 30));
@@ -166,6 +183,13 @@ export const DeepfakeDetective = ({ onBack }: { onBack: () => void }) => {
   };
 
   const restart = () => {
+    evidenceRecordedRef.current = false;
+    recordLearningEvent({
+      childId: activeChild?.id || 'guest-child',
+      sourceType: 'game',
+      sourceId: 'game_deepfake_detective',
+      eventType: 'activity_started'
+    });
     setPhase("intro");
     setRoundIndex(0);
     setScore(0);
@@ -177,6 +201,45 @@ export const DeepfakeDetective = ({ onBack }: { onBack: () => void }) => {
   };
 
   const accuracy = answers.length > 0 ? Math.round((answers.filter(Boolean).length / answers.length) * 100) : 0;
+
+  const evidenceRecordedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (phase === "results" && !evidenceRecordedRef.current) {
+      evidenceRecordedRef.current = true;
+      const childId = activeChild?.id || 'guest-child';
+      const demonstrated = accuracy >= 70;
+      const perfLevel = accuracy >= 85 ? 'mastered' : (accuracy >= 65 ? 'demonstrated' : 'completed_with_support');
+
+      recordSkillEvidence({
+        childId,
+        skillId: 'info.verification.fact_checking',
+        sourceType: 'game',
+        sourceId: 'game_deepfake_detective',
+        demonstrated,
+        evidenceLevel: perfLevel,
+        attemptCount: 1,
+        hintsUsed: 0,
+        notes: `Analyzed ${totalRounds} items with ${accuracy}% accuracy. Score: ${score}, Best streak: ${bestStreak}.`
+      });
+
+      recordLearningEvent({
+        childId,
+        sourceType: 'game',
+        sourceId: 'game_deepfake_detective',
+        eventType: 'activity_completed',
+        skillId: 'info.verification.fact_checking',
+        success: demonstrated,
+        metadata: {
+          score,
+          accuracy,
+          bestStreak,
+          totalRounds,
+          demonstrated
+        }
+      });
+    }
+  }, [phase, accuracy, score, bestStreak, answers, totalRounds, activeChild?.id]);
 
   // ── INTRO ────────────────────────────────────────────────────────────
   if (phase === "intro") {
@@ -207,7 +270,16 @@ export const DeepfakeDetective = ({ onBack }: { onBack: () => void }) => {
 
           <div className="flex gap-4">
             <button
-              onClick={() => setPhase("playing")}
+              onClick={() => {
+                evidenceRecordedRef.current = false;
+                recordLearningEvent({
+                  childId: activeChild?.id || 'guest-child',
+                  sourceType: 'game',
+                  sourceId: 'game_deepfake_detective',
+                  eventType: 'activity_started'
+                });
+                setPhase("playing");
+              }}
               className="px-8 py-4 rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-black text-base shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
             >
               Start Investigation <ArrowRight size={20} />

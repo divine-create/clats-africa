@@ -1879,14 +1879,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       {showAiModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => !loadingAi && setShowAiModal(false)} />
-          <div className={`relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col ${isDark ? "bg-[#111827] border border-slate-800" : "bg-white"}`}>
+          <div className={`relative w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col ${isDark ? "bg-[#111827] border border-slate-800" : "bg-white"}`}>
             
-            <div className={`p-6 border-b flex items-center justify-between ${isDark ? "border-slate-800 bg-indigo-500/10" : "border-indigo-100 bg-indigo-50"}`}>
+            <div className={`p-6 border-b flex items-center justify-between shrink-0 ${isDark ? "border-slate-800 bg-indigo-500/10" : "border-indigo-100 bg-indigo-50"}`}>
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-inner ${isDark ? "bg-indigo-900/50" : "bg-white"}`}>✨</div>
                 <div>
-                  <h3 className={`font-black text-lg m-0 ${isDark ? "text-indigo-300" : "text-indigo-700"}`}>AI Progress Analysis</h3>
-                  <p className={`text-xs font-semibold m-0 ${isDark ? "text-indigo-400/60" : "text-indigo-500/70"}`}>Powered by Meta Llama 3</p>
+                  <h3 className={`font-black text-lg m-0 ${isDark ? "text-indigo-300" : "text-indigo-700"}`}>AI Progress Analysis & Skill Evidence</h3>
+                  <p className={`text-xs font-semibold m-0 ${isDark ? "text-indigo-400/60" : "text-indigo-500/70"}`}>Powered by Meta AI (Llama 3.3 70B)</p>
                 </div>
               </div>
               {!loadingAi && (
@@ -1896,22 +1896,50 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               )}
             </div>
 
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto space-y-5">
               {loadingAi ? (
-                <div className="py-12 flex flex-col items-center justify-center space-y-6">
+                <div className="py-16 flex flex-col items-center justify-center space-y-6">
                   <div className="relative w-16 h-16">
                     <div className="absolute inset-0 border-4 border-indigo-200 dark:border-indigo-900 rounded-full"></div>
                     <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">🤖</div>
                   </div>
-                  <p className={`text-sm font-semibold animate-pulse ${isDark ? "text-slate-400" : "text-slate-500"}`}>Analyzing {child?.name}'s progress data...</p>
+                  <p className={`text-sm font-semibold animate-pulse ${isDark ? "text-slate-400" : "text-slate-500"}`}>Analyzing {child?.name}'s lessons, quizzes, and game performance...</p>
                 </div>
               ) : aiInsight ? (
-                <div className="space-y-6">
-                  <div className={`p-4 rounded-xl ${isDark ? "bg-slate-900" : "bg-slate-50"}`}>
-                    <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Weekly Summary</h4>
-                    <p className={`text-sm leading-relaxed ${isDark ? "text-slate-200" : "text-slate-700"}`}>{aiInsight.summary}</p>
+                <div className="space-y-5">
+                  {/* Executive Summary */}
+                  <div className={`p-5 rounded-2xl ${isDark ? "bg-slate-900/90 border border-slate-800" : "bg-slate-50 border border-slate-200"}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm">📋</span>
+                      <h4 className="text-xs uppercase tracking-wider font-extrabold text-slate-400">Executive Assessment</h4>
+                    </div>
+                    <p className={`text-sm leading-relaxed ${isDark ? "text-slate-200" : "text-slate-700"}`}>
+                      {aiInsight.executiveSummary || aiInsight.summary}
+                    </p>
                   </div>
+
+                  {/* Demonstrated Practical Skills */}
+                  {Array.isArray(aiInsight.demonstratedCompetencies) && aiInsight.demonstratedCompetencies.length > 0 && (
+                    <div className={`p-5 rounded-2xl border ${isDark ? "bg-emerald-500/10 border-emerald-500/20" : "bg-emerald-50/80 border-emerald-200"}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm">✅</span>
+                        <h4 className="text-xs uppercase tracking-wider font-extrabold text-emerald-600 dark:text-emerald-400">
+                          Demonstrated Practical Competencies
+                        </h4>
+                      </div>
+                      <ul className="space-y-2">
+                        {aiInsight.demonstratedCompetencies.map((comp: string, i: number) => (
+                          <li key={i} className={`text-sm flex items-start gap-2 ${isDark ? "text-emerald-200" : "text-emerald-900"}`}>
+                            <span className="text-emerald-500 mt-0.5 font-bold">✓</span>
+                            <span>{comp}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Strengths & Focus Areas */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className={`p-4 rounded-xl border ${isDark ? "bg-green-500/10 border-green-500/20" : "bg-green-50 border-green-200"}`}>
                       <h4 className="text-xs uppercase tracking-wider font-bold text-green-500 mb-2">Top Strength 🌟</h4>
@@ -1922,13 +1950,84 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       <p className={`text-sm leading-relaxed ${isDark ? "text-amber-200" : "text-amber-800"}`}>{aiInsight.focusArea}</p>
                     </div>
                   </div>
-                  <div className={`p-4 rounded-xl border ${isDark ? "bg-indigo-500/10 border-indigo-500/20" : "bg-indigo-50 border-indigo-200"}`}>
-                    <h4 className="text-xs uppercase tracking-wider font-bold text-indigo-500 mb-2">Action For Parents 💬</h4>
-                    <p className={`text-sm leading-relaxed font-semibold ${isDark ? "text-indigo-200" : "text-indigo-900"}`}>"{aiInsight.parentAction}"</p>
-                  </div>
+
+                  {/* Constructive Areas for Growth */}
+                  {Array.isArray(aiInsight.areasForImprovement) && aiInsight.areasForImprovement.length > 0 && (
+                    <div className={`p-5 rounded-2xl border ${isDark ? "bg-amber-500/10 border-amber-500/20" : "bg-amber-50/80 border-amber-200"}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm">🌱</span>
+                        <h4 className="text-xs uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-400">
+                          Constructive Areas for Growth
+                        </h4>
+                      </div>
+                      <ul className="space-y-2">
+                        {aiInsight.areasForImprovement.map((area: string, i: number) => (
+                          <li key={i} className={`text-sm flex items-start gap-2 ${isDark ? "text-amber-200" : "text-amber-900"}`}>
+                            <span className="text-amber-500 mt-0.5 font-bold">•</span>
+                            <span>{area}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Scaffolding Support: Parents & Educators */}
+                  {aiInsight.scaffoldingGuide ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {Array.isArray(aiInsight.scaffoldingGuide.forParents) && aiInsight.scaffoldingGuide.forParents.length > 0 && (
+                        <div className={`p-4 rounded-xl border ${isDark ? "bg-indigo-500/10 border-indigo-500/20" : "bg-indigo-50 border-indigo-200"}`}>
+                          <h4 className="text-xs uppercase tracking-wider font-bold text-indigo-500 mb-2">Home Scaffolding 🏠</h4>
+                          <ul className="space-y-1.5">
+                            {aiInsight.scaffoldingGuide.forParents.map((act: string, idx: number) => (
+                              <li key={idx} className={`text-xs leading-relaxed ${isDark ? "text-indigo-200" : "text-indigo-900"}`}>
+                                • {act}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {Array.isArray(aiInsight.scaffoldingGuide.forEducators) && aiInsight.scaffoldingGuide.forEducators.length > 0 && (
+                        <div className={`p-4 rounded-xl border ${isDark ? "bg-purple-500/10 border-purple-500/20" : "bg-purple-50 border-purple-200"}`}>
+                          <h4 className="text-xs uppercase tracking-wider font-bold text-purple-400 mb-2">School & Classroom 🏫</h4>
+                          <ul className="space-y-1.5">
+                            {aiInsight.scaffoldingGuide.forEducators.map((act: string, idx: number) => (
+                              <li key={idx} className={`text-xs leading-relaxed ${isDark ? "text-purple-200" : "text-purple-900"}`}>
+                                • {act}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`p-4 rounded-xl border ${isDark ? "bg-indigo-500/10 border-indigo-500/20" : "bg-indigo-50 border-indigo-200"}`}>
+                      <h4 className="text-xs uppercase tracking-wider font-bold text-indigo-500 mb-2">Action For Parents 💬</h4>
+                      <p className={`text-sm leading-relaxed font-semibold ${isDark ? "text-indigo-200" : "text-indigo-900"}`}>"{aiInsight.parentAction}"</p>
+                    </div>
+                  )}
+
+                  {/* Next Recommended Quest */}
+                  {aiInsight.nextRecommendedQuest && (
+                    <div className={`p-4 rounded-xl border ${isDark ? "bg-sky-500/10 border-sky-500/20" : "bg-sky-50 border-sky-200"}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs uppercase tracking-wider font-extrabold text-sky-600 dark:text-sky-400">
+                          Recommended Next Quest 🚀
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-200/50 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300">
+                          {aiInsight.nextRecommendedQuest.targetSkill}
+                        </span>
+                      </div>
+                      <h5 className={`text-sm font-black m-0 mb-1 ${isDark ? "text-sky-200" : "text-sky-900"}`}>
+                        {aiInsight.nextRecommendedQuest.title}
+                      </h5>
+                      <p className={`text-xs leading-relaxed m-0 ${isDark ? "text-sky-300/80" : "text-sky-800/80"}`}>
+                        {aiInsight.nextRecommendedQuest.rationale}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="py-8 text-center text-red-500">Failed to load insight.</div>
+                <div className="py-8 text-center text-red-500 font-semibold">Failed to load insight.</div>
               )}
             </div>
             

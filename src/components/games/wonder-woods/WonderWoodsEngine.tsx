@@ -10,6 +10,20 @@ import { MissionPreview } from "./components/MissionPreview";
 import { ChallengeWorkspace } from "./components/ChallengeWorkspace";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { sfx, gameMusic, companionVoice } from "../../../utils/audio";
+import { recordLearningEvent, recordSkillEvidence } from "../../../utils/learningEvidence";
+
+const LEVEL_SKILL_MAP: Record<number, string> = {
+  1: "pattern.alternation.binary",
+  2: "pattern.shape.geometric",
+  3: "pattern.category.object",
+  4: "pattern.repeat.double",
+  5: "pattern.attribute.size",
+  6: "pattern.sequence.triple",
+  7: "pattern.multi_attribute",
+  8: "pattern.rule_induction",
+  9: "pattern.anomaly.detection",
+  10: "pattern.creation.synthesis"
+};
 
 export interface WonderWoodsEngineProps {
   onExit?: () => void;
@@ -209,6 +223,36 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
     // Reward XP ONLY on first completion to prevent duplicate XP farming
     if (!isAlreadyCompleted) {
       onRewardXP?.(activeLevel.xpAward);
+    }
+
+    // Record genuine practical learning evidence without modifying gameplay
+    const skillId = LEVEL_SKILL_MAP[activeLevel.id] || "pattern.alternation.binary";
+    const isDemonstrated = stars >= 2;
+    const hintsCount = stars === 3 ? 0 : stars === 2 ? 1 : 2;
+
+    if (childId && childId !== "default") {
+      recordSkillEvidence({
+        childId,
+        skillId,
+        sourceType: "game",
+        sourceId: `wonder-woods-lvl-${activeLevel.id}`,
+        attemptCount: 1,
+        hintsUsed: hintsCount,
+        demonstrated: isDemonstrated,
+        evidenceLevel: stars === 3 ? "demonstrated" : stars === 2 ? "completed_with_support" : "participated",
+        outputValid: activeLevel.id === 10 ? true : undefined,
+        notes: `${activeLevel.title} completed with ${stars} stars.`
+      });
+
+      recordLearningEvent({
+        childId,
+        eventType: "activity_completed",
+        sourceType: "game",
+        sourceId: `wonder-woods-lvl-${activeLevel.id}`,
+        skillId,
+        hintsUsed: hintsCount,
+        success: isDemonstrated
+      });
     }
 
     // Open celebration modal

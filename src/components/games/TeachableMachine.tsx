@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Brain, Zap, CheckCircle2, XCircle, Volume2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { companionVoice, gameMusic, sfx } from '@/utils/audio';
+import { recordLearningEvent, recordSkillEvidence } from '@/utils/learningEvidence';
 
 // --- TRAINING DATA ---
 interface DataItem {
@@ -134,6 +135,16 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
     const newChoices = [...trainingChoices, bucketIndex];
     setTrainingChoices(newChoices);
 
+    recordLearningEvent({
+      childId: activeChild?.id || 'guest-child',
+      sourceType: 'game',
+      sourceId: 'game_teachable_machine',
+      eventType: 'solution_validated',
+      skillId: 'ml.classification.training',
+      success: isCorrect,
+      metadata: { challengeId: `item_${trainingIndex + 1}_${currentItem.label}`, chosenBucket, correctBucket }
+    });
+
     if (trainingIndex < TRAINING_ITEMS.length - 1) {
       setTrainingIndex(i => i + 1);
     } else {
@@ -192,6 +203,43 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
   const aiCorrectCount = testResults.filter(r => r.correct).length;
   const aiAccuracy = testResults.length > 0 ? Math.round((aiCorrectCount / testResults.length) * 100) : 0;
 
+  const evidenceRecordedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (phase === "results" && !evidenceRecordedRef.current) {
+      evidenceRecordedRef.current = true;
+      const childId = activeChild?.id || "guest-child";
+      const demonstrated = aiAccuracy >= 60 || trainingAccuracy >= 80;
+      const perfLevel = trainingAccuracy >= 90 ? "mastered" : (trainingAccuracy >= 70 ? "demonstrated" : "completed_with_support");
+
+      recordSkillEvidence({
+        childId,
+        skillId: "ml.classification.training",
+        sourceType: "game",
+        sourceId: "game_teachable_machine",
+        demonstrated,
+        evidenceLevel: perfLevel,
+        attemptCount: 1,
+        hintsUsed: 0,
+        notes: `Trained ${TRAINING_ITEMS.length} items with ${trainingAccuracy}% sorting accuracy. AI accuracy: ${aiAccuracy}%.`
+      });
+
+      recordLearningEvent({
+        childId,
+        sourceType: "game",
+        sourceId: "game_teachable_machine",
+        eventType: "activity_completed",
+        skillId: "ml.classification.training",
+        success: demonstrated,
+        metadata: {
+          trainingAccuracy,
+          aiAccuracy,
+          demonstrated
+        }
+      });
+    }
+  }, [phase, aiAccuracy, trainingAccuracy, aiCorrectCount, activeChild?.id]);
+
   // ── INTRO SCREEN ─────────────────────────────────────────────────────
   if (phase === "intro") {
     return (
@@ -220,7 +268,16 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
 
           <div className="flex gap-4">
             <button
-              onClick={() => setPhase("training")}
+              onClick={() => {
+                evidenceRecordedRef.current = false;
+                recordLearningEvent({
+                  childId: activeChild?.id || 'guest-child',
+                  sourceType: 'game',
+                  sourceId: 'game_teachable_machine',
+                  eventType: 'activity_started'
+                });
+                setPhase("training");
+              }}
               className="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black text-base shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"
             >
               Start Training <ArrowRight size={20} />
@@ -431,6 +488,7 @@ export const TeachableMachine = ({ onBack }: { onBack: () => void }) => {
         <div className="flex gap-4 w-full max-w-sm">
           <button
             onClick={() => {
+              evidenceRecordedRef.current = false;
               setPhase("intro");
               setTrainingIndex(0);
               setTrainingChoices([]);

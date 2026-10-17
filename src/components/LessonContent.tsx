@@ -9,6 +9,7 @@ import { C, F, AGE_META } from "../utils/config";
 import { Heading, Txt, Chip } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice, gameMusic } from "../utils/audio";
+import { recordLearningEvent, recordSkillEvidence } from "../utils/learningEvidence";
 import confetti from "canvas-confetti";
 import { Play, Pause, Settings, Gauge, Maximize, Minimize, HelpCircle, Sparkles, Mic, Volume2, Music } from "lucide-react";
 import { KobeLessonSidekick } from "./KobeLessonSidekick";
@@ -657,6 +658,23 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     const correctLetter = String.fromCharCode(65 + currentQ.ans);
     const correctText = currentQ.opts[currentQ.ans] || "";
 
+    recordLearningEvent({
+      childId: child.id,
+      sourceType: 'quiz',
+      sourceId: lesson?.id || 'lesson-u',
+      eventType: 'solution_validated',
+      skillId: 'curriculum.quiz.mastery',
+      success: isCorrect,
+      metadata: {
+        challengeId: `q_${currentQuizIndex + 1}`,
+        isCorrect,
+        chosenLetter,
+        chosenText,
+        correctLetter,
+        correctText
+      }
+    });
+
     if (isCorrect) {
       sfx.playCoin();
       const feedbackMsg = `Correct! Option ${chosenLetter} ("${chosenText}") is right! Why? ${currentQ.expl}`;
@@ -686,6 +704,35 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
       const xpToAward = isPassed ? (score === 100 ? 50 : 35) : 10;
       setEarnedXpState(xpToAward);
+
+      const lessonTitle = typeof lesson?.title === "string" ? lesson.title : (lesson?.title ? (lesson.title as any)[lang] || (lesson.title as any).en || "Lesson" : "Lesson");
+
+      recordSkillEvidence({
+        childId: child.id,
+        skillId: 'curriculum.quiz.mastery',
+        sourceType: 'quiz',
+        sourceId: lesson?.id || 'lesson-u',
+        demonstrated: score >= 60,
+        evidenceLevel: score >= 90 ? 'mastered' : (score >= 60 ? 'demonstrated' : 'completed_with_support'),
+        attemptCount: 1,
+        hintsUsed: 0,
+        notes: `${lessonTitle} Quiz completed: ${score}% score (${countCorrect}/${totalQ} correct). Status: ${isPassed ? 'Passed' : 'Needs Review'}.`
+      });
+
+      recordLearningEvent({
+        childId: child.id,
+        sourceType: 'quiz',
+        sourceId: lesson?.id || 'lesson-u',
+        eventType: 'activity_completed',
+        skillId: 'curriculum.quiz.mastery',
+        success: isPassed,
+        metadata: {
+          score,
+          correctCount: countCorrect,
+          totalQuestions: totalQ,
+          isPassed
+        }
+      });
 
       onLessonComplete(
         lesson?.id || "lesson-u",
