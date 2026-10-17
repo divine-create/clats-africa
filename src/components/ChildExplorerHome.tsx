@@ -2,37 +2,29 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * CLATS Explorers (Ages 6–10) Playful Discovery Home Screen
- * Replaces dry curriculum dashboards with an immersive, child-friendly Wonder World Hub.
+ * CLATS Explorers: Adventure-Style Explorer's Hub (Ages 6–10)
  *
- * Implements the CLATS Learning Progression:
- * WATCH → QUIZ → PRACTICE → PLAY → CREATE
+ * Purpose: A welcoming, playful Home experience giving children two clear hero choices:
+ *  1. Learn something new (Lessons, video arena, quizzes, practice, create, saga map)
+ *  2. Play, solve and discover (Dedicated purposeful games world)
+ *
+ * Plus one small, authentic progress element: "Continue your adventure".
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { Child, Language, Module, Lesson } from "../types";
 import { CURRICULUM } from "../data/curriculum";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
 import { computeEffectiveStreak } from "../utils/streak";
-import { evaluateChildBadges } from "../utils/badges";
-import { fmt } from "../utils/config";
 import {
+  BookOpen,
+  Gamepad2,
+  ArrowRight,
+  Compass,
   Sparkles,
   Flame,
-  Clock,
-  ArrowRight,
-  Shield,
-  Play,
-  CheckCircle,
-  Award,
-  Gamepad2,
-  Palette,
-  Compass,
-  Star,
-  RefreshCw,
-  Lock,
-  ChevronRight
+  Play
 } from "lucide-react";
 
 interface ChildExplorerHomeProps {
@@ -50,37 +42,36 @@ interface ChildExplorerHomeProps {
 
 export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
   child,
-  slotUsed,
-  slotLimit,
   onSelectLesson,
   onEnterWorld,
   onPlayGame,
-  onOpenChat,
-  onOpenRewards,
   lang,
   theme = "dark"
 }) => {
   const isDark = theme === "dark";
-  const limitOn = slotLimit > 0;
-  const remain = Math.max(0, slotLimit - slotUsed);
 
-  // Dynamic calculations from centralized engines
-  const { streak: computedStreak } = computeEffectiveStreak(child);
-  const badges = evaluateChildBadges(child);
-  const earnedBadgesCount = badges.filter((b) => b.unlocked).length;
+  // Safely extract existing display name
+  const rawName = child?.name ? String(child.name).trim() : "";
+  const displayName = rawName.length > 0 ? rawName : null;
 
-  const companionName = child.companion === "chibi" ? "Chibi" : "Kobe";
+  const companionCharacter = child.companion === "chibi" ? "chibi" : "kobe";
+  const companionName = companionCharacter === "chibi" ? "Chibi" : "Kobe";
 
-  // Friendly audio greeting on entry
+  // Friendly companion voice greeting on entry
   useEffect(() => {
-    const greeting = `Welcome back to Wonder World, ${child.name}! I am ${companionName}. Which high-tech quest shall we conquer today?`;
-    const timer = setTimeout(() => {
-      companionVoice.speak(greeting, child.companion || "kobe", child.ageGroup);
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [child.id, child.companion, child.name, child.ageGroup, companionName]);
+    const greetingHeading = displayName
+      ? `Ready for an adventure, ${displayName}?`
+      : "Ready for an adventure?";
+    const spokenText = `${greetingHeading} What would you like to explore today?`;
 
-  // Find the active quest (first uncompleted lesson in progression)
+    const timer = setTimeout(() => {
+      companionVoice.speak(spokenText, companionCharacter, child.ageGroup);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [child.id, companionCharacter, child.ageGroup, displayName]);
+
+  // Find active lesson (first uncompleted lesson in sequence)
   const course = CURRICULUM["early explorers"] || CURRICULUM[child.ageGroup];
   const modules = course?.modules || [];
 
@@ -105,553 +96,429 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
     isAllCompleted = true;
   }
 
-  // Handle start/resume quest
-  const handleLaunchQuest = () => {
+  // Meaningful streak calculation from existing engine
+  const { streak: computedStreak } = computeEffectiveStreak(child);
+
+  // Navigation handlers with SFX
+  const handleLearnClick = useCallback(() => {
     sfx.playTap();
-    if (activeModule && activeLesson) {
-      onSelectLesson(activeModule, activeLesson);
-    } else {
-      onEnterWorld("academy-1");
+    onEnterWorld("academy-1");
+  }, [onEnterWorld]);
+
+  const handleGamesClick = useCallback(() => {
+    sfx.playCoin();
+    onPlayGame();
+  }, [onPlayGame]);
+
+  const handleResumeActiveLesson = useCallback(
+    (e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      sfx.playTap();
+      if (activeModule && activeLesson) {
+        onSelectLesson(activeModule, activeLesson);
+      } else {
+        onEnterWorld("academy-1");
+      }
+    },
+    [activeModule, activeLesson, onSelectLesson, onEnterWorld]
+  );
+
+  // Accessible keyboard handler
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      action();
     }
   };
 
-  // Progression step pills
-  const progressionSteps = [
-    { label: "1. Watch", icon: "🎬", desc: "Animated Story & Video" },
-    { label: "2. Quiz", icon: "🎯", desc: "3-Question Check" },
-    { label: "3. Practice", icon: "🧩", desc: "Hands-on Exercise" },
-    { label: "4. Play", icon: "🎮", desc: "Mini Challenge" },
-    { label: "5. Create", icon: "🎨", desc: "Make Something!" }
-  ];
-
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 md:px-8 py-6 pb-28 relative z-10 animate-fade-in">
-      
-      {/* 🌴 PLAYFUL WONDER WORLD HUD */}
-      <div
-        className={`rounded-3xl p-5 md:p-6 mb-8 border-3 shadow-xl backdrop-blur-xl transition-all duration-300 ${
-          isDark
-            ? "bg-slate-900/90 border-slate-700/80 shadow-[0_12px_30px_rgba(0,0,0,0.5)]"
-            : "bg-white/95 border-amber-200/90 shadow-[0_12px_30px_rgba(251,191,36,0.15)]"
-        }`}
-      >
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-          
-          {/* Left: Companion Greeting with Speech Bubble */}
-          <div className="flex items-center gap-4 flex-col sm:flex-row text-center sm:text-left">
-            <div className="relative group shrink-0">
-              <span className="absolute inset-0 bg-amber-400 rounded-full blur-md opacity-40 animate-pulse"></span>
-              <div className="relative bg-gradient-to-br from-amber-100 to-yellow-200 p-2 rounded-full border-4 border-amber-400 shadow-md">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-10 pb-28 relative z-10 animate-fade-in">
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          .clats-motion-card,
+          .clats-motion-pulse,
+          .clats-motion-float {
+            animation: none !important;
+            transform: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
+
+      {/* ============================================================ */}
+      {/* SECTION A: FRIENDLY GREETING                                  */}
+      {/* ============================================================ */}
+      <header className="mb-8 md:mb-10">
+        <div
+          className={`rounded-3xl p-6 md:p-8 border-3 shadow-xl backdrop-blur-xl transition-all duration-300 ${
+            isDark
+              ? "bg-slate-900/90 border-slate-700/80 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+              : "bg-white/95 border-emerald-200/90 shadow-[0_12px_32px_rgba(46,196,182,0.15)]"
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6 text-center sm:text-left">
+            {/* Kobe / Chibi Character Avatar */}
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#2EC4B6] to-[#FFD166] rounded-full blur-md opacity-50 clats-motion-pulse animate-pulse pointer-events-none" />
+              <div className="relative bg-gradient-to-br from-emerald-100 via-teal-100 to-amber-100 dark:from-slate-800 dark:to-slate-700 p-2.5 rounded-full border-4 border-[#2EC4B6] shadow-lg">
                 <KobeAvatar
-                  size={74}
+                  size={84}
                   ageGroup="early explorers"
-                  pulse
+                  character={companionCharacter}
                   expression="happy"
-                  character={child.companion || "kobe"}
+                  pulse
                 />
               </div>
             </div>
 
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2EC4B6]/15 text-[#2EC4B6] font-black text-xs uppercase tracking-wider mb-1.5">
-                <span>🌴</span> Wonder World Explorer
+            {/* Greeting Text Content */}
+            <div className="flex-1 min-w-0">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2EC4B6]/15 text-[#0F766E] dark:text-[#2EC4B6] font-black text-xs uppercase tracking-wider mb-2">
+                <Sparkles size={13} className="text-[#2EC4B6]" />
+                <span>Explorer&apos;s Hub</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-800 dark:text-white m-0">
-                Hi, Captain {child.name}! 👋
+
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white m-0 leading-tight">
+                {displayName ? `Ready for an adventure, ${displayName}?` : "Ready for an adventure?"}
               </h1>
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-300 mt-1 max-w-md">
-                {companionName} is ready! Choose a world portal or continue your active learning quest below.
+
+              <p className="text-base sm:text-lg font-bold text-slate-600 dark:text-slate-300 mt-1.5 mb-0">
+                What would you like to explore today?
               </p>
+            </div>
+
+            {/* Subtle Companion Badge (if streak available) */}
+            {computedStreak > 0 && (
+              <div className="hidden lg:flex flex-col items-center justify-center px-4 py-2.5 rounded-2xl bg-amber-500/10 border-2 border-amber-400/40 text-amber-800 dark:text-amber-300">
+                <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wide">
+                  <Flame size={16} className="text-orange-500 animate-bounce" />
+                  <span>Streak</span>
+                </div>
+                <span className="text-lg font-black text-orange-950 dark:text-amber-200 mt-0.5">
+                  {computedStreak} {computedStreak === 1 ? "Day" : "Days"}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ============================================================ */}
+      {/* SECTION B & C: THE TWO MAIN HERO CHOICES                     */}
+      {/* ============================================================ */}
+      <main className="mb-8 md:mb-10">
+        <h2 className="sr-only">Main Choices</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-stretch">
+          
+          {/* ------------------------------------------------------------ */}
+          {/* CARD 1: LEARN SOMETHING NEW                                   */}
+          {/* ------------------------------------------------------------ */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleLearnClick}
+            onKeyDown={(e) => handleKeyDown(e, handleLearnClick)}
+            aria-label="Learn something new: Watch fun lessons, answer curious questions and discover new ideas"
+            className={`clats-motion-card group relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 md:p-8 cursor-pointer select-none overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2EC4B6] focus-visible:ring-offset-2 ${
+              isDark
+                ? "bg-gradient-to-br from-[#064E3B] via-[#065F46] to-[#0F766E] text-white border-4 border-emerald-400/30 hover:border-emerald-300 shadow-[0_16px_36px_rgba(6,78,59,0.45)] hover:shadow-[0_20px_48px_rgba(46,196,182,0.4)]"
+                : "bg-gradient-to-br from-[#ECFDF5] via-[#D1FAE5] to-[#A7F3D0] text-slate-900 border-4 border-emerald-300/80 hover:border-emerald-400 shadow-[0_16px_36px_rgba(16,185,129,0.18)] hover:shadow-[0_20px_48px_rgba(16,185,129,0.3)]"
+            } transform hover:-translate-y-1 active:translate-y-0`}
+          >
+            {/* Background Glow */}
+            <div className="absolute -top-16 -right-16 w-52 h-52 rounded-full bg-emerald-400/20 blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+
+            <div>
+              {/* Category pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-700/20 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs font-black uppercase tracking-wider mb-4 border border-emerald-500/30">
+                <BookOpen size={14} className="text-emerald-600 dark:text-emerald-300" />
+                <span>Learning Pathway</span>
+              </div>
+
+              {/* Card Title */}
+              <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug m-0 text-slate-900 dark:text-white">
+                Learn something new
+              </h3>
+
+              {/* Supporting Copy */}
+              <p className="text-sm sm:text-base font-semibold leading-relaxed mt-2.5 mb-6 text-slate-700 dark:text-emerald-100/90 max-w-md">
+                Watch fun lessons, answer curious questions and discover new ideas.
+              </p>
+            </div>
+
+            {/* Illustrated Scene: Discovery Trail, Open Book & Sparkles */}
+            <div className="my-3 py-2 flex items-center justify-center relative">
+              <div className="w-full max-w-[280px] h-[150px] relative flex items-center justify-center">
+                <svg
+                  viewBox="0 0 280 150"
+                  className="w-full h-full drop-shadow-md select-none pointer-events-none"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  {/* Soft Background Hill */}
+                  <path
+                    d="M 10 140 Q 90 85 180 110 T 270 140 Z"
+                    fill={isDark ? "#047857" : "#6EE7B7"}
+                    opacity="0.6"
+                  />
+                  {/* Winding Discovery Trail */}
+                  <path
+                    d="M 40 145 C 90 120 120 125 150 95 C 170 75 190 60 210 50"
+                    stroke="#FFD166"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray="4 8"
+                    opacity="0.8"
+                  />
+                  {/* Island Peak & Palm Silhouette */}
+                  <path
+                    d="M 210 50 L 235 90 L 185 90 Z"
+                    fill={isDark ? "#064E3B" : "#10B981"}
+                  />
+                  {/* Open Storybook */}
+                  <g transform="translate(75, 45)">
+                    {/* Book Left Page */}
+                    <path
+                      d="M 10 20 C 35 15 55 20 65 30 L 65 75 C 55 65 35 60 10 65 Z"
+                      fill="#FFFFFF"
+                      stroke="#2EC4B6"
+                      strokeWidth="3"
+                    />
+                    {/* Book Right Page */}
+                    <path
+                      d="M 120 20 C 95 15 75 20 65 30 L 65 75 C 75 65 95 60 120 65 Z"
+                      fill="#F8FAFC"
+                      stroke="#2EC4B6"
+                      strokeWidth="3"
+                    />
+                    {/* Page Lines (Left) */}
+                    <line x1="22" y1="35" x2="55" y2="35" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="22" y1="46" x2="52" y2="46" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="22" y1="57" x2="48" y2="57" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                    {/* Page Lines (Right) */}
+                    <line x1="75" y1="35" x2="108" y2="35" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="78" y1="46" x2="108" y2="46" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                    <line x1="82" y1="57" x2="108" y2="57" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
+                    {/* Golden Book Ribbon */}
+                    <path d="M 65 30 L 65 82 L 69 77 L 73 82 L 73 30 Z" fill="#F59E0B" />
+                  </g>
+                  {/* Floating Discovery Sparkles */}
+                  <g transform="translate(195, 25)">
+                    <circle cx="0" cy="0" r="4" fill="#FFD166" className="animate-ping" opacity="0.8" />
+                    <polygon points="0,-9 3,-3 9,0 3,3 0,9 -3,3 -9,0 -3,-3" fill="#FFD166" />
+                  </g>
+                  <g transform="translate(50, 30)">
+                    <polygon points="0,-7 2,-2 7,0 2,2 0,7 -2,2 -7,0 -2,-2" fill="#2EC4B6" />
+                  </g>
+                  <g transform="translate(240, 80)">
+                    <polygon points="0,-6 2,-2 6,0 2,2 0,6 -2,2 -6,0 -2,-2" fill="#38BDF8" />
+                  </g>
+                  {/* Curiosity Lightbulb / Compass Icon Silhouette */}
+                  <circle cx="230" cy="40" r="14" fill="#FFD166" opacity="0.9" />
+                  <path d="M 230 32 L 230 48 M 222 40 L 238 40" stroke="#78350F" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Large Touch-Friendly Primary CTA Button */}
+            <div className="mt-4 pt-4 border-t border-emerald-500/20 flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-200">
+                Explore The Trail
+              </span>
+              <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#2EC4B6] hover:bg-[#25a99d] text-white font-black text-sm sm:text-base shadow-lg border-b-4 border-teal-700 group-hover:scale-105 active:scale-95 transition-transform">
+                <span>Start Learning</span>
+                <ArrowRight size={18} className="stroke-[3] group-hover:translate-x-1 transition-transform" />
+              </div>
             </div>
           </div>
 
-          {/* Right: Child Stats Cards (XP, Streak, Time, Badges) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full lg:w-auto">
-            {/* XP Counter */}
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/40 dark:to-yellow-900/30 border-2 border-amber-300/80 dark:border-amber-600/50 text-center flex flex-col justify-center items-center shadow-sm">
-              <div className="flex items-center gap-1 text-amber-500 mb-0.5">
-                <Sparkles size={16} className="animate-spin-slow" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                  XP Sparks
-                </span>
+          {/* ------------------------------------------------------------ */}
+          {/* CARD 2: PLAY, SOLVE AND DISCOVER                             */}
+          {/* ------------------------------------------------------------ */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleGamesClick}
+            onKeyDown={(e) => handleKeyDown(e, handleGamesClick)}
+            aria-label="Play, solve and discover: Enter game worlds, solve puzzles and show what you can do"
+            className={`clats-motion-card group relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 md:p-8 cursor-pointer select-none overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#8B5CF6] focus-visible:ring-offset-2 ${
+              isDark
+                ? "bg-gradient-to-br from-[#312E81] via-[#4338CA] to-[#6D28D9] text-white border-4 border-purple-400/30 hover:border-purple-300 shadow-[0_16px_36px_rgba(49,46,129,0.45)] hover:shadow-[0_20px_48px_rgba(139,92,246,0.4)]"
+                : "bg-gradient-to-br from-[#F5F3FF] via-[#EDE9FE] to-[#DDD6FE] text-slate-900 border-4 border-purple-300/80 hover:border-purple-400 shadow-[0_16px_36px_rgba(139,92,246,0.18)] hover:shadow-[0_20px_48px_rgba(139,92,246,0.3)]"
+            } transform hover:-translate-y-1 active:translate-y-0`}
+          >
+            {/* Background Glow */}
+            <div className="absolute -top-16 -right-16 w-52 h-52 rounded-full bg-purple-400/20 blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
+
+            <div>
+              {/* Category pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-700/20 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 text-xs font-black uppercase tracking-wider mb-4 border border-purple-500/30">
+                <Gamepad2 size={14} className="text-purple-600 dark:text-purple-300" />
+                <span>Games World</span>
               </div>
-              <span className="text-lg font-black text-amber-900 dark:text-amber-200 leading-tight">
-                {child.xp || 0}
-              </span>
+
+              {/* Card Title */}
+              <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug m-0 text-slate-900 dark:text-white">
+                Play, solve and discover
+              </h3>
+
+              {/* Supporting Copy */}
+              <p className="text-sm sm:text-base font-semibold leading-relaxed mt-2.5 mb-6 text-slate-700 dark:text-purple-100/90 max-w-md">
+                Enter game worlds, solve puzzles and show what you can do.
+              </p>
             </div>
 
-            {/* Streak Counter */}
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-950/40 dark:to-amber-900/30 border-2 border-orange-300/80 dark:border-orange-600/50 text-center flex flex-col justify-center items-center shadow-sm">
-              <div className="flex items-center gap-1 text-orange-500 mb-0.5">
-                <Flame size={16} className="animate-bounce" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-orange-800 dark:text-orange-300">
-                  Streak
-                </span>
+            {/* Illustrated Scene: Glowing Adventure Portal & Floating Puzzle Blocks */}
+            <div className="my-3 py-2 flex items-center justify-center relative">
+              <div className="w-full max-w-[280px] h-[150px] relative flex items-center justify-center">
+                <svg
+                  viewBox="0 0 280 150"
+                  className="w-full h-full drop-shadow-md select-none pointer-events-none"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  {/* Concentric Portal Glowing Rings */}
+                  <ellipse cx="140" cy="75" rx="90" ry="55" fill="none" stroke="#8B5CF6" strokeWidth="2" opacity="0.4" strokeDasharray="6 6" />
+                  <ellipse cx="140" cy="75" rx="70" ry="42" fill="none" stroke="#38BDF8" strokeWidth="3" opacity="0.7" />
+                  <ellipse cx="140" cy="75" rx="50" ry="30" fill={isDark ? "#4C1D95" : "#C4B5FD"} opacity="0.6" />
+                  <ellipse cx="140" cy="75" rx="30" ry="18" fill="#38BDF8" opacity="0.8" />
+
+                  {/* Portal Energy Rays */}
+                  <line x1="140" y1="35" x2="140" y2="15" stroke="#38BDF8" strokeWidth="2.5" strokeLinecap="round" />
+                  <line x1="140" y1="115" x2="140" y2="135" stroke="#38BDF8" strokeWidth="2.5" strokeLinecap="round" />
+                  <line x1="85" y1="75" x2="65" y2="75" stroke="#A855F7" strokeWidth="2.5" strokeLinecap="round" />
+                  <line x1="195" y1="75" x2="215" y2="75" stroke="#A855F7" strokeWidth="2.5" strokeLinecap="round" />
+
+                  {/* Floating Puzzle Block 1 (Left Isometric Cube) */}
+                  <g transform="translate(45, 50)">
+                    {/* Top face */}
+                    <polygon points="18,0 36,9 18,18 0,9" fill="#F43F5E" />
+                    {/* Left face */}
+                    <polygon points="0,9 18,18 18,36 0,27" fill="#BE123C" />
+                    {/* Right face */}
+                    <polygon points="18,18 36,9 36,27 18,36" fill="#E11D48" />
+                    {/* Puzzle dot */}
+                    <circle cx="18" cy="9" r="3" fill="#FECDD3" />
+                  </g>
+
+                  {/* Floating Puzzle Block 2 (Right Isometric Cube) */}
+                  <g transform="translate(200, 60)">
+                    {/* Top face */}
+                    <polygon points="16,0 32,8 16,16 0,8" fill="#F59E0B" />
+                    {/* Left face */}
+                    <polygon points="0,8 16,16 16,32 0,24" fill="#B45309" />
+                    {/* Right face */}
+                    <polygon points="16,16 32,8 32,24 16,32" fill="#D97706" />
+                    {/* Star in puzzle block */}
+                    <circle cx="16" cy="8" r="2.5" fill="#FEF3C7" />
+                  </g>
+
+                  {/* Floating Game Gem / Crystal in Portal Center */}
+                  <polygon
+                    points="140,58 152,75 140,92 128,75"
+                    fill="#FFD166"
+                    stroke="#FFFFFF"
+                    strokeWidth="2"
+                    className="clats-motion-float"
+                  />
+
+                  {/* Game Controller D-pad silhouette */}
+                  <g transform="translate(130, 71)">
+                    <path d="M 5 0 L 15 0 L 15 5 L 20 5 L 20 15 L 15 15 L 15 20 L 5 20 L 5 15 L 0 15 L 0 5 L 5 5 Z" fill="#FFFFFF" opacity="0.9" />
+                  </g>
+
+                  {/* Floating Neon Sparkles */}
+                  <g transform="translate(60, 25)">
+                    <circle cx="0" cy="0" r="3.5" fill="#38BDF8" className="animate-ping" opacity="0.8" />
+                    <polygon points="0,-8 2,-2 8,0 2,2 0,8 -2,2 -8,0 -2,-2" fill="#38BDF8" />
+                  </g>
+                  <g transform="translate(225, 30)">
+                    <polygon points="0,-7 2,-2 7,0 2,2 0,7 -2,2 -7,0 -2,-2" fill="#EC4899" />
+                  </g>
+                </svg>
               </div>
-              <span className="text-lg font-black text-orange-950 dark:text-orange-200 leading-tight">
-                {computedStreak} {computedStreak === 1 ? "Day" : "Days"}
-              </span>
             </div>
 
-            {/* Badges Earned */}
-            <button
-              onClick={() => {
-                sfx.playTap();
-                onOpenRewards();
-              }}
-              className="p-3 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-950/40 dark:to-indigo-900/30 border-2 border-purple-300/80 dark:border-purple-600/50 text-center flex flex-col justify-center items-center shadow-sm hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-            >
-              <div className="flex items-center gap-1 text-purple-500 mb-0.5">
-                <Award size={16} />
-                <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 dark:text-purple-300">
-                  Badges
-                </span>
-              </div>
-              <span className="text-lg font-black text-purple-950 dark:text-purple-200 leading-tight">
-                {earnedBadgesCount} / 8
+            {/* Large Touch-Friendly Primary CTA Button */}
+            <div className="mt-4 pt-4 border-t border-purple-500/20 flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-purple-800 dark:text-purple-200">
+                Enter Games World
               </span>
-            </button>
-
-            {/* Time Left */}
-            <div className={`p-3 rounded-2xl border-2 text-center flex flex-col justify-center items-center shadow-sm ${
-              limitOn
-                ? "bg-sky-50 dark:bg-sky-950/40 border-sky-300/80 dark:border-sky-600/50"
-                : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-600/50"
-            }`}>
-              <div className={`flex items-center gap-1 mb-0.5 ${limitOn ? "text-sky-500" : "text-emerald-500"}`}>
-                <Clock size={16} />
-                <span className="text-[10px] font-black uppercase tracking-wider">
-                  Time Left
-                </span>
+              <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-sm sm:text-base shadow-lg border-b-4 border-indigo-900 group-hover:scale-105 active:scale-95 transition-transform">
+                <span>Play Games</span>
+                <Play size={18} className="fill-white group-hover:scale-110 transition-transform" />
               </div>
-              <span className="text-sm font-black leading-tight">
-                {limitOn ? fmt(remain) : "Unlimited"}
-              </span>
             </div>
           </div>
 
         </div>
-      </div>
+      </main>
 
-      {/* 🚀 HERO SECTION: TODAY'S ACTIVE QUEST (WATCH → QUIZ → PRACTICE → PLAY → CREATE) */}
-      <div className="mb-10">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0284c7] via-[#0ea5e9] to-[#2EC4B6] p-6 md:p-8 text-white shadow-2xl border-4 border-white/20">
-          
-          {/* Background decorative circles */}
-          <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-          <div className="absolute -left-16 -bottom-16 w-56 h-56 rounded-full bg-black/10 blur-2xl pointer-events-none"></div>
-
-          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      {/* ============================================================ */}
+      {/* SECTION D: OPTIONAL SUPPORTING INFORMATION                   */}
+      {/* "Continue your adventure" (Authentic small progress element) */}
+      {/* ============================================================ */}
+      {activeLesson && (
+        <section
+          aria-label="Continue your adventure"
+          onClick={handleResumeActiveLesson}
+          className={`rounded-3xl p-5 md:p-6 border-3 shadow-lg transition-all duration-300 cursor-pointer ${
+            isDark
+              ? "bg-slate-900/80 border-slate-700/80 hover:border-teal-500/60"
+              : "bg-white/95 border-teal-200/90 hover:border-teal-400/80 shadow-[0_8px_24px_rgba(46,196,182,0.12)]"
+          } transform hover:-translate-y-0.5 active:translate-y-0`}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-yellow-300 text-xs font-black uppercase tracking-wider mb-3">
-                <span className="animate-ping inline-block w-2 h-2 rounded-full bg-yellow-300"></span>
-                ⭐ Today&apos;s Active Adventure
+            {/* Left: Compass / Trail icon and details */}
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2EC4B6] to-[#0ea5e9] text-white flex items-center justify-center text-xl shadow-md shrink-0">
+                <Compass size={24} className="stroke-[2.5]" />
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-snug drop-shadow-sm m-0">
-                {activeLesson ? (activeLesson.title[lang] || activeLesson.title.en) : "Curriculum Completed!"}
-              </h2>
-              
-              <p className="text-white/90 text-sm font-medium mt-1.5 max-w-xl">
-                {activeModule ? (activeModule.name[lang] || activeModule.name.en) : "AI & Emerging Technologies"}
-                {" • "}
-                {isAllCompleted
-                  ? "Incredible job! You mastered every lesson. Ready to replay or play challenge games?"
-                  : "Follow the 5-step learning progression: Watch, Quiz, Practice, Play & Create!"}
-              </p>
-
-              {/* 5-Step Learning Loop Visual Track */}
-              <div className="mt-5 grid grid-cols-5 gap-2 max-w-lg">
-                {progressionSteps.map((step, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2 rounded-xl bg-white/15 backdrop-blur-sm text-center border border-white/20 flex flex-col items-center justify-center transition-transform hover:scale-105"
-                  >
-                    <span className="text-lg md:text-xl block">{step.icon}</span>
-                    <span className="text-[10px] font-black uppercase tracking-wider mt-1 block">
-                      {step.label.split(". ")[1]}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#2EC4B6]">
+                    ⭐ Continue your adventure
+                  </span>
+                  {isAllCompleted && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-[10px] font-black uppercase">
+                      All Completed!
                     </span>
-                  </div>
-                ))}
+                  )}
+                </div>
+
+                <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate m-0 mt-0.5">
+                  {activeLesson.title[lang] || activeLesson.title.en}
+                </h4>
+
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate m-0 mt-0.5">
+                  {activeModule?.name[lang] || activeModule?.name.en || "AI & Emerging Technologies"}
+                </p>
               </div>
             </div>
 
-            {/* Launch CTA Button */}
-            <div className="shrink-0 w-full lg:w-auto flex flex-col sm:flex-row gap-3">
+            {/* Right: Resume button */}
+            <div className="shrink-0 w-full sm:w-auto">
               <button
-                onClick={handleLaunchQuest}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#FFD166] hover:bg-amber-400 text-slate-900 font-black text-base md:text-lg shadow-xl border-b-4 border-amber-600 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer"
+                type="button"
+                onClick={handleResumeActiveLesson}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#FFD166] hover:bg-amber-400 text-slate-900 font-black text-sm shadow-md border-b-3 border-amber-600 flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
-                <span>{isAllCompleted ? "Replay Quests" : "Start Today's Quest"}</span>
-                <ArrowRight size={22} className="stroke-[3]" />
-              </button>
-
-              <button
-                onClick={() => {
-                  sfx.playTap();
-                  onEnterWorld("academy-1");
-                }}
-                className="w-full sm:w-auto px-5 py-4 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-black text-sm md:text-base border-2 border-white/30 backdrop-blur-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>View Full Map</span>
-                <Compass size={18} />
+                <span>{isAllCompleted ? "Replay Quest" : "Resume"}</span>
+                <ArrowRight size={16} className="stroke-[3]" />
               </button>
             </div>
 
           </div>
-        </div>
-      </div>
-
-      {/* 🗺️ THE 4 DISCOVERY WORLD PORTALS */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#2EC4B6]">
-              <span>🌍</span> Exploration Hub
-            </div>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white m-0">
-              The Four Discovery Worlds
-            </h3>
-          </div>
-          <button
-            onClick={() => {
-              sfx.playTap();
-              onEnterWorld();
-            }}
-            className="text-xs font-black text-[#2EC4B6] hover:underline flex items-center gap-1"
-          >
-            <span>Open Saga Map</span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          
-          {/* World 1: Wonder Woods & AI Island */}
-          <div
-            onClick={() => {
-              sfx.playTap();
-              onEnterWorld("academy-1");
-            }}
-            className={`p-6 rounded-3xl border-3 transition-all duration-300 hover:scale-[1.02] cursor-pointer relative overflow-hidden group shadow-md ${
-              isDark
-                ? "bg-gradient-to-br from-emerald-950/40 to-slate-900 border-emerald-500/40"
-                : "bg-gradient-to-br from-emerald-50/80 to-teal-50/40 border-emerald-200"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-3xl shadow-lg shrink-0 group-hover:rotate-6 transition-transform">
-                🤖
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-xs font-black uppercase tracking-wider">
-                🌟 Active World
-              </span>
-            </div>
-
-            <h4 className="text-lg font-black text-slate-800 dark:text-white mt-4 mb-1">
-              Wonder Woods & AI Island
-            </h4>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-              Meet smart robot friends, discover how machines learn, spot patterns, and automate tasks.
-            </p>
-
-            <div className="flex items-center justify-between pt-3 border-t border-emerald-500/20 text-xs font-black text-emerald-600 dark:text-emerald-400">
-              <span>3 Modules • 15 Story Quests</span>
-              <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Enter World <ArrowRight size={14} />
-              </span>
-            </div>
-          </div>
-
-          {/* World 2: Cyber Shield Citadel */}
-          <div
-            onClick={() => {
-              sfx.playTap();
-              onPlayGame("phishing-swipe");
-            }}
-            className={`p-6 rounded-3xl border-3 transition-all duration-300 hover:scale-[1.02] cursor-pointer relative overflow-hidden group shadow-md ${
-              isDark
-                ? "bg-gradient-to-br from-amber-950/40 to-slate-900 border-amber-500/40"
-                : "bg-gradient-to-br from-amber-50/80 to-orange-50/40 border-amber-200"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-3xl shadow-lg shrink-0 group-hover:rotate-6 transition-transform">
-                🛡️
-              </div>
-              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 text-xs font-black uppercase tracking-wider">
-                🎮 Safety Arena
-              </span>
-            </div>
-
-            <h4 className="text-lg font-black text-slate-800 dark:text-white mt-4 mb-1">
-              Cyber Shield Citadel
-            </h4>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-              Defend against tricky phishers, lock your secret passwords, and master digital kindness.
-            </p>
-
-            <div className="flex items-center justify-between pt-3 border-t border-amber-500/20 text-xs font-black text-amber-600 dark:text-amber-400">
-              <span>Phishing Swipe • Cyber Defense</span>
-              <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Play Defense <ArrowRight size={14} />
-              </span>
-            </div>
-          </div>
-
-          {/* World 3: Creative Spark Studio */}
-          <div
-            onClick={() => {
-              sfx.playTap();
-              onPlayGame("teachable-machine");
-            }}
-            className={`p-6 rounded-3xl border-3 transition-all duration-300 hover:scale-[1.02] cursor-pointer relative overflow-hidden group shadow-md ${
-              isDark
-                ? "bg-gradient-to-br from-purple-950/40 to-slate-900 border-purple-500/40"
-                : "bg-gradient-to-br from-purple-50/80 to-indigo-50/40 border-purple-200"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500 text-white flex items-center justify-center text-3xl shadow-lg shrink-0 group-hover:rotate-6 transition-transform">
-                🎨
-              </div>
-              <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-black uppercase tracking-wider">
-                🌈 Studio Lab
-              </span>
-            </div>
-
-            <h4 className="text-lg font-black text-slate-800 dark:text-white mt-4 mb-1">
-              Creative Spark Studio
-            </h4>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-              Draw digital art, construct futuristic cities, compose soundscapes, and train Kobe with examples.
-            </p>
-
-            <div className="flex items-center justify-between pt-3 border-t border-purple-500/20 text-xs font-black text-purple-600 dark:text-purple-400">
-              <span>Teachable Machine • City Builder</span>
-              <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Create & Train <ArrowRight size={14} />
-              </span>
-            </div>
-          </div>
-
-          {/* World 4: Curious Explorer Trails */}
-          <div
-            onClick={() => {
-              sfx.playTap();
-              onPlayGame("wonder-woods");
-            }}
-            className={`p-6 rounded-3xl border-3 transition-all duration-300 hover:scale-[1.02] cursor-pointer relative overflow-hidden group shadow-md ${
-              isDark
-                ? "bg-gradient-to-br from-blue-950/40 to-slate-900 border-blue-500/40"
-                : "bg-gradient-to-br from-blue-50/80 to-sky-50/40 border-blue-200"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-500 text-white flex items-center justify-center text-3xl shadow-lg shrink-0 group-hover:rotate-6 transition-transform">
-                🦋
-              </div>
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-300 text-xs font-black uppercase tracking-wider">
-                🧩 10 Meadow Levels
-              </span>
-            </div>
-
-            <h4 className="text-lg font-black text-slate-800 dark:text-white mt-4 mb-1">
-              Pattern Quest & Logic Trails
-            </h4>
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
-              Spot firefly lights, complete stone stepping patterns, sort by size and solve detective puzzles.
-            </p>
-
-            <div className="flex items-center justify-between pt-3 border-t border-blue-500/20 text-xs font-black text-blue-600 dark:text-blue-400">
-              <span>Pattern Quest: Meadow 1–10</span>
-              <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Play Pattern Quest <ArrowRight size={14} />
-              </span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* 🎮 QUICK-PLAY GAME PODS */}
-      <div className="mb-12">
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#B8A0FF]">
-              <span>🕹️</span> Learning Through Play
-            </div>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white m-0">
-              Featured Purposeful Games
-            </h3>
-          </div>
-          <button
-            onClick={() => {
-              sfx.playTap();
-              onPlayGame();
-            }}
-            className="text-xs font-black text-[#B8A0FF] hover:underline flex items-center gap-1"
-          >
-            <span>All Games ({modules.length > 0 ? "7 Games" : "Arcade"})</span>
-            <ChevronRight size={14} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          
-          {/* Game 1: Pattern Quest */}
-          <button
-            onClick={() => {
-              sfx.playCoin();
-              onPlayGame("wonder-woods");
-            }}
-            className={`p-4 rounded-2xl border-2 text-center transition-all hover:scale-105 active:scale-95 shadow-md flex flex-col items-center justify-between cursor-pointer ${
-              isDark ? "bg-slate-900 border-blue-500/40 hover:border-blue-400" : "bg-white border-blue-200 hover:border-blue-400"
-            }`}
-          >
-            <div className="text-4xl mb-2">🦋</div>
-            <h5 className="text-xs font-black text-slate-800 dark:text-white mb-1">
-              Pattern Quest
-            </h5>
-            <span className="text-[10px] font-bold text-blue-500 uppercase">
-              10 Levels Ready
-            </span>
-          </button>
-
-          {/* Game 2: Teachable Machine */}
-          <button
-            onClick={() => {
-              sfx.playCoin();
-              onPlayGame("teachable-machine");
-            }}
-            className={`p-4 rounded-2xl border-2 text-center transition-all hover:scale-105 active:scale-95 shadow-md flex flex-col items-center justify-between cursor-pointer ${
-              isDark ? "bg-slate-900 border-indigo-500/40 hover:border-indigo-400" : "bg-white border-indigo-200 hover:border-indigo-400"
-            }`}
-          >
-            <div className="text-4xl mb-2">🧠</div>
-            <h5 className="text-xs font-black text-slate-800 dark:text-white mb-1">
-              Teachable Machine
-            </h5>
-            <span className="text-[10px] font-bold text-indigo-500 uppercase">
-              Train Kobe
-            </span>
-          </button>
-
-          {/* Game 3: Smart City Builder */}
-          <button
-            onClick={() => {
-              sfx.playCoin();
-              onPlayGame("smart-city-builder");
-            }}
-            className={`p-4 rounded-2xl border-2 text-center transition-all hover:scale-105 active:scale-95 shadow-md flex flex-col items-center justify-between cursor-pointer ${
-              isDark ? "bg-slate-900 border-teal-500/40 hover:border-teal-400" : "bg-white border-teal-200 hover:border-teal-400"
-            }`}
-          >
-            <div className="text-4xl mb-2">🏙️</div>
-            <h5 className="text-xs font-black text-slate-800 dark:text-white mb-1">
-              Smart City Builder
-            </h5>
-            <span className="text-[10px] font-bold text-teal-500 uppercase">
-              Clean Energy Grid
-            </span>
-          </button>
-
-          {/* Game 4: Phishing Swipe */}
-          <button
-            onClick={() => {
-              sfx.playCoin();
-              onPlayGame("phishing-swipe");
-            }}
-            className={`p-4 rounded-2xl border-2 text-center transition-all hover:scale-105 active:scale-95 shadow-md flex flex-col items-center justify-between cursor-pointer ${
-              isDark ? "bg-slate-900 border-amber-500/40 hover:border-amber-400" : "bg-white border-amber-200 hover:border-amber-400"
-            }`}
-          >
-            <div className="text-4xl mb-2">🛡️</div>
-            <h5 className="text-xs font-black text-slate-800 dark:text-white mb-1">
-              Phishing Swipe
-            </h5>
-            <span className="text-[10px] font-bold text-amber-500 uppercase">
-              Spot the Trap
-            </span>
-          </button>
-
-        </div>
-      </div>
-
-      {/* 🌟 WHAT CAN I DO NOW? (CAPABILITY & REAL CAPABILITY SHOWCASE) */}
-      <div
-        className={`rounded-3xl p-6 border-3 shadow-lg ${
-          isDark
-            ? "bg-slate-900/80 border-slate-700/80"
-            : "bg-gradient-to-br from-amber-50/50 to-teal-50/50 border-teal-100"
-        }`}
-      >
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-teal-600 dark:text-teal-400">
-              <span>💡</span> Capability Showcase
-            </div>
-            <h3 className="text-lg md:text-xl font-black text-slate-800 dark:text-white m-0">
-              What Can Captain {child.name} Do?
-            </h3>
-          </div>
-          <button
-            onClick={() => {
-              sfx.playTap();
-              onOpenChat();
-            }}
-            className="px-4 py-2 rounded-xl bg-[#2EC4B6] hover:bg-teal-500 text-white font-black text-xs transition-transform active:scale-95 shadow"
-          >
-            Chat with {companionName} 💬
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <span className="text-2xl block mb-1">🔍</span>
-            <strong className="text-xs font-black block text-slate-800 dark:text-slate-100 mb-0.5">
-              Spot Patterns
-            </strong>
-            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight block">
-              I can identify repeating colours, shapes, and sequence rules in Wonder Woods.
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <span className="text-2xl block mb-1">🤖</span>
-            <strong className="text-xs font-black block text-slate-800 dark:text-slate-100 mb-0.5">
-              Understand AI
-            </strong>
-            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight block">
-              I understand that machines learn from training data, vision, and commands.
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <span className="text-2xl block mb-1">🛡️</span>
-            <strong className="text-xs font-black block text-slate-800 dark:text-slate-100 mb-0.5">
-              Protect Privacy
-            </strong>
-            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight block">
-              I know how to keep personal passwords private and ask parents before sharing.
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <span className="text-2xl block mb-1">💡</span>
-            <strong className="text-xs font-black block text-slate-800 dark:text-slate-100 mb-0.5">
-              Adapt & Try Again
-            </strong>
-            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight block">
-              When an answer is not quite right, I use hints and test another solution!
-            </span>
-          </div>
-
-        </div>
-      </div>
+        </section>
+      )}
 
     </div>
   );
 };
+
+export default ChildExplorerHome;
