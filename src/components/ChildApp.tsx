@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Child, Parent, Language, Module, Lesson } from "../types";
 import { useLearningTimeTracker } from "../utils/timeTracker";
 import {
@@ -15,7 +15,7 @@ import {
 } from "../utils/config";
 import { Card, Heading, Txt, Chip, Btn } from "./Primitives";
 import { KobeAvatar } from "./KobeAvatar";
-import { companionVoice } from "../utils/audio";
+import { companionVoice, sfx } from "../utils/audio";
 import { ChildWelcomeScreen } from "./ChildWelcome";
 import { ChildExplorerHome } from "./ChildExplorerHome";
 import { SagaMap } from "./SagaMap";
@@ -163,13 +163,60 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const isDark = theme === "dark";
 
   // States
-  const [activeTab, setActiveTab] = useState<TabType>("home");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      const validTabs: TabType[] = ["home", "map", "progress", "chat", "lesson", "games", "rewards"];
+      if (validTabs.includes(hash as TabType)) {
+        return hash as TabType;
+      }
+    }
+    return "home";
+  });
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selModule, setSelModule] = useState<Module | null>(null);
   const [selLesson, setSelLesson] = useState<Lesson | null>(null);
   const [showHandoff, setShowHandoff] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [selectedAcademyId, setSelectedAcademyId] = useState<string>("academy-1");
   const [celebrationQueue, setCelebrationQueue] = useState<any[]>([]);
+
+  // Navigation with URL Hash & Browser History integration
+  const navigateToTab = useCallback((tab: TabType) => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      try {
+        window.history.pushState({ tab }, "", `#${tab}`);
+      } catch {}
+    }
+  }, []);
+
+  // Listen for browser back / forward navigation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!window.history.state || !window.history.state.tab) {
+      const initialTab = window.location.hash ? window.location.hash.replace("#", "") : "home";
+      window.history.replaceState({ tab: initialTab }, "", window.location.hash || `#${initialTab}`);
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      const validTabs: TabType[] = ["home", "map", "progress", "chat", "lesson", "games", "rewards"];
+      if (e.state && validTabs.includes(e.state.tab)) {
+        setActiveTab(e.state.tab);
+      } else {
+        const hash = window.location.hash.replace("#", "");
+        if (validTabs.includes(hash as TabType)) {
+          setActiveTab(hash as TabType);
+        } else {
+          setActiveTab("home");
+        }
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Load narration preference
   const isYoungExplorer = child.ageGroup === "early explorers" || child.ageGroup === "young explorers";
@@ -661,17 +708,18 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             onSelectLesson={(mod, les) => {
               setSelModule(mod);
               setSelLesson(les);
-              setActiveTab("lesson");
+              navigateToTab("lesson");
             }}
             onEnterWorld={(acadId) => {
               setSelectedAcademyId(acadId || "academy-1");
-              setActiveTab("map");
+              navigateToTab("map");
             }}
-            onPlayGame={(_gameId) => {
-              setActiveTab("games");
+            onPlayGame={(gameId) => {
+              setSelectedGameId(gameId || null);
+              navigateToTab("games");
             }}
-            onOpenChat={() => setActiveTab("chat")}
-            onOpenRewards={() => setActiveTab("rewards")}
+            onOpenChat={() => navigateToTab("chat")}
+            onOpenRewards={() => navigateToTab("rewards")}
             lang={lang}
             theme={theme}
           />
@@ -717,13 +765,13 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           child={child}
           lang={lang}
           theme={theme}
-          onBack={() => setActiveTab("home")}
+          onBack={() => navigateToTab("home")}
           onSelectLesson={(l) => {
             const course = CURRICULUM[child.ageGroup || "early explorers"];
             const mod = course?.modules?.find((m) => m.lessons.some((les) => les.id === l.id));
             if (mod) setSelModule(mod);
             setSelLesson(l);
-            setActiveTab("lesson");
+            navigateToTab("lesson");
           }}
           onShowPaywall={() => setShowHandoff(true)}
         />
@@ -736,7 +784,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           lesson={selLesson}
           onLessonComplete={handleLessonComplete}
           lang={lang}
-          onClose={() => setActiveTab("home")}
+          onClose={() => navigateToTab("home")}
           theme={theme}
           onToggleTheme={onToggleTheme}
           narrationOn={narrationOn}
@@ -783,20 +831,20 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             theme={theme}
             onClose={() => {
               setSelLesson(null);
-              setActiveTab("map");
+              navigateToTab("map");
             }}
             onNextLesson={!isLastLesson ? () => {
               if (resolvedModule && selLesson) {
-                const idx = resolvedModule.lessons.findIndex((l) => l.id === selLesson.id);
-                if (idx !== -1 && idx + 1 < resolvedModule.lessons.length) {
-                  setSelModule(resolvedModule);
-                  setSelLesson(resolvedModule.lessons[idx + 1]);
-                  return;
-                }
-              }
-              setSelLesson(null);
-              setActiveTab("map");
-            } : undefined}
+                 const idx = resolvedModule.lessons.findIndex((l) => l.id === selLesson.id);
+                 if (idx !== -1 && idx + 1 < resolvedModule.lessons.length) {
+                   setSelModule(resolvedModule);
+                   setSelLesson(resolvedModule.lessons[idx + 1]);
+                   return;
+                 }
+               }
+               setSelLesson(null);
+               navigateToTab("map");
+             } : undefined}
             isLastLessonInModule={isLastLesson}
             isNextModuleLocked={isNextModuleLocked}
             onShowPaywall={() => setShowHandoff(true)}
@@ -806,11 +854,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               if (nextModule.lessons && nextModule.lessons.length > 0) {
                 setSelLesson(nextModule.lessons[0]);
               } else {
-                setActiveTab("map");
+                navigateToTab("map");
               }
             } : () => {
               // End of the entire curriculum!
-              setActiveTab("rewards");
+              navigateToTab("rewards");
             }}
           />
         );
@@ -820,12 +868,12 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       {activeTab === "progress" && (
         <ChildProgressScreen
           child={child}
-          onBack={() => setActiveTab("home")}
+          onBack={() => navigateToTab("home")}
           lang={lang}
           parentEmail={parent ? parent.email : "guest"}
           onUpdateChild={onUpdateChild}
           theme={theme}
-          onTabChange={setActiveTab}
+          onTabChange={navigateToTab}
         />
       )}
 
@@ -836,6 +884,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           lang={lang}
           theme={theme}
           onAddXP={handleAddGamesXP}
+          onBack={() => {
+            setSelectedGameId(null);
+            navigateToTab("home");
+          }}
+          initialGameId={selectedGameId}
         />
       )}
 
@@ -844,7 +897,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         <ChildRewards
           child={child}
           lang={lang}
-          onStartLearning={() => setActiveTab("home")}
+          onStartLearning={() => navigateToTab("home")}
           theme={theme}
           onUpdateChild={onUpdateChild}
         />
@@ -866,19 +919,30 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             zIndex: 100
           }}
         >
-          {[
-            { id: "home" as const, label: "Learn", icon: "🗺️" },
-            { id: "chat" as const, label: "AI Tutor", icon: "🤖" },
-            { id: "games" as const, label: "Games", icon: "🎮" },
-            { id: "rewards" as const, label: "Rewards", icon: "🏆" },
-            { id: "progress" as const, label: "Profile", icon: "📊" }
-          ].map(({ id, label, icon }) => {
+          {(isYoungExplorer
+            ? [
+                { id: "home" as const, label: "Home", icon: "🏠" },
+                { id: "chat" as const, label: "AI Tutor", icon: "🤖" },
+                { id: "rewards" as const, label: "Rewards", icon: "🏆" },
+                { id: "progress" as const, label: "Profile", icon: "📊" }
+              ]
+            : [
+                { id: "home" as const, label: "Learn", icon: "🗺️" },
+                { id: "chat" as const, label: "AI Tutor", icon: "🤖" },
+                { id: "games" as const, label: "Games", icon: "🎮" },
+                { id: "rewards" as const, label: "Rewards", icon: "🏆" },
+                { id: "progress" as const, label: "Profile", icon: "📊" }
+              ]
+          ).map(({ id, label, icon }) => {
             const isSel = activeTab === id || 
               (id === "home" && activeTab === "map");
             return (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={() => {
+                  sfx.playTap();
+                  navigateToTab(id);
+                }}
                 style={{
                   background: "none",
                   border: "none",

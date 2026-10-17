@@ -24,6 +24,8 @@ interface ChildGamesProps {
   lang: Language;
   onAddXP: (amount: number) => void;
   theme?: "light" | "dark";
+  onBack?: () => void;
+  initialGameId?: string | null;
 }
 
 interface Game {
@@ -38,7 +40,14 @@ interface Game {
   icon: string;
 }
 
-export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, theme }) => {
+export const ChildGames: React.FC<ChildGamesProps> = ({
+  child,
+  lang,
+  onAddXP,
+  theme,
+  onBack,
+  initialGameId
+}) => {
   // Live dynamic theme detection (with prop synchronization)
   const [isDark, setIsDark] = useState(() => {
     if (theme) return theme === "dark";
@@ -78,7 +87,14 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
   }, [child.companion, child.ageGroup, companionName]);
 
   const [activeAcademy, setActiveAcademy] = useState<"ai" | "cyber" | "design" | "career">("ai");
-  const [activeGameModal, setActiveGameModal] = useState<string | null>(null);
+  const [activeGameModal, setActiveGameModal] = useState<string | null>(initialGameId || null);
+
+  useEffect(() => {
+    if (initialGameId !== undefined) {
+      setActiveGameModal(initialGameId);
+    }
+  }, [initialGameId]);
+
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
 
   // Gameplay specific states
@@ -605,6 +621,35 @@ export const ChildGames: React.FC<ChildGamesProps> = ({ child, lang, onAddXP, th
           margin: "0 auto 28px"
         }}
       >
+        {onBack && (
+          <div>
+            <button
+              onClick={() => {
+                sfx.playTap();
+                onBack();
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                borderRadius: 14,
+                background: isDark ? "#1e293b" : "#ffffff",
+                border: isDark ? "2px solid #334155" : "2px solid #cbd5e1",
+                color: isDark ? "#ffffff" : "#1e293b",
+                fontWeight: 800,
+                fontSize: 13.5,
+                cursor: "pointer",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                transition: "all 0.15s ease"
+              }}
+              className="hover:scale-105 active:scale-95"
+            >
+              <span style={{ fontSize: 16 }}>←</span> Back to Home
+            </button>
+          </div>
+        )}
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
           <div>
             <Heading size={32} style={{ color: isDark ? "#2EC4B6" : "#0f172a", fontFamily: F.display, fontWeight: 900 }}>
