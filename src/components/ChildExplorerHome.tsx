@@ -247,78 +247,20 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
               </p>
             </div>
 
-            {/* Illustrated Scene: Discovery Trail, Open Book & Sparkles */}
-            <div className="my-3 py-2 flex items-center justify-center relative">
-              <div className="w-full max-w-[280px] h-[150px] relative flex items-center justify-center">
-                <svg
-                  viewBox="0 0 280 150"
-                  className="w-full h-full drop-shadow-md select-none pointer-events-none"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  {/* Soft Background Hill */}
-                  <path
-                    d="M 10 140 Q 90 85 180 110 T 270 140 Z"
-                    fill={isDark ? "#047857" : "#6EE7B7"}
-                    opacity="0.6"
+            {/* Custom Bespoke Illustration: Learn Something New */}
+            <div className="my-3 py-1 w-full overflow-hidden rounded-2xl relative shadow-md border-2 border-emerald-400/30 group-hover:border-emerald-300/60 transition-all duration-300">
+              <div className="relative w-full aspect-[16/9] max-h-[190px] sm:max-h-[210px] md:max-h-[220px] overflow-hidden bg-emerald-950/20">
+                <picture>
+                  <source srcSet="/assets/images/learn-something-new.webp" type="image/webp" />
+                  <img
+                    src="/assets/images/learn-something-new.jpeg"
+                    alt="Magical discovery world illustrating learning, technology, and educational exploration"
+                    className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500 ease-out"
+                    loading="eager"
+                    decoding="async"
                   />
-                  {/* Winding Discovery Trail */}
-                  <path
-                    d="M 40 145 C 90 120 120 125 150 95 C 170 75 190 60 210 50"
-                    stroke="#FFD166"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray="4 8"
-                    opacity="0.8"
-                  />
-                  {/* Island Peak & Palm Silhouette */}
-                  <path
-                    d="M 210 50 L 235 90 L 185 90 Z"
-                    fill={isDark ? "#064E3B" : "#10B981"}
-                  />
-                  {/* Open Storybook */}
-                  <g transform="translate(75, 45)">
-                    {/* Book Left Page */}
-                    <path
-                      d="M 10 20 C 35 15 55 20 65 30 L 65 75 C 55 65 35 60 10 65 Z"
-                      fill="#FFFFFF"
-                      stroke="#2EC4B6"
-                      strokeWidth="3"
-                    />
-                    {/* Book Right Page */}
-                    <path
-                      d="M 120 20 C 95 15 75 20 65 30 L 65 75 C 75 65 95 60 120 65 Z"
-                      fill="#F8FAFC"
-                      stroke="#2EC4B6"
-                      strokeWidth="3"
-                    />
-                    {/* Page Lines (Left) */}
-                    <line x1="22" y1="35" x2="55" y2="35" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-                    <line x1="22" y1="46" x2="52" y2="46" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-                    <line x1="22" y1="57" x2="48" y2="57" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-                    {/* Page Lines (Right) */}
-                    <line x1="75" y1="35" x2="108" y2="35" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-                    <line x1="78" y1="46" x2="108" y2="46" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-                    <line x1="82" y1="57" x2="108" y2="57" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" />
-                    {/* Golden Book Ribbon */}
-                    <path d="M 65 30 L 65 82 L 69 77 L 73 82 L 73 30 Z" fill="#F59E0B" />
-                  </g>
-                  {/* Floating Discovery Sparkles */}
-                  <g transform="translate(195, 25)">
-                    <circle cx="0" cy="0" r="4" fill="#FFD166" className="animate-ping" opacity="0.8" />
-                    <polygon points="0,-9 3,-3 9,0 3,3 0,9 -3,3 -9,0 -3,-3" fill="#FFD166" />
-                  </g>
-                  <g transform="translate(50, 30)">
-                    <polygon points="0,-7 2,-2 7,0 2,2 0,7 -2,2 -7,0 -2,-2" fill="#2EC4B6" />
-                  </g>
-                  <g transform="translate(240, 80)">
-                    <polygon points="0,-6 2,-2 6,0 2,2 0,6 -2,2 -6,0 -2,-2" fill="#38BDF8" />
-                  </g>
-                  {/* Curiosity Lightbulb / Compass Icon Silhouette */}
-                  <circle cx="230" cy="40" r="14" fill="#FFD166" opacity="0.9" />
-                  <path d="M 230 32 L 230 48 M 222 40 L 238 40" stroke="#78350F" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+                </picture>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
               </div>
             </div>
 
@@ -370,75 +312,20 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
               </p>
             </div>
 
-            {/* Illustrated Scene: Glowing Adventure Portal & Floating Puzzle Blocks */}
-            <div className="my-3 py-2 flex items-center justify-center relative">
-              <div className="w-full max-w-[280px] h-[150px] relative flex items-center justify-center">
-                <svg
-                  viewBox="0 0 280 150"
-                  className="w-full h-full drop-shadow-md select-none pointer-events-none"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  {/* Concentric Portal Glowing Rings */}
-                  <ellipse cx="140" cy="75" rx="90" ry="55" fill="none" stroke="#8B5CF6" strokeWidth="2" opacity="0.4" strokeDasharray="6 6" />
-                  <ellipse cx="140" cy="75" rx="70" ry="42" fill="none" stroke="#38BDF8" strokeWidth="3" opacity="0.7" />
-                  <ellipse cx="140" cy="75" rx="50" ry="30" fill={isDark ? "#4C1D95" : "#C4B5FD"} opacity="0.6" />
-                  <ellipse cx="140" cy="75" rx="30" ry="18" fill="#38BDF8" opacity="0.8" />
-
-                  {/* Portal Energy Rays */}
-                  <line x1="140" y1="35" x2="140" y2="15" stroke="#38BDF8" strokeWidth="2.5" strokeLinecap="round" />
-                  <line x1="140" y1="115" x2="140" y2="135" stroke="#38BDF8" strokeWidth="2.5" strokeLinecap="round" />
-                  <line x1="85" y1="75" x2="65" y2="75" stroke="#A855F7" strokeWidth="2.5" strokeLinecap="round" />
-                  <line x1="195" y1="75" x2="215" y2="75" stroke="#A855F7" strokeWidth="2.5" strokeLinecap="round" />
-
-                  {/* Floating Puzzle Block 1 (Left Isometric Cube) */}
-                  <g transform="translate(45, 50)">
-                    {/* Top face */}
-                    <polygon points="18,0 36,9 18,18 0,9" fill="#F43F5E" />
-                    {/* Left face */}
-                    <polygon points="0,9 18,18 18,36 0,27" fill="#BE123C" />
-                    {/* Right face */}
-                    <polygon points="18,18 36,9 36,27 18,36" fill="#E11D48" />
-                    {/* Puzzle dot */}
-                    <circle cx="18" cy="9" r="3" fill="#FECDD3" />
-                  </g>
-
-                  {/* Floating Puzzle Block 2 (Right Isometric Cube) */}
-                  <g transform="translate(200, 60)">
-                    {/* Top face */}
-                    <polygon points="16,0 32,8 16,16 0,8" fill="#F59E0B" />
-                    {/* Left face */}
-                    <polygon points="0,8 16,16 16,32 0,24" fill="#B45309" />
-                    {/* Right face */}
-                    <polygon points="16,16 32,8 32,24 16,32" fill="#D97706" />
-                    {/* Star in puzzle block */}
-                    <circle cx="16" cy="8" r="2.5" fill="#FEF3C7" />
-                  </g>
-
-                  {/* Floating Game Gem / Crystal in Portal Center */}
-                  <polygon
-                    points="140,58 152,75 140,92 128,75"
-                    fill="#FFD166"
-                    stroke="#FFFFFF"
-                    strokeWidth="2"
-                    className="clats-motion-float"
+            {/* Custom Bespoke Illustration: Play, Solve and Discover */}
+            <div className="my-3 py-1 w-full overflow-hidden rounded-2xl relative shadow-md border-2 border-purple-400/30 group-hover:border-purple-300/60 transition-all duration-300">
+              <div className="relative w-full aspect-[16/9] max-h-[190px] sm:max-h-[210px] md:max-h-[220px] overflow-hidden bg-purple-950/20">
+                <picture>
+                  <source srcSet="/assets/images/play-solve-discover.webp" type="image/webp" />
+                  <img
+                    src="/assets/images/play-solve-discover.jpeg"
+                    alt="Vibrant game adventure portal illustrating puzzles, problem-solving, and discovery challenges"
+                    className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500 ease-out"
+                    loading="eager"
+                    decoding="async"
                   />
-
-                  {/* Game Controller D-pad silhouette */}
-                  <g transform="translate(130, 71)">
-                    <path d="M 5 0 L 15 0 L 15 5 L 20 5 L 20 15 L 15 15 L 15 20 L 5 20 L 5 15 L 0 15 L 0 5 L 5 5 Z" fill="#FFFFFF" opacity="0.9" />
-                  </g>
-
-                  {/* Floating Neon Sparkles */}
-                  <g transform="translate(60, 25)">
-                    <circle cx="0" cy="0" r="3.5" fill="#38BDF8" className="animate-ping" opacity="0.8" />
-                    <polygon points="0,-8 2,-2 8,0 2,2 0,8 -2,2 -8,0 -2,-2" fill="#38BDF8" />
-                  </g>
-                  <g transform="translate(225, 30)">
-                    <polygon points="0,-7 2,-2 7,0 2,2 0,7 -2,2 -7,0 -2,-2" fill="#EC4899" />
-                  </g>
-                </svg>
+                </picture>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
               </div>
             </div>
 
