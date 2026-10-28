@@ -39,6 +39,14 @@ export const SagaMap: React.FC<SagaMapProps> = ({
   const ageGroup: AgeGroup = child.ageGroup || "early explorers";
   const course = CURRICULUM[ageGroup];
   const modules = course?.modules || [];
+  const isYoungExplorer = ageGroup === "early explorers" || ageGroup === "young explorers";
+
+  // Calculate overall level progression across course
+  const totalLevels = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+  const totalCompletedLevels = modules.reduce(
+    (acc, m) => acc + (m.lessons?.filter((l) => Boolean(child.completed?.[l.id])).length || 0),
+    0
+  );
 
   const activeNodeRef = useRef<HTMLButtonElement>(null);
 
@@ -98,7 +106,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
         <div className="absolute top-[1900px] left-0 text-6xl opacity-30 animate-[drift_50s_linear_infinite_10s]">🚤</div>
       </div>
       {/* Map Header */}
-      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-4 flex items-center justify-between shadow-sm ${
+      <div className={`sticky top-0 z-50 backdrop-blur-xl border-b p-3 sm:p-4 flex items-center justify-between shadow-sm ${
         isDark ? "bg-[#0B1120]/80 border-slate-800" : "bg-white/80 border-slate-200"
       }`}>
         <div className="flex items-center gap-3">
@@ -108,6 +116,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
               className={`p-2 rounded-xl transition-transform active:scale-95 flex-shrink-0 ${
                 isDark ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-600"
               }`}
+              title="Return to Hub"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 18l-6-6 6-6" />
@@ -115,15 +124,33 @@ export const SagaMap: React.FC<SagaMapProps> = ({
             </button>
           )}
           <div>
-            <h2 className={`text-xl font-black ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>Learning Map</h2>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Your Adventure</p>
+            <h2 className={`text-lg sm:text-xl font-black ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
+              {isYoungExplorer ? "Adventure Map" : "Learning Map"}
+            </h2>
+            <p className="text-[11px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">
+              {isYoungExplorer ? "Pathways & Levels" : "Your Adventure"}
+            </p>
           </div>
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
-          isDark ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-200"
-        }`}>
-          <Star size={14} className="text-amber-400" />
-          <span className={`text-xs font-black ${isDark ? "text-white" : "text-slate-900"}`}>{child.xp || 0} XP</span>
+
+        <div className="flex items-center gap-2">
+          {isYoungExplorer && (
+            <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+              isDark ? "bg-slate-800/80 border-slate-700 text-slate-300" : "bg-slate-100 border-slate-200 text-slate-700"
+            }`}>
+              <Check size={13} className="text-emerald-400" />
+              <span className="text-xs font-black">
+                {totalCompletedLevels} / {totalLevels} Levels
+              </span>
+            </div>
+          )}
+
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+            isDark ? "bg-slate-800 border-slate-700" : "bg-slate-100 border-slate-200"
+          }`}>
+            <Star size={14} className="text-amber-400" />
+            <span className={`text-xs font-black ${isDark ? "text-white" : "text-slate-900"}`}>{child.xp || 0} XP</span>
+          </div>
         </div>
       </div>
 
@@ -134,20 +161,51 @@ export const SagaMap: React.FC<SagaMapProps> = ({
           const isPremiumModule = modIndex > 0;
           const isLockedByPaywall = isPremiumModule && !child.is_premium;
 
+          const modLessons = mod.lessons || [];
+          const modCompletedCount = modLessons.filter((l) => Boolean(child.completed?.[l.id])).length;
+          const isModFullyCompleted = modLessons.length > 0 && modCompletedCount === modLessons.length;
+
+          // Clean module title for Young Explorers (remove redundant "Module X: " prefix)
+          const rawModTitle = mod.name?.[lang] || mod.name?.en || `Module ${modIndex + 1}`;
+          const displayPathwayTitle = isYoungExplorer
+            ? rawModTitle.replace(/^Module\s*\d+:\s*/i, "").trim()
+            : rawModTitle;
+
           return (
             <div 
               key={mod.id} 
               className="relative py-24 px-4 flex flex-col items-center"
             >
-              {/* Module Header Overlay */}
-              <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-8 py-3 rounded-2xl text-center shadow-lg z-10 w-[90%] max-w-sm md:max-w-md ${
-                isDark ? "bg-black/50 border-white/10" : "bg-white/60 border-slate-300"
+              {/* Pathway Header Overlay */}
+              <div className={`absolute top-6 left-1/2 -translate-x-1/2 backdrop-blur-md border px-6 sm:px-8 py-3 rounded-2xl text-center shadow-lg z-10 w-[92%] max-w-sm md:max-w-md ${
+                isDark ? "bg-black/60 border-white/10" : "bg-white/70 border-slate-300"
               }`}>
-                <span className={`text-xs md:text-sm font-black uppercase tracking-widest block mb-1 ${isDark ? "text-white/70" : "text-slate-500"}`}>
-                  Section {modIndex + 1}
-                </span>
-                <h3 className={`text-xl md:text-2xl font-black leading-tight ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
-                  {mod.name?.[lang] || mod.name?.en}
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+                    isModFullyCompleted
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                      : isLockedByPaywall
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                      : isDark
+                      ? "bg-teal-500/20 text-teal-300 border-teal-500/30"
+                      : "bg-teal-50 text-teal-700 border-teal-200"
+                  }`}>
+                    {isYoungExplorer ? `🧭 PATHWAY ${modIndex + 1}` : `Section ${modIndex + 1}`}
+                  </span>
+
+                  {isYoungExplorer && (
+                    <span className="text-[10px] font-black text-slate-400">
+                      {isModFullyCompleted
+                        ? "⭐ Mastered!"
+                        : isLockedByPaywall
+                        ? "🔒 Premium"
+                        : `${modCompletedCount}/${modLessons.length} Levels`}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className={`text-lg sm:text-xl md:text-2xl font-black leading-tight ${isDark ? "text-white" : "text-slate-900"}`} style={{ fontFamily: F.display }}>
+                  {displayPathwayTitle}
                 </h3>
               </div>
 
@@ -180,8 +238,13 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                     <div key={les.id} className={`relative z-10 flex flex-col items-center ${alignment}`}>
                       
                       {isActive && (
-                        <div className="absolute -top-14 animate-[bounce_2s_ease-in-out_infinite] z-20">
-                           <KobeAvatar size={55} character={child.companion || "kobe"} ageGroup={ageGroup} />
+                        <div className="absolute -top-16 flex flex-col items-center animate-[bounce_2s_ease-in-out_infinite] z-20 pointer-events-none">
+                          {isYoungExplorer && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#FFD166] text-slate-900 font-black text-[10px] shadow-md border border-amber-600 mb-1 whitespace-nowrap">
+                              👉 Level {lesIndex + 1} Ready!
+                            </span>
+                          )}
+                          <KobeAvatar size={52} character={child.companion || "kobe"} ageGroup={ageGroup} />
                         </div>
                       )}
 
@@ -214,14 +277,42 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                       </button>
 
                       {/* Node Label (Centered below) */}
-                      <div className={`mt-4 px-4 py-2 rounded-xl z-30 shadow-md border text-center w-max max-w-[200px] flex flex-col items-center
-                        ${isDark ? "bg-[#1e293b]/95 text-white border-slate-700" : "bg-white/95 text-slate-800 border-slate-200"}
-                      `}>
-                        <span className="font-black text-[10px] uppercase tracking-wider opacity-60 mb-0.5">Lesson {lesIndex + 1}</span>
-                        <span className="font-black text-base block leading-tight">
+                      <div className={`mt-4 px-4 py-2 rounded-xl z-30 shadow-md border text-center w-max max-w-[210px] flex flex-col items-center transition-all ${
+                        isActive
+                          ? (isDark ? "bg-[#1e293b] text-white border-teal-400 ring-2 ring-teal-400/40" : "bg-white text-slate-900 border-teal-400 ring-2 ring-teal-400/30")
+                          : (isDark ? "bg-[#1e293b]/95 text-white border-slate-700" : "bg-white/95 text-slate-800 border-slate-200")
+                      }`}>
+                        <span className={`font-black text-[10px] uppercase tracking-wider mb-0.5 ${
+                          isActive ? "text-teal-400 font-black" : "opacity-60"
+                        }`}>
+                          {isYoungExplorer 
+                            ? (isBossNode ? `⭐ LEVEL ${lesIndex + 1} · FINALE` : `LEVEL ${lesIndex + 1}`) 
+                            : `Lesson ${lesIndex + 1}`}
+                        </span>
+
+                        <span className="font-black text-sm sm:text-base block leading-tight">
                           {les.title?.[lang] || les.title?.en}
                         </span>
 
+                        {isYoungExplorer && (
+                          <div className="mt-1 flex items-center gap-1">
+                            {isCompleted && (
+                              <span className="text-[10px] font-black text-emerald-400">
+                                ✓ Mastered
+                              </span>
+                            )}
+                            {isActive && (
+                              <span className="text-[10px] font-black text-[#2EC4B6] animate-pulse">
+                                ⚡ Current Quest
+                              </span>
+                            )}
+                            {totallyLocked && (
+                              <span className="text-[10px] font-bold text-slate-400">
+                                {isLockedByPaywall ? "🔒 Premium Gate" : "🔒 Complete Prior Levels"}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
