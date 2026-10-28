@@ -162,3 +162,9 @@ export type TileInteractionState =
   | "completed"
   | "locked"
   | "newly_unlocked";
+
+export type {
+  PatternQuestRankId,
+  PatternQuestRankName,
+  PatternQuestRankInfo
+} from "./data/ranks";

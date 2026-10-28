@@ -15,6 +15,7 @@ import { PhishingSwipe } from "./games/PhishingSwipe";
 import { TeachableMachine } from "./games/TeachableMachine";
 import { DeepfakeDetective } from "./games/DeepfakeDetective";
 import WonderWoods from "./games/WonderWoods";
+import { getPatternQuestRank } from "./games/wonder-woods/data/ranks";
 import TheSignalLab from "./games/TheSignalLab";
 import TheIntelligenceLab from "./games/TheIntelligenceLab";
 import { computeEffectiveStreak } from "../utils/streak";
@@ -140,18 +141,21 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
   // Use real child streak from centralized streak engine (no hardcoded completedCount + 2)
   const { streak } = computeEffectiveStreak(child);
 
-  // Mark academy listing with supported game content
-  const academiesList = [
-    { id: "ai" as const, label: "AI & Emerging Technologies", icon: "🤖" },
-    { id: "cyber" as const, label: "Digital Citizenship & Cybersecurity", icon: "🔒" },
-    { id: "design" as const, label: "Design & Creation", icon: "🎨" },
-    { id: "career" as const, label: child.ageGroup === "future builders" ? "Innovation & Career Readiness" : "Adaptability & Lifelong Learning", icon: child.ageGroup === "future builders" ? "🚀" : "🌱" }
-  ];
-
   // Academies games lists (tailored by age group)
   const isOlder = child.ageGroup === "future builders";
   const isMiddle = child.ageGroup === "young innovators";
   const isYoung = !isOlder && !isMiddle;
+
+  // Mark academy listing with supported game content
+  // For ages 6–10 (Young Explorers), temporarily focus solely on AI Foundations where Pattern Quest lives
+  const academiesList = [
+    { id: "ai" as const, label: "AI & Emerging Technologies", icon: "🤖" },
+    ...(!isYoung ? [
+      { id: "cyber" as const, label: "Digital Citizenship & Cybersecurity", icon: "🔒" },
+      { id: "design" as const, label: "Design & Creation", icon: "🎨" },
+      { id: "career" as const, label: child.ageGroup === "future builders" ? "Innovation & Career Readiness" : "Adaptability & Lifelong Learning", icon: child.ageGroup === "future builders" ? "🚀" : "🌱" }
+    ] : [])
+  ];
 
   const aiGames: Game[] = [
     ...(isYoung ? [{
@@ -187,31 +191,33 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
       supportsLesson: "Machine Learning & Bias",
       icon: "🌐"
     }] : []),
-    {
-      id: "teachable-machine",
-      name: "Teachable Machine",
-      desc: "YOU are the AI trainer! Sort items to teach the AI, then watch it learn.",
-      difficulty: "Intermediate",
-      xpAward: 100,
-      status: "Available",
-      supportsModule: "🤖 AI Foundations",
-      supportsLesson: "How AI Learns",
-      icon: "🧠"
-    },
-    {
-      id: "smart-city-builder",
-      name: "Smart City Builder",
-      desc: "Place AI sensors and EV buses to optimize your digital metropolis!",
-      difficulty: "Intermediate",
-      xpAward: 150,
-      status: "Available",
-      supportsModule: "🤖 AI Foundations",
-      supportsLesson: "AI Around Us",
-      icon: "🏙️"
-    }
+    ...(!isYoung ? ([
+      {
+        id: "teachable-machine",
+        name: "Teachable Machine",
+        desc: "YOU are the AI trainer! Sort items to teach the AI, then watch it learn.",
+        difficulty: "Intermediate",
+        xpAward: 100,
+        status: "Available",
+        supportsModule: "🤖 AI Foundations",
+        supportsLesson: "How AI Learns",
+        icon: "🧠"
+      },
+      {
+        id: "smart-city-builder",
+        name: "Smart City Builder",
+        desc: "Place AI sensors and EV buses to optimize your digital metropolis!",
+        difficulty: "Intermediate",
+        xpAward: 150,
+        status: "Available",
+        supportsModule: "🤖 AI Foundations",
+        supportsLesson: "AI Around Us",
+        icon: "🏙️"
+      }
+    ] as Game[]) : [])
   ];
 
-  const cyberGames: Game[] = [
+  const cyberGames: Game[] = !isYoung ? [
     {
       id: "deepfake-detective",
       name: "Deepfake Detective",
@@ -245,9 +251,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
       supportsLesson: "Password Basics",
       icon: "🔒"
     }
-  ];
+  ] : [];
 
-  const designGames: Game[] = [
+  const designGames: Game[] = !isYoung ? [
     {
       id: "story-creator",
       name: "Story Creator",
@@ -259,9 +265,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
       supportsLesson: "Creative Writing",
       icon: "🎨"
     }
-  ];
+  ] : [];
 
-  const careerGames: Game[] = [
+  const careerGames: Game[] = !isYoung ? [
     {
       id: "future-career",
       name: "Future Career Quest",
@@ -273,9 +279,11 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
       supportsLesson: "Future Jobs",
       icon: "🚀"
     }
-  ];
+  ] : [];
 
   const getActiveArray = () => {
+    // For ages 6–10 (Young Explorers), temporarily show Pattern Quest as the only game
+    if (isYoung) return aiGames.filter(g => g.id === "wonder-woods");
     if (activeAcademy === "ai") return aiGames;
     if (activeAcademy === "cyber") return cyberGames;
     if (activeAcademy === "design") return designGames;
@@ -297,6 +305,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
           const unlockedLevel = typeof parsed.unlockedLevel === "number" ? Math.min(10, parsed.unlockedLevel) : 1;
           const isDone = completedCount >= 10 || completedLevels.includes(10);
           const percent = isDone ? 100 : Math.min(100, Math.round((completedCount / 10) * 100));
+          const starsPerLevel = parsed.starsPerLevel || {};
+          const rank = getPatternQuestRank(completedLevels, starsPerLevel);
+          const sparks = typeof parsed.totalSparks === "number" ? parsed.totalSparks : completedCount;
 
           return {
             isCompleted: isDone,
@@ -304,11 +315,11 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
             progressPercent: percent,
             progressHeader: "QUEST PROGRESS",
             progressDisplay: isDone 
-              ? "100% · MASTERED" 
+              ? `100% · ${rank.name} (${sparks} Sparks)` 
               : completedCount > 0 
-              ? `${percent}% (${completedCount}/10 Missions)` 
+              ? `${percent}% (${completedCount}/10 Missions · ${rank.name})` 
               : "0% (10 Missions Ahead)",
-            badgeText: isDone ? "✓ COMPLETED" : completedCount > 0 ? `LEVEL ${unlockedLevel} / 10` : null,
+            badgeText: isDone ? `✓ ${rank.name}` : completedCount > 0 ? `${rank.icon} ${rank.name}` : null,
             badgeType: isDone ? "completed" : completedCount > 0 ? "in_progress" : "none",
             buttonText: isDone 
               ? "🔄 Replay Game (Earned)" 

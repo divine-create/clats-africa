@@ -964,7 +964,7 @@ export const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({
                 {successMessage}
               </p>
               <div className="mt-4 px-4 py-2 bg-amber-400/10 border border-amber-400/30 rounded-xl text-xs font-black text-amber-300">
-                +{level.xpAward} XP Earned · Forest Spark Collected!
+                +{level.xpAward} XP Earned · Pattern Spark Collected!
               </div>
             </div>
           </motion.div>

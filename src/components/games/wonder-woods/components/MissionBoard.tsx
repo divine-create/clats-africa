@@ -3,12 +3,14 @@ import { motion } from "motion/react";
 import { ArrowLeft, Star, Lock, Sparkles, CheckCircle2, Play, Flame } from "lucide-react";
 import { MEADOW_LEVELS } from "../data/meadowLevels";
 import { MeadowLevelConfig } from "../types";
+import { getPatternQuestRank, getRankProgressSummary, calculateTotalStars } from "../data/ranks";
 import { sfx } from "../../../../utils/audio";
 
 interface MissionBoardProps {
   unlockedLevel: number;
   completedLevels: number[];
   starsPerLevel?: Record<number, number>;
+  totalSparks?: number;
   onSelectLevel: (level: MeadowLevelConfig) => void;
   onBackToMap: () => void;
 }
@@ -17,6 +19,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
   unlockedLevel,
   completedLevels,
   starsPerLevel = {},
+  totalSparks = 0,
   onSelectLevel,
   onBackToMap
 }) => {
@@ -30,7 +33,9 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
     }
   };
 
-  const totalEarnedStars = Object.values(starsPerLevel).reduce((acc, s) => acc + s, 0) || (completedLevels.length * 3);
+  const currentRank = getPatternQuestRank(completedLevels, starsPerLevel);
+  const rankSummary = getRankProgressSummary(completedLevels, starsPerLevel);
+  const totalEarnedStars = calculateTotalStars(completedLevels, starsPerLevel);
   const progressPercent = Math.round((completedLevels.length / MEADOW_LEVELS.length) * 100);
 
   return (
@@ -46,7 +51,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
           className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-bold"
         >
           <ArrowLeft size={16} />
-          <span>World Map</span>
+          <span className="hidden sm:inline">World Map</span>
         </button>
 
         <div className="text-center">
@@ -61,23 +66,46 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
           </p>
         </div>
 
-        <div className="bg-emerald-950/80 border border-emerald-400/50 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-black text-emerald-300 shadow-sm">
-          <Star size={14} className="fill-amber-400 text-amber-400" />
-          <span>{totalEarnedStars} / 30 ⭐</span>
+        <div className="flex items-center gap-2">
+          {/* Game-Specific Rank */}
+          <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-black shadow-sm ${currentRank.badgeBg}`}>
+            <span>{currentRank.icon}</span>
+            <span>{currentRank.name}</span>
+          </div>
+
+          {/* Pattern Sparks Balance */}
+          <div className="bg-slate-800/90 border border-teal-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm text-teal-300 text-xs font-black">
+            <Sparkles size={14} className="text-teal-300" />
+            <span>{totalSparks} Pattern Sparks</span>
+          </div>
+
+          {/* Stars */}
+          <div className="bg-emerald-950/80 border border-emerald-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1 text-xs font-black text-emerald-300 shadow-sm">
+            <Star size={14} className="fill-amber-400 text-amber-400" />
+            <span>{totalEarnedStars} / 30 ⭐</span>
+          </div>
         </div>
       </div>
 
       {/* Progress Strip */}
       <div className="w-full max-w-md mx-auto my-2 z-10 px-2">
         <div className="flex justify-between items-center text-[11px] font-bold text-slate-300 mb-1">
-          <span>Meadow Mastery</span>
-          <span className="text-emerald-400">{progressPercent}% Complete ({completedLevels.length}/10 Missions)</span>
+          <div className="flex items-center gap-1.5">
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${currentRank.badgeBg}`}>
+              {currentRank.icon} {currentRank.name}
+            </span>
+            <span className="text-slate-400 text-[10px]">({completedLevels.length}/10 Missions)</span>
+          </div>
+          <span className="text-emerald-400">{progressPercent}% Complete</span>
         </div>
-        <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
           <div 
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
+        </div>
+        <div className="text-[10px] text-amber-300/90 font-bold mt-1 text-center truncate">
+          {rankSummary.milestoneMessage}
         </div>
       </div>
 

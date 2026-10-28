@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Music, Volume2, VolumeX } from "lucide-react";
 import { MeadowLevelConfig, RegionId, WonderWoodsProgress } from "./types";
@@ -9,6 +9,7 @@ import { MissionBoard } from "./components/MissionBoard";
 import { MissionPreview } from "./components/MissionPreview";
 import { ChallengeWorkspace } from "./components/ChallengeWorkspace";
 import { FeedbackModal } from "./components/FeedbackModal";
+import { getPatternQuestRank, calculateTotalStars } from "./data/ranks";
 import { sfx, gameMusic, companionVoice } from "../../../utils/audio";
 import { recordLearningEvent, recordSkillEvidence } from "../../../utils/learningEvidence";
 
@@ -146,6 +147,14 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
     } catch {}
     return undefined;
   });
+
+  const currentRank = useMemo(() => {
+    return getPatternQuestRank(completedLevels, starsPerLevel);
+  }, [completedLevels, starsPerLevel]);
+
+  const totalCalculatedStars = useMemo(() => {
+    return calculateTotalStars(completedLevels, starsPerLevel);
+  }, [completedLevels, starsPerLevel]);
 
   const saveProgress = (
     newUnlocked: number,
@@ -346,7 +355,9 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
             <IntroScreen
               companion={companion}
               unlockedLevel={unlockedLevel}
-              totalStars={completedLevels.length}
+              totalStars={totalCalculatedStars}
+              totalSparks={totalSparks}
+              rank={currentRank}
               onStart={() => setCurrentScreen("world_map")}
               onExit={onExit}
             />
@@ -366,6 +377,9 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
               starsCollected={completedLevels.length}
               unlockedLevel={unlockedLevel}
               isGroveUnlocked={isGroveUnlocked}
+              totalSparks={totalSparks}
+              completedLevels={completedLevels}
+              starsPerLevel={starsPerLevel}
               onSelectRegion={(regId) => {
                 setSelectedRegionId(regId);
                 setCurrentScreen("mission_board");
@@ -389,6 +403,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
               unlockedLevel={unlockedLevel}
               completedLevels={completedLevels}
               starsPerLevel={starsPerLevel}
+              totalSparks={totalSparks}
               onSelectLevel={(lvl) => {
                 setActiveLevel(lvl);
                 setCurrentScreen("preview");
@@ -449,6 +464,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
           starsEarned={lastEarnedStars}
           isGrandFinale={activeLevel.id === 10}
           isReplay={isCurrentLevelReplay}
+          currentRank={currentRank}
           companion={companion}
           lang={lang}
           onNext={handleNextFromFeedback}

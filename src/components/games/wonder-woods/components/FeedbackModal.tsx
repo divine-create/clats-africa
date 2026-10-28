@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import confetti from "canvas-confetti";
 import { Star, Award, ArrowRight, RotateCcw, Sparkles } from "lucide-react";
 import { sfx, companionVoice } from "../../../../utils/audio";
+import type { PatternQuestRankInfo } from "../data/ranks";
 
 interface FeedbackModalProps {
   levelTitle: string;
@@ -11,6 +12,7 @@ interface FeedbackModalProps {
   starsEarned?: number;
   isGrandFinale?: boolean;
   isReplay?: boolean;
+  currentRank?: PatternQuestRankInfo;
   companion?: "kobe" | "chibi";
   lang?: string;
   onNext: () => void;
@@ -24,6 +26,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   starsEarned = 3,
   isGrandFinale = false,
   isReplay = false,
+  currentRank,
   companion = "kobe",
   lang = "en",
   onNext,
@@ -39,7 +42,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
     if (companionVoice.isNarrationEnabled("early explorers")) {
       const msg = isGrandFinale
-        ? `Meadow Archway Restored! You earned ${starsEarned} stars and unlocked the Pattern Meadow Master badge! Butterfly Grove is now unlocked on your World Map!`
+        ? `Meadow Archway Restored! You earned ${starsEarned} stars and unlocked the Pattern Meadow Master badge! Wonder Woods is now unlocked on your World Map!`
         : `Mission Complete! You earned ${starsEarned} stars on ${levelTitle} and mastered ${subrule}!`;
       const timer = setTimeout(() => {
         companionVoice.speakTTS(msg, companion, "early explorers", lang);
@@ -100,7 +103,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
               <span>Badge Unlocked: Pattern Meadow Master</span>
             </div>
             <p className="text-[11px] text-teal-200 font-bold">
-              🦋 Butterfly Grove is now UNLOCKED on your World Map!
+              🌳 Wonder Woods is now UNLOCKED on your World Map!
             </p>
           </motion.div>
         )}
@@ -118,11 +121,20 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-center text-slate-300">
-            <span>Woodland Harmony:</span>
+            <span>Pattern Sparks:</span>
             <span className="font-black text-teal-300">
-              {isReplay ? `⭐ Rating Updated` : `+1 Forest Spark`}
+              {isReplay ? `⭐ Rating Updated` : `+1 Pattern Spark`}
             </span>
           </div>
+          {currentRank && (
+            <div className="flex justify-between items-center text-slate-300">
+              <span>Pattern Quest Rank:</span>
+              <span className="font-black text-amber-300 flex items-center gap-1">
+                <span>{currentRank.icon}</span>
+                <span>{currentRank.name}</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Action Button */}

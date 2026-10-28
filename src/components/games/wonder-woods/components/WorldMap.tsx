@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info, CheckCircle2, Award, Music, LogOut } from "lucide-react";
 import { RegionData, RegionId } from "../types";
 import { WONDER_WOODS_REGIONS } from "../data/regions";
+import { getPatternQuestRank, getRankProgressSummary } from "../data/ranks";
 import { sfx } from "../../../../utils/audio";
 
 interface WorldMapProps {
@@ -10,6 +11,9 @@ interface WorldMapProps {
   starsCollected: number;
   unlockedLevel: number;
   isGroveUnlocked?: boolean;
+  totalSparks?: number;
+  completedLevels?: number[];
+  starsPerLevel?: Record<number, number>;
   onBackToIntro: () => void;
   onExit?: () => void;
 }
@@ -19,11 +23,17 @@ export const WorldMap: React.FC<WorldMapProps> = ({
   starsCollected,
   unlockedLevel,
   isGroveUnlocked = false,
+  totalSparks = 0,
+  completedLevels = [],
+  starsPerLevel = {},
   onBackToIntro,
   onExit
 }) => {
   const [hoveredRegion, setHoveredRegion] = useState<RegionData | null>(null);
   const [showGroveModal, setShowGroveModal] = useState<boolean>(false);
+
+  const currentRank = getPatternQuestRank(completedLevels, starsPerLevel);
+  const rankSummary = getRankProgressSummary(completedLevels, starsPerLevel);
 
   // Compute dynamic locked states based on user progression
   const dynamicRegions = WONDER_WOODS_REGIONS.map((region) => {
@@ -92,16 +102,30 @@ export const WorldMap: React.FC<WorldMapProps> = ({
             className="text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200"
             style={{ fontFamily: "'Baloo 2', system-ui, sans-serif" }}
           >
-            Wonder Woods World Map
+            Pattern Quest World Map
           </h2>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            6 Enchanted Pattern Realms
+            6 Enchanted Adventure Regions
           </p>
         </div>
 
-        <div className="bg-slate-800/90 border border-amber-400/50 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
-          <Sparkles size={14} className="text-amber-400" />
-          <span className="text-xs font-black text-amber-300">{starsCollected} / 10 Missions ⭐</span>
+        <div className="flex items-center gap-2">
+          {/* Game-Specific Rank */}
+          <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-black shadow-sm ${currentRank.badgeBg}`}>
+            <span>{currentRank.icon}</span>
+            <span>{currentRank.name}</span>
+          </div>
+
+          {/* Pattern Sparks Balance */}
+          <div className="bg-slate-800/90 border border-teal-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm text-teal-300 text-xs font-black">
+            <Sparkles size={14} className="text-teal-300" />
+            <span>{totalSparks} Pattern Sparks</span>
+          </div>
+
+          {/* Missions Completed */}
+          <div className="bg-slate-800/90 border border-amber-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm text-amber-300 text-xs font-black">
+            <span>{starsCollected} / 10 ⭐</span>
+          </div>
         </div>
       </div>
 
@@ -240,15 +264,26 @@ export const WorldMap: React.FC<WorldMapProps> = ({
                 onClick={() => handleRegionClick(hoveredRegion)}
                 className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition active:scale-95 shrink-0"
               >
-                <span>{hoveredRegion.id === "meadow" ? "ENTER MEADOW MISSIONS" : "EXPLORE GROVE"}</span>
+                <span>{hoveredRegion.id === "meadow" ? "ENTER MEADOW MISSIONS" : "EXPLORE WONDER WOODS"}</span>
                 <ChevronRight size={16} />
               </button>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-medium justify-center py-1">
-            <Info size={16} className="text-teal-400" />
-            <span>Tap <strong>Pattern Meadow</strong> to play your 10-level challenge board!</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 py-1 px-1">
+            <div className="flex items-center gap-2 text-xs font-medium">
+              <span className={`px-2 py-0.5 rounded-md border text-[11px] font-black flex items-center gap-1 ${currentRank.badgeBg}`}>
+                <span>{currentRank.icon}</span>
+                <span>{currentRank.name}</span>
+              </span>
+              <span className="text-slate-300 text-xs font-bold">
+                {rankSummary.milestoneMessage}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+              <Info size={14} className="text-teal-400 shrink-0" />
+              <span>Tap <strong>Pattern Meadow</strong> to play your 10-level challenge board!</span>
+            </div>
           </div>
         )}
       </div>
@@ -269,16 +304,16 @@ export const WorldMap: React.FC<WorldMapProps> = ({
               className="bg-slate-900 border-4 border-sky-400 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl text-white"
             >
               <div className="w-18 h-18 bg-sky-500/20 border-2 border-sky-400 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 shadow-lg">
-                🦋
+                🌳
               </div>
               <h3 
                 className="text-2xl font-black text-sky-300"
                 style={{ fontFamily: "'Baloo 2', system-ui, sans-serif" }}
               >
-                Butterfly Grove Unlocked!
+                Wonder Woods Unlocked!
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 mt-2 font-medium">
-                Congratulations! By solving the 10th Meadow Trial and restoring the ancient archway, you unlocked the gateway to <strong>Butterfly Grove</strong>!
+                Congratulations! By solving the 10th Meadow Trial and restoring the ancient archway, you unlocked the gateway to <strong>Wonder Woods</strong>!
               </p>
               <div className="mt-4 p-3 bg-slate-800/80 rounded-2xl border border-sky-500/30 text-xs text-sky-200 font-bold">
                 Classification & Feature Grouping missions will be available in the next Wonder Woods adventure expansion!

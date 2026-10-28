@@ -3,11 +3,14 @@ import { motion } from "motion/react";
 import { Play, Sparkles, Compass, MapPin, ArrowRight, Volume2 } from "lucide-react";
 import { MascotImage } from "../../../Onboarding";
 import { sfx, companionVoice } from "../../../../utils/audio";
+import type { PatternQuestRankInfo } from "../data/ranks";
 
 interface IntroScreenProps {
   companion: "kobe" | "chibi";
   unlockedLevel: number;
   totalStars: number;
+  totalSparks?: number;
+  rank?: PatternQuestRankInfo;
   onStart: () => void;
   onExit?: () => void;
 }
@@ -16,15 +19,17 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
   companion,
   unlockedLevel,
   totalStars,
+  totalSparks = 0,
+  rank,
   onStart,
   onExit
 }) => {
-  const hasProgress = unlockedLevel > 1 || totalStars > 0;
+  const hasProgress = unlockedLevel > 1 || totalStars > 0 || totalSparks > 0;
   const companionName = companion === "chibi" ? "Chibi" : "Kobe";
 
   const introSpeech = hasProgress
-    ? `Welcome back to Pattern Quest: Wonder Woods! I am ${companionName}. You have earned ${totalStars} stars so far, and Meadow Level ${unlockedLevel} is ready! Tap Continue Adventure to play!`
-    : `Welcome to Pattern Quest: Wonder Woods! I am ${companionName}, your woodland guide. Embark on an enchanted woodland journey! Discover secret repeating rhythms, classify creatures, and master the ancient Pattern Engine! Tap Start Adventure to begin!`;
+    ? `Welcome back to Pattern Quest: Wonder Woods! I am ${companionName}. You are a ${rank ? rank.name : "Pattern Explorer"} with ${totalStars} stars and ${totalSparks} Pattern Sparks! Meadow Level ${unlockedLevel} is ready. Tap Continue Adventure to play!`
+    : `Welcome to Pattern Quest: Wonder Woods! I am ${companionName}, your woodland guide. Embark on an enchanted woodland journey! Discover secret repeating rhythms, earn Pattern Sparks, and master the ancient Pattern Engine! Tap Start Adventure to begin!`;
 
   useEffect(() => {
     if (companionVoice.isNarrationEnabled("early explorers")) {
@@ -33,7 +38,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [companion, hasProgress, totalStars, unlockedLevel]);
+  }, [companion, hasProgress, totalStars, totalSparks, unlockedLevel, rank]);
 
   const handleStart = () => {
     sfx.play("pop");
@@ -114,10 +119,18 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
 
         {/* Progress pill if existing */}
         {hasProgress && (
-          <div className="mt-4 inline-flex items-center gap-3 bg-slate-800/90 border border-emerald-500/50 rounded-2xl px-4 py-2 shadow-inner text-xs">
-            <span className="text-amber-400 font-black">⭐ {totalStars} Stars Earned</span>
+          <div className="mt-4 inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 bg-slate-800/90 border border-emerald-500/50 rounded-2xl px-4 py-2 shadow-inner text-xs">
+            {rank && (
+              <span className={`px-2 py-0.5 rounded-lg border text-[11px] font-black flex items-center gap-1 ${rank.badgeBg}`}>
+                <span>{rank.icon}</span>
+                <span>{rank.name}</span>
+              </span>
+            )}
+            <span className="text-amber-400 font-black">⭐ {totalStars} Stars</span>
             <span className="text-slate-500">|</span>
-            <span className="text-emerald-300 font-black">Next: Meadow Level {unlockedLevel}</span>
+            <span className="text-teal-300 font-black">✨ {totalSparks} Pattern Sparks</span>
+            <span className="text-slate-500">|</span>
+            <span className="text-emerald-300 font-black">Next: Level {unlockedLevel}</span>
           </div>
         )}
       </div>

@@ -663,11 +663,11 @@ export const MEADOW_LEVELS: MeadowLevelConfig[] = [
     subrule: "Mixed Solve + Pattern Creator Archway",
     phase: "CREATE",
     mode: "trial_hybrid",
-    instruction: "Solve the Gate Lock, then construct your own 6-piece repeating pattern to unlock Butterfly Grove!",
+    instruction: "Solve the Gate Lock, then construct your own 6-piece repeating pattern to unlock Wonder Woods!",
     companionVoicePrompt: "You made it to the final Meadow trial! Solve the gate lock, then build your own pattern to open the portal!",
     hintLevel1: "Find the rule for the gate lock first.",
     hintLevel2: "Find the rule first. Then use it to build your own pattern.",
-    successExplanation: "THE ANCIENT GATE OPENS! The Pattern Keeper salutes your brilliance! Butterfly Grove is now UNLOCKED!",
+    successExplanation: "THE ANCIENT GATE OPENS! The Pattern Keeper salutes your brilliance! Wonder Woods is now UNLOCKED!",
     preview: {
       type: "archway_assembly",
       title: "The Pattern Keeper's Trial",
