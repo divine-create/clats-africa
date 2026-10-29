@@ -222,32 +222,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const isYoungExplorer = child.ageGroup === "early explorers" || child.ageGroup === "young explorers";
   const [narrationOn, setNarrationOn] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
 
-  // Auto-Start on Login for Young Explorers
-  useEffect(() => {
-    if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem("hasAutoStarted_" + child.id)) {
-      sessionStorage.setItem("hasAutoStarted_" + child.id, "true");
-      if (isYoungExplorer) {
-        const course = CURRICULUM["early explorers"];
-        if (course && course.modules) {
-          for (const mod of course.modules) {
-            for (const les of mod.lessons) {
-              if (!child.completed?.[les.id]) {
-                setSelModule(mod);
-                setSelLesson(les);
-                setActiveTab("chat");
-                return;
-              }
-            }
-          }
-          if (course.modules[0] && course.modules[0].lessons[0]) {
-            setSelModule(course.modules[0]);
-            setSelLesson(course.modules[0].lessons[0]);
-            setActiveTab("chat");
-          }
-        }
-      }
-    }
-  }, [child, isYoungExplorer]);
+  // Young Explorers land directly on the Explorer Hub ("home").
+  // They can launch missions or the learning map deliberately from the hub.
 
   // Stop current voice playback whenever changing screens
   useEffect(() => {

@@ -196,7 +196,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                   {isYoungExplorer && (
                     <span className="text-[10px] font-black text-slate-400">
                       {isModFullyCompleted
-                        ? "⭐ Mastered!"
+                        ? "⭐ Pathway Pass Earned!"
                         : isLockedByPaywall
                         ? "🔒 Premium"
                         : `${modCompletedCount}/${modLessons.length} Levels`}

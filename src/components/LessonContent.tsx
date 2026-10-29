@@ -97,6 +97,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showControls, setShowControls] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [videoUnavailable, setVideoUnavailable] = useState(false);
+  const [showConceptPreview, setShowConceptPreview] = useState(false);
+  const [conceptPreviewAcknowledged, setConceptPreviewAcknowledged] = useState(false);
 
   // Kobe In-Lesson Voice Sidekick & Socratic Hint State
   const [sidekickOpen, setSidekickOpen] = useState(false);
@@ -368,11 +371,17 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               } else if (event.data === (window as any).YT?.PlayerState?.ENDED) {
                 setWatchedFraction(1);
               }
+            },
+            'onError': (event: any) => {
+              console.warn("YouTube player error, falling back to Concept Preview:", event?.data);
+              setVideoUnavailable(true);
             }
           }
         });
       } catch (e) {
+        console.warn("Failed to initialize YouTube player:", e);
         ytPlayerRef.current = null;
+        setVideoUnavailable(true);
       }
     };
 
@@ -384,7 +393,15 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       initPlayer();
     }
 
+    // Fallback timer: if player fails to initialize within 5 seconds, allow concept preview
+    const timeoutId = setTimeout(() => {
+      if (!ytPlayerRef.current && !(window as any).YT) {
+        setVideoUnavailable(true);
+      }
+    }, 5000);
+
     return () => {
+      clearTimeout(timeoutId);
       if (ytPlayerRef.current) {
         try {
           ytPlayerRef.current.destroy();
@@ -598,6 +615,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     setCorrectAnswersList([]);
     setWatchedFraction(0);
     setIsVideoPlaying(false);
+    setVideoUnavailable(false);
+    setShowConceptPreview(false);
+    setConceptPreviewAcknowledged(false);
     practiceCompletionLoggedRef.current = false;
   }, [lesson?.id]);
 
@@ -849,8 +869,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     }
   };
 
-  const activeProgressProgress =
-    learningStep === "video" ? 33 : learningStep === "quiz" ? 66 : 100;
+  const activeProgressProgress = hasValidPractice
+    ? (learningStep === "video" ? 25 : learningStep === "practice" ? 50 : learningStep === "quiz" ? 75 : 100)
+    : (learningStep === "video" ? 33 : learningStep === "quiz" ? 66 : 100);
 
   const buildExcitedStarsSpeech = (xpAmount: number, scorePct: number): string => {
     const nextActionText = isLastLessonInModule
@@ -1003,59 +1024,78 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           style={{
             maxWidth: 600,
             margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: hasValidPractice ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr",
-            gap: 8,
             marginBottom: 24,
             background: getCardBackground(),
             border: `2px solid ${getBorderColor()}`,
             borderRadius: 24,
-            padding: "10px 12px"
+            padding: "12px 14px"
           }}
         >
-          {[
-            { id: "video", label: isEarlyExplorers ? "Watch" : "Lesson", icon: "📺" },
-            ...(hasValidPractice ? [{ id: "practice", label: isEarlyExplorers ? "Practice" : "Activity", icon: "🎯" }] : []),
-            { id: "quiz", label: "Quiz", icon: "🧩" },
-            { id: "reward", label: "Stars", icon: "🏆" }
-          ].map((st) => {
-            const isCompleted =
-              (st.id === "video" && learningStep !== "video") ||
-              (st.id === "practice" && (learningStep === "quiz" || learningStep === "reward")) ||
-              (st.id === "quiz" && learningStep === "reward");
-            const isActive = learningStep === st.id;
-            return (
-              <div
-                key={st.id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  opacity: isActive || isCompleted ? 1 : 0.45
-                }}
-              >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: hasValidPractice ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr",
+              gap: 8,
+              marginBottom: 10
+            }}
+          >
+            {[
+              { id: "video", label: isEarlyExplorers ? "Watch" : "Lesson", icon: "📺" },
+              ...(hasValidPractice ? [{ id: "practice", label: isEarlyExplorers ? "Practice" : "Activity", icon: "🎯" }] : []),
+              { id: "quiz", label: "Quiz", icon: "🧩" },
+              { id: "reward", label: "Stars", icon: "🏆" }
+            ].map((st) => {
+              const isCompleted =
+                (st.id === "video" && learningStep !== "video") ||
+                (st.id === "practice" && (learningStep === "quiz" || learningStep === "reward")) ||
+                (st.id === "quiz" && learningStep === "reward");
+              const isActive = learningStep === st.id;
+              return (
                 <div
+                  key={st.id}
                   style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    background: isCompleted ? "#2EC4B6" : isActive ? "#0d9488" : "rgba(0,0,0,0.06)",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 18,
-                    fontWeight: 900,
-                    color: "#ffffff"
+                    opacity: isActive || isCompleted ? 1 : 0.45
                   }}
                 >
-                  {isCompleted ? "✓" : st.icon}
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: "50%",
+                      background: isCompleted ? "#2EC4B6" : isActive ? "#0d9488" : "rgba(0,0,0,0.06)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 18,
+                      fontWeight: 900,
+                      color: "#ffffff"
+                    }}
+                  >
+                    {isCompleted ? "✓" : st.icon}
+                  </div>
+                  <span style={{ fontSize: 13, fontFamily: F.mono, marginTop: 4, fontWeight: isActive ? 900 : 500, color: getTextColor() }}>
+                    {st.label}
+                  </span>
                 </div>
-                <span style={{ fontSize: 13, fontFamily: F.mono, marginTop: 4, fontWeight: isActive ? 900 : 500, color: getTextColor() }}>
-                  {st.label}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Stepper Linear Progress Bar (25% -> 50% -> 75% -> 100% when practice exists) */}
+          <div style={{ height: 6, width: "100%", background: colorMode === "night" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)", borderRadius: 99, overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${activeProgressProgress}%`,
+                background: "linear-gradient(90deg, #2EC4B6, #0d9488)",
+                borderRadius: 99,
+                transition: "width 0.4s ease"
+              }}
+            />
+          </div>
         </div>
 
         {/* -------------------------------------------------------------
@@ -1065,7 +1105,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
 
             {/* If video player is available */}
-            {currentVideoData ? (
+            {currentVideoData && !videoUnavailable && !showConceptPreview ? (
               <>
                 <div
                 style={{
@@ -1139,6 +1179,16 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button
+                      onClick={() => {
+                        sfx.playTap();
+                        setShowConceptPreview(true);
+                      }}
+                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Switch to Concept Preview slides if video is unavailable or slow"
+                    >
+                      📖 Concept Preview
+                    </button>
+                    <button
                       onClick={isFullscreen ? handleExitFullScreen : handleFullScreen}
                       className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
                       title={isFullscreen ? "Exit Full Screen" : "Full Screen"}
@@ -1159,7 +1209,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                 </div>
               </>
             ) : (
-              // Story-first Interactive Card Slideshow (Required for Ages 6-10, and as dynamic text renderer)
+              // Story-first Interactive Card Slideshow (Fallback for unavailable/offline video and concept previews)
               <div
                 className="playful-card"
                 style={{
@@ -1167,32 +1217,89 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   border: `3px solid ${getBorderColor()}`,
                   borderBottom: `8px solid ${getBorderColor()}`,
                   borderRadius: 32,
-                  padding: "30px 24px",
+                  padding: "26px 20px",
                   textAlign: "center"
                 }}
               >
+                {/* Honest Status Banner */}
+                <div
+                  style={{
+                    background: colorMode === "night" ? "rgba(245, 158, 11, 0.15)" : "#fffbeb",
+                    border: "2px dashed #f59e0b",
+                    borderRadius: 18,
+                    padding: "12px 16px",
+                    marginBottom: 18,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    textAlign: "left",
+                    flexWrap: "wrap"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 24 }}>🎬</span>
+                    <div>
+                      <Txt size={11.5} weight={950} color="#b45309" style={{ textTransform: "uppercase", display: "block", fontFamily: F.mono }}>
+                        {videoUnavailable ? "Offline / In Development Mode" : "Concept Preview Mode"}
+                      </Txt>
+                      <Txt size={13} color={getTextColor()} style={{ fontWeight: 700 }}>
+                        {videoUnavailable
+                          ? "Video lecture is currently in development or offline. Review the concept slides below to continue your quest!"
+                          : "Explore the concept slides and story with your companion!"}
+                      </Txt>
+                    </div>
+                  </div>
+                  {!videoUnavailable && currentVideoData && (
+                    <button
+                      onClick={() => {
+                        sfx.playTap();
+                        setShowConceptPreview(false);
+                      }}
+                      style={{
+                        background: "#0d9488",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 12,
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 900,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      ▶️ Return to Video
+                    </button>
+                  )}
+                </div>
+
                 {/* Visual slide card mascot helper */}
-                <div style={{ fontSize: 72, display: "block", marginBottom: 16 }}>
+                <div style={{ fontSize: 64, display: "block", marginBottom: 12 }}>
                   {"🧠"}
                 </div>
 
-                <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
                   <Chip color="#c084fc" bg="rgba(192, 132, 252, 0.1)">
                     SLIDE {currentSlideIndex + 1} OF {storySlides.length || 1}
                   </Chip>
+                  {conceptPreviewAcknowledged && (
+                    <Chip color="#16a34a" bg="rgba(22, 163, 74, 0.1)">
+                      ✓ Concept Reviewed
+                    </Chip>
+                  )}
                 </div>
 
                 <Txt
                   size={19.5 * getFontSizeMultiplier()}
                   weight={850}
                   color={getTextColor()}
-                  style={{ display: "block", lineHeight: 1.6, minHeight: 110, padding: "0 10px" }}
+                  style={{ display: "block", lineHeight: 1.6, minHeight: 90, padding: "0 10px" }}
                 >
                   "{storySlides[currentSlideIndex] || rawStoryText}"
                 </Txt>
 
                 {/* Speech read narration triggers */}
-                <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 12, margin: "20px 0" }}>
+                <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 12, margin: "16px 0", flexWrap: "wrap" }}>
                   <button
                     onClick={() => {
                       sfx.playTap();
@@ -1202,9 +1309,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                       background: "#e0f2fe",
                       border: "2px solid #0284c7",
                       borderRadius: 16,
-                      padding: "10px 18px",
+                      padding: "8px 16px",
                       cursor: "pointer",
-                      fontSize: 14.5,
+                      fontSize: 14,
                       fontWeight: 900,
                       color: "#0369a1",
                       display: "flex",
@@ -1213,7 +1320,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     }}
                     className="hover:scale-105"
                   >
-                    <span>🔊 Narration Voice</span>
+                    <span>🔊 Read Slide</span>
                   </button>
 
                   <button
@@ -1234,9 +1341,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                         : (colorMode === "night" ? "#334155" : "#f1f5f9"),
                       border: `2px solid ${voiceAssistActive ? "#16a34a" : (colorMode === "night" ? "#475569" : "#cbd5e1")}`,
                       borderRadius: 16,
-                      padding: "10px 18px",
+                      padding: "8px 16px",
                       cursor: "pointer",
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: 850,
                       color: voiceAssistActive ? (colorMode === "night" ? "#86efac" : "#15803d") : (colorMode === "night" ? "#94a3b8" : "#475569")
                     }}
@@ -1247,7 +1354,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
                 {/* Slideshow paginators */}
                 {storySlides.length > 1 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24, padding: "0 10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, padding: "0 10px" }}>
                     <button
                       onClick={() => {
                         sfx.playTap();
@@ -1273,7 +1380,12 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     <button
                       onClick={() => {
                         sfx.playTap();
-                        setCurrentSlideIndex((p) => Math.min(storySlides.length - 1, p + 1));
+                        const nextIdx = Math.min(storySlides.length - 1, currentSlideIndex + 1);
+                        setCurrentSlideIndex(nextIdx);
+                        if (nextIdx === storySlides.length - 1) {
+                          setWatchedFraction(1);
+                          setConceptPreviewAcknowledged(true);
+                        }
                       }}
                       disabled={currentSlideIndex === storySlides.length - 1}
                       style={{
@@ -1293,6 +1405,36 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     </button>
                   </div>
                 )}
+
+                {/* Concept acknowledgement button */}
+                <div style={{ marginTop: 18 }}>
+                  <button
+                    onClick={() => {
+                      sfx.playCoin();
+                      setWatchedFraction(1);
+                      setConceptPreviewAcknowledged(true);
+                    }}
+                    style={{
+                      background: conceptPreviewAcknowledged
+                        ? (colorMode === "night" ? "#166534" : "#dcfce7")
+                        : "linear-gradient(135deg, #f59e0b, #d97706)",
+                      border: conceptPreviewAcknowledged ? "2px solid #22c55e" : "none",
+                      color: conceptPreviewAcknowledged ? (colorMode === "night" ? "#86efac" : "#15803d") : "#ffffff",
+                      borderRadius: 16,
+                      padding: "10px 22px",
+                      fontSize: 14.5,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      boxShadow: conceptPreviewAcknowledged ? "none" : "0 4px 14px rgba(245, 158, 11, 0.3)"
+                    }}
+                    className="hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <span>{conceptPreviewAcknowledged ? "✓ Concept Preview Complete" : "💡 I Understand This Concept!"}</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1332,21 +1474,48 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   setLearningStep("quiz");
                 }
               }}
-              disabled={watchedFraction < 0.8 && !!currentVideoData}
+              disabled={
+                !videoUnavailable &&
+                !showConceptPreview &&
+                !conceptPreviewAcknowledged &&
+                !!currentVideoData &&
+                watchedFraction < 0.8
+              }
               style={{
                 width: "100%",
-                background: watchedFraction < 0.8 && currentVideoData ? "#cbd5e1" : `linear-gradient(135deg, #2EC4B6, #208a80)`,
+                background:
+                  !videoUnavailable &&
+                  !showConceptPreview &&
+                  !conceptPreviewAcknowledged &&
+                  currentVideoData &&
+                  watchedFraction < 0.8
+                    ? "#cbd5e1"
+                    : `linear-gradient(135deg, #2EC4B6, #208a80)`,
                 color: "#ffffff",
                 border: "none",
                 borderRadius: 20,
                 padding: "16px 24px",
                 fontSize: 18,
                 fontWeight: 950,
-                cursor: watchedFraction < 0.8 && currentVideoData ? "not-allowed" : "pointer",
-                boxShadow: watchedFraction < 0.8 && currentVideoData ? "none" : "0 8px 24px rgba(46,196,182,0.2)"
+                cursor:
+                  !videoUnavailable &&
+                  !showConceptPreview &&
+                  !conceptPreviewAcknowledged &&
+                  currentVideoData &&
+                  watchedFraction < 0.8
+                    ? "not-allowed"
+                    : "pointer",
+                boxShadow:
+                  !videoUnavailable &&
+                  !showConceptPreview &&
+                  !conceptPreviewAcknowledged &&
+                  currentVideoData &&
+                  watchedFraction < 0.8
+                    ? "none"
+                    : "0 8px 24px rgba(46,196,182,0.2)"
               }}
             >
-              {watchedFraction < 0.8 && currentVideoData
+              {!videoUnavailable && !showConceptPreview && !conceptPreviewAcknowledged && currentVideoData && watchedFraction < 0.8
                 ? `WATCH THE VIDEO FIRST (${Math.floor(watchedFraction * 100)}%) ⏳`
                 : hasValidPractice
                 ? (isEarlyExplorers ? "START PRACTICE ACTIVITY 🎯" : "CONTINUE TO PRACTICE 🎯")
@@ -1973,8 +2142,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
                 <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 8, marginBottom: 8, position: "relative", zIndex: 2 }}>
                   <Chip color={"#c084fc"} bg={"rgba(192, 132, 252, 0.15)"}>
-                    {isModuleChallenge 
-                      ? (isEarlyExplorers ? "🏆 PATHWAY COMPLETE!" : "🏆 MODULE COMPLETE!") 
+                    {(isModuleChallenge || isLastLessonInModule) && isEarlyExplorers
+                      ? "🏆 PATHWAY PASS EARNED!"
+                      : isModuleChallenge 
+                      ? "🏆 MODULE COMPLETE!" 
                       : (isEarlyExplorers ? "🌟 LEVEL QUIZ COMPLETE!" : "🌟 LESSON QUIZ COMPLETE!")}
                   </Chip>
                 </div>

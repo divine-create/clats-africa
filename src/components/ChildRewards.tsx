@@ -207,7 +207,16 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   const badgesData = evaluateChildBadges(child);
   const earnedBadgesCount = badgesData.filter(b => b.unlocked).length;
 
-  // 6. Certificates — one per curriculum pathway from the database
+  // 6. Certificates — one per curriculum pathway plus 30-level Young Explorer Graduate Certificate
+  const isYoungExplorer = child.ageGroup === "early explorers" || child.ageGroup === "young explorers";
+
+  // Total levels for Young Explorers (6 modules * 5 lessons = 30 levels)
+  const eeCourse = CURRICULUM["early explorers"];
+  const allEeLessons = eeCourse ? eeCourse.modules.flatMap(m => m.lessons) : [];
+  const totalEeLessons = allEeLessons.length || 30;
+  const completedEeLessonsCount = allEeLessons.filter(l => Boolean(completed[l.id])).length;
+  const isAllEeLessonsCompleted = totalEeLessons > 0 && completedEeLessonsCount >= totalEeLessons;
+
   const dynamicCertificates = pathways.map((pathway: any) => {
     const allLessons: any[] = pathway.lessons || [];
     const totalLessons = allLessons.length;
@@ -216,10 +225,12 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
     const progressPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
     return {
       id: `cert-pathway-${pathway.id}`,
-      name: `${pathway.title} Certificate`,
-      desc: `Awarded for completing all lessons in the ${pathway.title} curriculum.`,
+      name: isYoungExplorer ? `${pathway.title} Pathway Pass` : `${pathway.title} Certificate`,
+      desc: isYoungExplorer
+        ? `Official Pathway Pass awarded for mastering all levels in ${pathway.title}.`
+        : `Awarded for completing all lessons in the ${pathway.title} curriculum.`,
       unlocked: isUnlocked,
-      requirement: `Complete all ${totalLessons} lessons in ${pathway.title}`,
+      requirement: isYoungExplorer ? `Complete all ${totalLessons} levels in ${pathway.title}` : `Complete all ${totalLessons} lessons in ${pathway.title}`,
       progress: progressPct,
       completedLessons,
       totalLessons,
@@ -227,17 +238,33 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
     };
   });
 
+  const completionCertificate = isYoungExplorer
+    ? {
+        id: "young-explorer-graduate",
+        name: "Young Explorer Graduate Certificate",
+        desc: "The premier achievement awarded to Young Explorers who complete all 30 adventure levels across all 6 pathways.",
+        unlocked: isAllEeLessonsCompleted,
+        requirement: `Complete all 30 Young Explorer levels (${completedEeLessonsCount}/30 completed. Note: Pathways 2–6 require a Premium membership)`,
+        progress: Math.min(100, Math.round((completedEeLessonsCount / totalEeLessons) * 100)),
+        completedLessons: completedEeLessonsCount,
+        totalLessons: totalEeLessons,
+        icon: "🌟"
+      }
+    : {
+        id: "master-explorer",
+        name: "Master Explorer Certificate",
+        desc: "Acquired a high learning level and earned substantial XP milestones.",
+        unlocked: currentXP >= 500,
+        requirement: "Earn 500+ XP",
+        progress: Math.min(100, Math.round((currentXP / 500) * 100)),
+        completedLessons: completedCount,
+        totalLessons: modules.flatMap((m: any) => m.lessons || []).length || 30,
+        icon: "🌟"
+      };
+
   const certificatesData = [
     ...dynamicCertificates,
-    {
-      id: "master-explorer",
-      name: "Master Explorer Certificate",
-      desc: "Acquired a high learning level and earned substantial XP milestones.",
-      unlocked: currentXP >= 500,
-      requirement: "Earn 500+ XP",
-      progress: Math.min(100, Math.round((currentXP / 500) * 100)),
-      icon: "🌟"
-    }
+    completionCertificate
   ];
 
   const earnedCertificatesCount = certificatesData.filter(c => c.unlocked).length;
