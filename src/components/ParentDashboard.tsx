@@ -1545,16 +1545,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <ChevronRight size={18} className="text-slate-400" />
               </button>
 
-              <a
-                href="mailto:support@clats.org?subject=Book Parent-Teacher Tech Workshop"
-                className={`w-full p-4 rounded-xl border flex items-center justify-between text-base font-semibold hover:translate-x-1.5 transition-all text-left ${
-                  isDark ? "bg-slate-950 border-slate-850 text-slate-300 hover:border-slate-700" : "bg-slate-50 border-slate-150 text-slate-800 hover:bg-slate-100"
-                }`}
-              >
-                <span className="flex items-center gap-2">🎓 Book Parent-Teacher Tech Workshop</span>
-                <ChevronRight size={18} className="text-slate-400" />
-              </a>
-
               <button
                 id="tour-settings-button"
                 onClick={() => onNavigate("settings")}
