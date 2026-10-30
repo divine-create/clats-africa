@@ -9,6 +9,7 @@ import { MissionBoard } from "./components/MissionBoard";
 import { MissionPreview } from "./components/MissionPreview";
 import { ChallengeWorkspace } from "./components/ChallengeWorkspace";
 import { FeedbackModal } from "./components/FeedbackModal";
+import { AchievementsModal } from "./components/AchievementsModal";
 import { getPatternQuestRank, calculateTotalStars } from "./data/ranks";
 import { sfx, gameMusic, companionVoice } from "../../../utils/audio";
 import { recordLearningEvent, recordSkillEvidence } from "../../../utils/learningEvidence";
@@ -50,6 +51,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
   const [selectedRegionId, setSelectedRegionId] = useState<RegionId>("meadow");
   const [activeLevel, setActiveLevel] = useState<MeadowLevelConfig>(MEADOW_LEVELS[0]);
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState<boolean>(false);
   const [lastEarnedStars, setLastEarnedStars] = useState<number>(3);
   const [isCurrentLevelReplay, setIsCurrentLevelReplay] = useState<boolean>(false);
 
@@ -229,6 +231,13 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
       earnedBadge
     );
 
+    if (activeLevel.id === 10) {
+      try {
+        localStorage.setItem(`clats_game_completed_${childId}_wonder-woods`, "true");
+        localStorage.setItem(`clats_badge_earned_${childId}_bdg-pattern-meadow-master`, "true");
+      } catch {}
+    }
+
     // Reward XP ONLY on first completion to prevent duplicate XP farming
     if (!isAlreadyCompleted) {
       onRewardXP?.(activeLevel.xpAward);
@@ -359,6 +368,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
               totalSparks={totalSparks}
               rank={currentRank}
               onStart={() => setCurrentScreen("world_map")}
+              onOpenAchievements={() => setShowAchievementsModal(true)}
               onExit={onExit}
             />
           </motion.div>
@@ -385,6 +395,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
                 setCurrentScreen("mission_board");
               }}
               onBackToIntro={() => setCurrentScreen("intro")}
+              onOpenAchievements={() => setShowAchievementsModal(true)}
               onExit={onExit}
             />
           </motion.div>
@@ -409,6 +420,7 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
                 setCurrentScreen("preview");
               }}
               onBackToMap={() => setCurrentScreen("world_map")}
+              onOpenAchievements={() => setShowAchievementsModal(true)}
             />
           </motion.div>
         )}
@@ -472,6 +484,16 @@ export const WonderWoodsEngine: React.FC<WonderWoodsEngineProps> = ({
             setShowFeedbackModal(false);
             setCurrentScreen("gameplay");
           }}
+        />
+      )}
+
+      {/* PATTERN QUEST ACHIEVEMENTS & MILESTONES MODAL */}
+      {showAchievementsModal && (
+        <AchievementsModal
+          completedLevels={completedLevels}
+          starsPerLevel={starsPerLevel}
+          totalSparks={totalSparks}
+          onClose={() => setShowAchievementsModal(false)}
         />
       )}
     </div>

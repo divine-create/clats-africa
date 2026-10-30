@@ -12,6 +12,7 @@ interface IntroScreenProps {
   totalSparks?: number;
   rank?: PatternQuestRankInfo;
   onStart: () => void;
+  onOpenAchievements?: () => void;
   onExit?: () => void;
 }
 
@@ -22,6 +23,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
   totalSparks = 0,
   rank,
   onStart,
+  onOpenAchievements,
   onExit
 }) => {
   const hasProgress = unlockedLevel > 1 || totalStars > 0 || totalSparks > 0;
@@ -62,6 +64,18 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenAchievements && (
+            <button
+              type="button"
+              onClick={onOpenAchievements}
+              className="text-xs font-black text-amber-300 hover:text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 px-3 py-1.5 rounded-full transition flex items-center gap-1.5"
+              title="View Pattern Quest Achievements"
+            >
+              <span>🏆</span>
+              <span>Achievements</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => companionVoice.speakTTS(introSpeech, companion, "early explorers", "en")}

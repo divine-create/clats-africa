@@ -378,5 +378,10 @@ export const UNIFIED_BADGE_MAP: Record<string, { title: string; icon: string; de
     title: "Consistency Star",
     icon: "👑",
     desc: "Step 8 Complete: You achieved 1,000+ XP as a Bronze Scholar!"
+  },
+  "bdg-pattern-meadow-master": {
+    title: "Pattern Meadow Master",
+    icon: "🌳",
+    desc: "Game Achievement: Conquered all 10 missions in Pattern Meadow and restored the ancient woodland archway!"
   }
 };

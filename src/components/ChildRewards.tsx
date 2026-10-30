@@ -116,6 +116,28 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
   // Syllabus configuration
   const course = CURRICULUM[child.ageGroup] || CURRICULUM["young innovators"];
   const modules = course ? course.modules : [];
+
+  // Pattern Quest Flagship Game Milestone State
+  const patternQuestMilestone = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(`clats_wonder_woods_progress_${child.id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const completedLevels: number[] = Array.isArray(parsed.completedLevels) ? parsed.completedLevels : [];
+        const isMastered = completedLevels.length >= 10 || completedLevels.includes(10);
+        const starsPerLevel: Record<number, number> = parsed.starsPerLevel || {};
+        const totalSparks = typeof parsed.totalSparks === "number" ? parsed.totalSparks : completedLevels.length;
+        return {
+          completedLevels,
+          isMastered,
+          starsPerLevel,
+          totalSparks
+        };
+      }
+    } catch {}
+    return null;
+  })();
   
   // Build pathway → modules map from the DB cache if available
   const pathways: { id: string; title: string; modules: any[] }[] = (() => {
@@ -927,6 +949,77 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* FLAGSHIP GAME ACHIEVEMENT: PATTERN QUEST */}
+            <div
+              style={{
+                background: isDark ? "#1e293b" : "#ffffff",
+                border: `2px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+                borderRadius: 28,
+                padding: "24px 22px"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+                <div>
+                  <Heading size={20} style={{ fontWeight: 800, color: isDark ? "#38bdf8" : "#0284c7" }}>
+                    🎮 Flagship Game Milestone: Pattern Quest
+                  </Heading>
+                  <Txt size={13.5} color={isDark ? "#cbd5e1" : "#475569"}>
+                    Master computational thinking in Wonder Woods to restore the ancient Meadow Archway.
+                  </Txt>
+                </div>
+                {patternQuestMilestone?.isMastered && (
+                  <Chip bg="rgba(16, 185, 129, 0.15)" color="#10b981" style={{ fontWeight: 900 }}>
+                    🌳 MEADOW MASTERED ✓
+                  </Chip>
+                )}
+              </div>
+
+              <div
+                style={{
+                  background: patternQuestMilestone?.isMastered
+                    ? (isDark ? "rgba(16, 185, 129, 0.08)" : "linear-gradient(135deg, rgba(236,253,245,0.7) 0%, rgba(209,250,229,0.4) 100%)")
+                    : (isDark ? "#151f32" : "#f8fafc"),
+                  border: patternQuestMilestone?.isMastered
+                    ? `2.5px solid ${isDark ? "#10b981" : "#34d399"}`
+                    : `2px solid ${isDark ? "#1e293b" : "#e2e8f0"}`,
+                  borderRadius: 22,
+                  padding: "18px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 16
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ fontSize: 40, filter: patternQuestMilestone?.isMastered ? "none" : "grayscale(80%)", opacity: patternQuestMilestone?.isMastered ? 1 : 0.6 }}>
+                    🌳
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Heading size={16} style={{ color: isDark ? "#ffffff" : "#0f172a", fontWeight: 900 }}>
+                        Pattern Meadow Master
+                      </Heading>
+                      <Chip bg={isDark ? "rgba(245, 158, 11, 0.15)" : "#fef3c7"} color="#d97706" style={{ fontSize: 10, fontWeight: 900 }}>
+                        {patternQuestMilestone ? `${patternQuestMilestone.totalSparks} Pattern Sparks` : "0 Sparks"}
+                      </Chip>
+                    </div>
+                    <Txt size={12} color={isDark ? "#94a3b8" : "#64748b"} style={{ display: "block", marginTop: 4, maxWidth: 520, lineHeight: 1.4 }}>
+                      {patternQuestMilestone?.isMastered
+                        ? "Conquered all 10 missions in Pattern Meadow, solved the Pattern Keeper's Trial, and restored the ancient woodland archway!"
+                        : `Solve all 10 Pattern Meadow missions in Wonder Woods to restore the ancient archway (${patternQuestMilestone ? patternQuestMilestone.completedLevels.length : 0}/10 completed).`}
+                    </Txt>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: patternQuestMilestone?.isMastered ? "#10b981" : "#94a3b8" }}>
+                    {patternQuestMilestone?.isMastered ? "UNLOCKED ✓" : `${patternQuestMilestone ? patternQuestMilestone.completedLevels.length : 0}/10 Missions`}
+                  </span>
+                </div>
               </div>
             </div>
 

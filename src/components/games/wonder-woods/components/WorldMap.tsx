@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info, CheckCircle2, Award, Music, LogOut } from "lucide-react";
+import { Lock, Sparkles, MapPin, ArrowLeft, ChevronRight, Info, CheckCircle2, Award, Music, LogOut, Trophy } from "lucide-react";
 import { RegionData, RegionId } from "../types";
 import { WONDER_WOODS_REGIONS } from "../data/regions";
 import { getPatternQuestRank, getRankProgressSummary } from "../data/ranks";
+import { isMeadowMastered } from "../data/achievements";
 import { sfx } from "../../../../utils/audio";
 
 interface WorldMapProps {
@@ -15,6 +16,7 @@ interface WorldMapProps {
   completedLevels?: number[];
   starsPerLevel?: Record<number, number>;
   onBackToIntro: () => void;
+  onOpenAchievements?: () => void;
   onExit?: () => void;
 }
 
@@ -27,6 +29,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
   completedLevels = [],
   starsPerLevel = {},
   onBackToIntro,
+  onOpenAchievements,
   onExit
 }) => {
   const [hoveredRegion, setHoveredRegion] = useState<RegionData | null>(null);
@@ -34,6 +37,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({
 
   const currentRank = getPatternQuestRank(completedLevels, starsPerLevel);
   const rankSummary = getRankProgressSummary(completedLevels, starsPerLevel);
+  const isMeadowComplete = isMeadowMastered(completedLevels);
 
   // Compute dynamic locked states based on user progression
   const dynamicRegions = WONDER_WOODS_REGIONS.map((region) => {
@@ -122,12 +126,38 @@ export const WorldMap: React.FC<WorldMapProps> = ({
             <span>{totalSparks} Pattern Sparks</span>
           </div>
 
+          {/* Achievements Button */}
+          {onOpenAchievements && (
+            <button
+              type="button"
+              onClick={onOpenAchievements}
+              className="bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm text-amber-300 text-xs font-black transition cursor-pointer"
+              title="View Pattern Quest Achievements"
+            >
+              <Trophy size={13} className="text-amber-400" />
+              <span className="hidden sm:inline">Achievements</span>
+            </button>
+          )}
+
           {/* Missions Completed */}
           <div className="bg-slate-800/90 border border-amber-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm text-amber-300 text-xs font-black">
             <span>{starsCollected} / 10 ⭐</span>
           </div>
         </div>
       </div>
+
+      {/* Meadow Master Milestone Banner */}
+      {isMeadowComplete && (
+        <div className="z-20 w-full mt-2 py-1.5 px-3 bg-gradient-to-r from-emerald-500/20 via-amber-500/20 to-teal-500/20 border border-emerald-400/60 rounded-xl flex items-center justify-between text-xs font-black text-emerald-300 shadow-md">
+          <span className="flex items-center gap-1.5">
+            <span>🌳</span>
+            <span>Pattern Meadow Conquered! Wonder Woods Gateway Restored.</span>
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded-full border border-amber-400/40">
+            Meadow Master
+          </span>
+        </div>
+      )}
 
       {/* Map Interactive Canvas */}
       <div className="relative flex-1 my-3 min-h-[380px] w-full">
@@ -199,8 +229,12 @@ export const WorldMap: React.FC<WorldMapProps> = ({
 
                   {/* Playable Star Count Badge */}
                   {isPlayable && (
-                    <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-slate-950 font-black text-[10px] rounded-full px-1.5 py-0.5 border border-white shadow">
-                      {region.id === "meadow" ? "PLAY" : "OPEN"}
+                    <div className={`absolute -top-1.5 -right-1.5 font-black text-[9px] rounded-full px-1.5 py-0.5 border border-white shadow ${
+                      region.id === "meadow" && isMeadowComplete
+                        ? "bg-amber-400 text-slate-950 animate-pulse"
+                        : "bg-emerald-500 text-slate-950"
+                    }`}>
+                      {region.id === "meadow" ? (isMeadowComplete ? "MASTERED ✓" : "PLAY") : "OPEN"}
                     </div>
                   )}
                 </div>

@@ -1,9 +1,10 @@
 import React from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Star, Lock, Sparkles, CheckCircle2, Play, Flame } from "lucide-react";
+import { ArrowLeft, Star, Lock, Sparkles, CheckCircle2, Play, Flame, Trophy } from "lucide-react";
 import { MEADOW_LEVELS } from "../data/meadowLevels";
 import { MeadowLevelConfig } from "../types";
 import { getPatternQuestRank, getRankProgressSummary, calculateTotalStars } from "../data/ranks";
+import { isMeadowMastered } from "../data/achievements";
 import { sfx } from "../../../../utils/audio";
 
 interface MissionBoardProps {
@@ -13,6 +14,7 @@ interface MissionBoardProps {
   totalSparks?: number;
   onSelectLevel: (level: MeadowLevelConfig) => void;
   onBackToMap: () => void;
+  onOpenAchievements?: () => void;
 }
 
 export const MissionBoard: React.FC<MissionBoardProps> = ({
@@ -21,7 +23,8 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
   starsPerLevel = {},
   totalSparks = 0,
   onSelectLevel,
-  onBackToMap
+  onBackToMap,
+  onOpenAchievements
 }) => {
   const handleLevelClick = (level: MeadowLevelConfig) => {
     const isUnlocked = level.id <= unlockedLevel;
@@ -37,6 +40,7 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
   const rankSummary = getRankProgressSummary(completedLevels, starsPerLevel);
   const totalEarnedStars = calculateTotalStars(completedLevels, starsPerLevel);
   const progressPercent = Math.round((completedLevels.length / MEADOW_LEVELS.length) * 100);
+  const isMeadowComplete = isMeadowMastered(completedLevels);
 
   return (
     <div className="w-full h-full flex flex-col justify-between p-4 sm:p-6 bg-gradient-to-b from-[#06141F] via-[#0A2328] to-[#06171B] text-white rounded-3xl overflow-hidden relative min-h-[560px]">
@@ -79,6 +83,19 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
             <span>{totalSparks} Pattern Sparks</span>
           </div>
 
+          {/* Achievements Button */}
+          {onOpenAchievements && (
+            <button
+              type="button"
+              onClick={onOpenAchievements}
+              className="bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-sm text-amber-300 text-xs font-black transition cursor-pointer"
+              title="View Pattern Quest Achievements"
+            >
+              <Trophy size={13} className="text-amber-400" />
+              <span className="hidden sm:inline">Achievements</span>
+            </button>
+          )}
+
           {/* Stars */}
           <div className="bg-emerald-950/80 border border-emerald-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1 text-xs font-black text-emerald-300 shadow-sm">
             <Star size={14} className="fill-amber-400 text-amber-400" />
@@ -87,8 +104,20 @@ export const MissionBoard: React.FC<MissionBoardProps> = ({
         </div>
       </div>
 
-      {/* Progress Strip */}
+      {/* Progress Strip & Milestone Banner */}
       <div className="w-full max-w-md mx-auto my-2 z-10 px-2">
+        {isMeadowComplete ? (
+          <div className="p-2 bg-gradient-to-r from-emerald-500/25 via-amber-500/20 to-teal-500/25 border border-emerald-400/60 rounded-xl flex items-center justify-between text-xs font-black text-emerald-200 shadow-md mb-1">
+            <span className="flex items-center gap-1.5">
+              <span>🌳</span>
+              <span>Pattern Meadow Conquered (10/10)!</span>
+            </span>
+            <span className="text-[10px] text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded-full border border-amber-400/40">
+              Archway Restored ✓
+            </span>
+          </div>
+        ) : null}
+
         <div className="flex justify-between items-center text-[11px] font-bold text-slate-300 mb-1">
           <div className="flex items-center gap-1.5">
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${currentRank.badgeBg}`}>
