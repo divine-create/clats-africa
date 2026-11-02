@@ -34,6 +34,7 @@ interface ChildExplorerHomeProps {
   onSelectLesson: (mod: Module, les: Lesson) => void;
   onEnterWorld: (academyId?: string) => void;
   onPlayGame: (gameId?: string) => void;
+  onOpenSandbox?: (adventureId?: string, moduleId?: string, lessonId?: string) => void;
   onOpenChat: () => void;
   onOpenRewards: () => void;
   lang: Language;
@@ -45,6 +46,7 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
   onSelectLesson,
   onEnterWorld,
   onPlayGame,
+  onOpenSandbox,
   lang,
   theme = "dark"
 }) => {
@@ -345,7 +347,61 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
       </main>
 
       {/* ============================================================ */}
-      {/* SECTION D: OPTIONAL SUPPORTING INFORMATION                   */}
+      {/* SECTION D: HANDS-ON PRACTICE SANDBOX LAB                     */}
+      {/* ============================================================ */}
+      {onOpenSandbox && (
+        <section
+          aria-label="Practice Sandbox"
+          onClick={() => {
+            sfx.playTap();
+            onOpenSandbox();
+          }}
+          className={`mb-6 rounded-3xl p-5 md:p-6 border-3 shadow-lg transition-all duration-300 cursor-pointer ${
+            isDark
+              ? "bg-gradient-to-r from-amber-950/70 via-teal-950/70 to-slate-900 border-amber-400/40 hover:border-amber-300"
+              : "bg-gradient-to-r from-amber-50 via-teal-50 to-emerald-50 border-amber-300 hover:border-amber-400 shadow-[0_8px_24px_rgba(245,158,11,0.14)]"
+          } transform hover:-translate-y-0.5 active:translate-y-0`}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center text-2xl shadow-md shrink-0">
+                🧪
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-300">
+                    ✨ Hands-On Discovery Lab
+                  </span>
+                </div>
+                <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate m-0 mt-0.5">
+                  Practice Sandbox
+                </h4>
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 m-0 mt-0.5">
+                  Sort smart tools, draw digital art, make music, and practise what you learn across all 4 Adventures!
+                </p>
+              </div>
+            </div>
+
+            <div className="shrink-0 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sfx.playTap();
+                  onOpenSandbox();
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#2EC4B6] hover:bg-[#25a99d] text-white font-black text-sm shadow-md border-b-3 border-teal-700 flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <span>Open Sandbox</span>
+                <ArrowRight size={16} className="stroke-[3]" />
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============================================================ */}
+      {/* SECTION E: OPTIONAL SUPPORTING INFORMATION                   */}
       {/* "Continue your adventure" (Authentic small progress element) */}
       {/* ============================================================ */}
       {activeLesson && (

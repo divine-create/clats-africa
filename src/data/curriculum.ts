@@ -16,7 +16,7 @@ interface ModuleMetadata {
 
 const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
   "early explorers": [
-    // ACADEMY 1: AI & EMERGING TECHNOLOGIES
+    // PATHWAY 1: AI & SMART TECHNOLOGY
     {
       id: "t-a1m1",
       name: {
@@ -34,40 +34,18 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
         "What is Technology?",
         "Smart Things Around Us",
         "Technology at Home",
-        "Technology at School",
-        "Technology Adventure Quiz"
+        "Technology at School"
       ]
     },
     {
       id: "t-a1m2",
       name: {
-        en: "Module 2: Meet AI Friends",
-        ig: "Nkeji 2: Zute Ndị Enyi AI M",
-        yo: "Mọ́dù 2: Pàdé Àwọn Ọ̀rẹ́ AI Mi"
+        en: "Module 2: Learning With AI",
+        ig: "Nkeji 2: Mmụta na AI",
+        yo: "Mọ́dù 2: Kíkọ́ Ẹ̀kọ́ pẹ̀lú AI"
       },
       goal: {
-        en: "Meet friendly mascot helpers Kobe and Chibi and see how AI can help.",
-        ig: "Zute ndị enyemaka Kobe na Chibi ma hụ ka AI si enyere anyị aka.",
-        yo: "Pàdé Kobe àti Chibi tí wọn jẹ́ olùrànlọ́wọ́ AI fún wa."
-      },
-      badge: { name: "AI Friends Badge", icon: "🤝" },
-      lessons: [
-        "Meet Kobe",
-        "Meet Chibi",
-        "AI Can Help People",
-        "AI Helpers Everywhere",
-        "My AI Adventure"
-      ]
-    },
-    {
-      id: "t-a1m3",
-      name: {
-        en: "Module 3: Learning With AI",
-        ig: "Nkeji 3: Mmụta na AI",
-        yo: "Mọ́dù 3: Kíkọ́ Ẹ̀kọ́ pẹ̀lú AI"
-      },
-      goal: {
-        en: "Discover how AI perceives objects, listens to commands, and spot patterns.",
+        en: "Discover how AI perceives objects, listens to commands, talks, and learns patterns.",
         ig: "Mụta ka AI si ahụ ihe, na-anụ okwu, ma na-achọpụta usoro.",
         yo: "Wo bí AI ṣe ń ríran, gbọ́ràn àti rí àwọn àpẹẹrẹ nǹkan."
       },
@@ -76,12 +54,11 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
         "AI Can See",
         "AI Can Listen",
         "AI Can Talk",
-        "AI Learns Patterns",
-        "AI Fun Challenge"
+        "AI Can Learn Patterns"
       ]
     },
 
-    // ACADEMY 2: DIGITAL CITIZENSHIP & CYBERSECURITY
+    // PATHWAY 2: DIGITAL LITERACY AND CYBER SAFETY
     {
       id: "t-a2m1",
       name: {
@@ -104,7 +81,7 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
       ]
     },
 
-    // ACADEMY 3: DESIGN & CREATION
+    // PATHWAY 3: CREATIVITY & PLAY
     {
       id: "t-a3m1",
       name: {
@@ -127,7 +104,7 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
       ]
     },
 
-    // ACADEMY 4: ADAPTABILITY & LIFELONG LEARNING
+    // PATHWAY 4: ADAPTABILITY & LIFELONG LEARNING
     {
       id: "t-a4m1",
       name: {
@@ -147,6 +124,27 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
         "Finding Patterns Around Us",
         "Trying New Things",
         "Curiosity Challenge"
+      ]
+    },
+    {
+      id: "t-a4m2",
+      name: {
+        en: "Module 2: Learning Adventures",
+        ig: "Nkeji 2: Njem Mmụta Ọhụrụ",
+        yo: "Mọ́dù 2: Ìrìn-Àjò Kíkọ́ Ẹ̀kọ́"
+      },
+      goal: {
+        en: "Practice everyday learning, grow from mistakes, explore new ideas, and work together.",
+        ig: "Mụta ihe kwa ụbọchị, mụta site na mmejọ, nyochaa echiche ọhụrụ, ma rụkọọ ọrụ ọnụ.",
+        yo: "Kọ́ nǹkan ojoojúmọ́, kọ́ láti inú àṣìṣe, ṣàwárí èrò tuntun, kí ẹ sì ṣiṣẹ́ papọ̀."
+      },
+      badge: { name: "Adventure Explorer", icon: "🧭" },
+      lessons: [
+        "Learning Every Day",
+        "Mistakes Help Us Grow",
+        "Exploring New Ideas",
+        "Working Together",
+        "Adventure Quest"
       ]
     }
   ],
@@ -689,11 +687,338 @@ const ACADEMY_METADATA: Record<AgeGroup, ModuleMetadata[]> = {
   ]
 };
 
-// Returns interactive stories and matching quizzes on the fly for all 148+ lessons!
+// Approved Young Explorers (Ages 6–10) Pathway 1 lesson videos & 3-question quizzes (offline fallback matching Supabase & PDF)
+const APPROVED_EARLY_EXPLORERS_LESSONS: Record<string, {
+  title: string;
+  video_url?: string;
+  story: { en: string; ig: string; yo: string };
+  quiz: QuizQuestion[];
+}> = {
+  "t-a1m1-l1": {
+    title: "What is Technology?",
+    video_url: "https://youtu.be/bHDcP9ao4wk",
+    story: {
+      en: "Technology is something people make to help us do things! Examples like a smartphone and a light bulb are helpful tools people designed to make everyday tasks easier.",
+      ig: "Teknụzụ bụ ihe ndị mmadụ na-emepụta iji nyere anyị aka ime ihe! Ekwentị smart na ọkụ latrik bụ ngwa ọrụ bara uru.",
+      yo: "Ìmọ̀-ẹ̀rọ jẹ́ ohun tí àwọn ènìyàn ṣe láti ràn wá lọ́wọ́ láti ṣe nǹkan! Foonu olóye àti gílóòbù iná jẹ́ àpẹẹrẹ."
+    },
+    quiz: [
+      {
+        q: { en: "What is technology?", ig: "What is technology?", yo: "What is technology?" },
+        opts: {
+          en: ["Something people make to help us do things", "Something we eat", "Something that grows on a tree", "A pet animal"],
+          ig: ["Something people make to help us do things", "Something we eat", "Something that grows on a tree", "A pet animal"],
+          yo: ["Something people make to help us do things", "Something we eat", "Something that grows on a tree", "A pet animal"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "Which one is technology?", ig: "Which one is technology?", yo: "Which one is technology?" },
+        opts: {
+          en: ["A teddy bear", "A smartphone", "An apple", "A tree"],
+          ig: ["A teddy bear", "A smartphone", "An apple", "A tree"],
+          yo: ["A teddy bear", "A smartphone", "An apple", "A tree"]
+        },
+        ans: 1
+      },
+      {
+        q: { en: "Which one is technology?", ig: "Which one is technology?", yo: "Which one is technology?" },
+        opts: {
+          en: ["A light bulb", "A ball", "A banana", "A rock"],
+          ig: ["A light bulb", "A ball", "A banana", "A rock"],
+          yo: ["A light bulb", "A ball", "A banana", "A rock"]
+        },
+        ans: 0
+      }
+    ]
+  },
+  "t-a1m1-l2": {
+    title: "Smart Things Around Us",
+    video_url: "https://youtu.be/MlyT33sVKgc",
+    story: {
+      en: "Some smart things around us can sense, respond, and help us! For example, a smart light is a smart thing, and a smart speaker can listen and respond when we speak.",
+      ig: "Ụfọdụ ihe smart dị anyị gburugburu nwere ike ịhụ ihe, zaa, ma nyere anyị aka! Ọkụ smart na igwe okwu smart bụ ihe atụ.",
+      yo: "Àwọn nǹkan olóye tó wà láyìíká wa lè mọ nǹkan, dáhùn, kí wọ́n sì ràn wá lọ́wọ́! Iná olóye àti agbọ́hùnsọ olóye jẹ́ àpẹẹrẹ."
+    },
+    quiz: [
+      {
+        q: { en: "What can some smart things do?", ig: "What can some smart things do?", yo: "What can some smart things do?" },
+        opts: {
+          en: ["Sense, respond, and help", "Grow on trees", "Become food", "Fly to the moon"],
+          ig: ["Sense, respond, and help", "Grow on trees", "Become food", "Fly to the moon"],
+          yo: ["Sense, respond, and help", "Grow on trees", "Become food", "Fly to the moon"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "Which one is a smart thing?", ig: "Which one is a smart thing?", yo: "Which one is a smart thing?" },
+        opts: {
+          en: ["Smart light", "Teddy bear", "Spoon", "Pillow"],
+          ig: ["Smart light", "Teddy bear", "Spoon", "Pillow"],
+          yo: ["Smart light", "Teddy bear", "Spoon", "Pillow"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "Which smart thing can listen and respond when we speak?", ig: "Which smart thing can listen and respond when we speak?", yo: "Which smart thing can listen and respond when we speak?" },
+        opts: {
+          en: ["Smart screen", "Smart speaker", "Smart light", "Smart fridge"],
+          ig: ["Smart screen", "Smart speaker", "Smart light", "Smart fridge"],
+          yo: ["Smart screen", "Smart speaker", "Smart light", "Smart fridge"]
+        },
+        ans: 1
+      }
+    ]
+  },
+  "t-a1m1-l3": {
+    title: "Technology at Home",
+    video_url: "https://youtu.be/dmvw4GGH4KY",
+    story: {
+      en: "Technology helps our families at home every day! A light helps us see when it is dark, a fan helps us stay comfortable when it is hot, and a tablet or computer helps us learn new things.",
+      ig: "Teknụzụ na-enyere ezinụlọ anyị aka n'ụlọ kwa ụbọchị! Ọkụ na-enyere anyị aka ịhụ ụzọ n'ọchịchịrị, fan na-eme ka ahụ dị jụụ, kọmputa na-enyere anyị aka ịmụ ihe ọhụrụ.",
+      yo: "Ìmọ̀-ẹ̀rọ ń ran ìdílé wa lọ́wọ́ nílé lójoojúmọ́! Iná ń jẹ́ ká ríran nínú òkùnkùn, abẹ́bẹ́ ń mú kí ara tutù, tábílẹ́ẹ̀tì tàbí kọmputa sì ń jẹ́ ká kọ́ nǹkan tuntun."
+    },
+    quiz: [
+      {
+        q: { en: "Which technology helps us see when it is dark?", ig: "Which technology helps us see when it is dark?", yo: "Which technology helps us see when it is dark?" },
+        opts: {
+          en: ["A pillow", "A light", "A spoon", "A fan"],
+          ig: ["A pillow", "A light", "A spoon", "A fan"],
+          yo: ["A pillow", "A light", "A spoon", "A fan"]
+        },
+        ans: 1
+      },
+      {
+        q: { en: "What can a fan help us do?", ig: "What can a fan help us do?", yo: "What can a fan help us do?" },
+        opts: {
+          en: ["Stay comfortable when it is hot", "Read a book", "Talk to someone far away", "Cook food"],
+          ig: ["Stay comfortable when it is hot", "Read a book", "Talk to someone far away", "Cook food"],
+          yo: ["Stay comfortable when it is hot", "Read a book", "Talk to someone far away", "Cook food"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can we use technology like a tablet or computer to do at home?", ig: "What can we use technology like a tablet or computer to do at home?", yo: "What can we use technology like a tablet or computer to do at home?" },
+        opts: {
+          en: ["Learn new things", "Sleep on it", "Eat food", "Wear it as a hat"],
+          ig: ["Learn new things", "Sleep on it", "Eat food", "Wear it as a hat"],
+          yo: ["Learn new things", "Sleep on it", "Eat food", "Wear it as a hat"]
+        },
+        ans: 0
+      }
+    ]
+  },
+  "t-a1m1-l4": {
+    title: "Technology at School",
+    video_url: "https://youtu.be/ty86odcrjPc",
+    story: {
+      en: "Technology is all around us at home and at school! A television, projector, or computer is technology that helps teachers teach and children learn many useful things.",
+      ig: "Teknụzụ dị anyị gburugburu n'ụlọ na n'ụlọ akwụkwọ! Igwe onyonyo na kọmputa na-enyere ndị nkuzi aka ịkụzi ihe na ụmụaka ịmụ ihe.",
+      yo: "Ìmọ̀-ẹ̀rọ wà láyìíká wa nílé àti nílé-ìwé! Tẹlifíṣọ̀nù àti kọmputa ń ran àwọn olùkọ́ lọ́wọ́ láti kọ́ni àti àwọn ọmọdé láti kọ́ ẹ̀kọ́."
+    },
+    quiz: [
+      {
+        q: { en: "Which one is technology?", ig: "Which one is technology?", yo: "Which one is technology?" },
+        opts: {
+          en: ["A television", "A pillow", "A spoon", "A plant"],
+          ig: ["A television", "A pillow", "A spoon", "A plant"],
+          yo: ["A television", "A pillow", "A spoon", "A plant"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can technology help us do at home?", ig: "What can technology help us do at home?", yo: "What can technology help us do at home?" },
+        opts: {
+          en: ["Learn new things", "Eat a spoon", "Sleep on a fan", "Grow a tree"],
+          ig: ["Learn new things", "Eat a spoon", "Sleep on a fan", "Grow a tree"],
+          yo: ["Learn new things", "Eat a spoon", "Sleep on a fan", "Grow a tree"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "How can technology help us at school?", ig: "How can technology help us at school?", yo: "How can technology help us at school?" },
+        opts: {
+          en: ["It can help teachers teach and children learn.", "It can become our lunch.", "It can turn into a teddy bear.", "It can clean the floor."],
+          ig: ["It can help teachers teach and children learn.", "It can become our lunch.", "It can turn into a teddy bear.", "It can clean the floor."],
+          yo: ["It can help teachers teach and children learn.", "It can become our lunch.", "It can turn into a teddy bear.", "It can clean the floor."]
+        },
+        ans: 0
+      }
+    ]
+  },
+  "t-a1m2-l1": {
+    title: "AI Can See",
+    video_url: "https://youtu.be/Fno0L_XsdWM",
+    story: {
+      en: "People use their eyes to see! Cameras can capture pictures, and some Artificial Intelligence systems can process pictures and recognize things inside the picture.",
+      ig: "Ndị mmadụ na-eji anya ha ahụ ụzọ! Igwefoto na-ese foto, ụfọdụ usoro AI nwekwara ike ịmata ihe dị n'ime foto ahụ.",
+      yo: "Àwọn ènìyàn ń lo ojú wọn láti ríran! Kámẹ́rà lè ya fọ́tò, àwọn ẹ̀rọ AI kan sì lè dá àwọn nǹkan inú fọ́tò náà mọ̀."
+    },
+    quiz: [
+      {
+        q: { en: "What do people use to see?", ig: "What do people use to see?", yo: "What do people use to see?" },
+        opts: {
+          en: ["Their ears", "Their eyes", "A microphone", "A speaker"],
+          ig: ["Their ears", "Their eyes", "A microphone", "A speaker"],
+          yo: ["Their ears", "Their eyes", "A microphone", "A speaker"]
+        },
+        ans: 1
+      },
+      {
+        q: { en: "What can a camera do?", ig: "What can a camera do?", yo: "What can a camera do?" },
+        opts: {
+          en: ["Capture a picture", "Eat food", "Sing a song", "Run fast"],
+          ig: ["Capture a picture", "Eat food", "Sing a song", "Run fast"],
+          yo: ["Capture a picture", "Eat food", "Sing a song", "Run fast"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can some AI systems do with pictures?", ig: "What can some AI systems do with pictures?", yo: "What can some AI systems do with pictures?" },
+        opts: {
+          en: ["Recognize some things in the picture", "Eat the picture", "Sleep inside the picture", "Throw the picture"],
+          ig: ["Recognize some things in the picture", "Eat the picture", "Sleep inside the picture", "Throw the picture"],
+          yo: ["Recognize some things in the picture", "Eat the picture", "Sleep inside the picture", "Throw the picture"]
+        },
+        ans: 0
+      }
+    ]
+  },
+  "t-a1m2-l2": {
+    title: "AI Can Listen",
+    video_url: "https://youtu.be/I9DkSDMDHGg",
+    story: {
+      en: "People use their ears to hear sounds! Microphones can capture sounds, and some Artificial Intelligence systems can recognize spoken words and respond.",
+      ig: "Ndị mmadụ na-eji ntị ha anụ ụda! Igwe okwu (microphone) na-anata ụda, ụfọdụ usoro AI nwekwara ike ịmata okwu a gwara ha ma zaa.",
+      yo: "Àwọn ènìyàn ń lo etí wọn láti gbọ́ ohùn! Kọ́nrín-ohùn (microphone) lè gba ohùn, àwọn ẹ̀rọ AI kan sì lè mọ ọ̀rọ̀ tí a sọ kí wọ́n sì dáhùn."
+    },
+    quiz: [
+      {
+        q: { en: "What do people use to hear sounds?", ig: "What do people use to hear sounds?", yo: "What do people use to hear sounds?" },
+        opts: {
+          en: ["Their eyes", "Their ears", "A camera", "A screen"],
+          ig: ["Their eyes", "Their ears", "A camera", "A screen"],
+          yo: ["Their eyes", "Their ears", "A camera", "A screen"]
+        },
+        ans: 1
+      },
+      {
+        q: { en: "What can a microphone do?", ig: "What can a microphone do?", yo: "What can a microphone do?" },
+        opts: {
+          en: ["Capture sounds", "Eat food", "Take a nap", "Play games"],
+          ig: ["Capture sounds", "Eat food", "Take a nap", "Play games"],
+          yo: ["Capture sounds", "Eat food", "Take a nap", "Play games"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can some Artificial Intelligence systems do with sounds or spoken words?", ig: "What can some Artificial Intelligence systems do with sounds or spoken words?", yo: "What can some Artificial Intelligence systems do with sounds or spoken words?" },
+        opts: {
+          en: ["Recognize some words and respond", "Turn into a person", "Eat the sounds", "Go to sleep"],
+          ig: ["Recognize some words and respond", "Turn into a person", "Eat the sounds", "Go to sleep"],
+          yo: ["Recognize some words and respond", "Turn into a person", "Eat the sounds", "Go to sleep"]
+        },
+        ans: 0
+      }
+    ]
+  },
+  "t-a1m2-l3": {
+    title: "AI Can Talk",
+    video_url: "https://youtu.be/Bmn0XBDXcy4",
+    story: {
+      en: "Some Artificial Intelligence systems can respond to spoken words and use technology to communicate with people! A voice assistant can respond when we speak to it, using technology rather than a human mouth.",
+      ig: "Ụfọdụ usoro AI nwere ike ịza okwu a gwara ha ma jiri teknụzụ kwurịta okwu! Voice assistant na-eji teknụzụ aza anyị mgbe anyị kwuru okwu.",
+      yo: "Àwọn ẹ̀rọ AI kan lè dáhùn sí ọ̀rọ̀ tí a sọ nípa lílo ìmọ̀-ẹ̀rọ! Olùrànlọ́wọ́ ohùn (voice assistant) ń lo ìmọ̀-ẹ̀rọ láti dáhùn nígbà tí a bá bá a sọ̀rọ̀."
+    },
+    quiz: [
+      {
+        q: { en: "What can some AI systems do after receiving spoken words?", ig: "What can some AI systems do after receiving spoken words?", yo: "What can some AI systems do after receiving spoken words?" },
+        opts: {
+          en: ["Respond to people", "Eat the words", "Turn into a toy", "Run away"],
+          ig: ["Respond to people", "Eat the words", "Turn into a toy", "Run away"],
+          yo: ["Respond to people", "Eat the words", "Turn into a toy", "Run away"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can a voice assistant do?", ig: "What can a voice assistant do?", yo: "What can a voice assistant do?" },
+        opts: {
+          en: ["Respond when we speak to it", "Sleep all day", "Eat food", "Watch TV"],
+          ig: ["Respond when we speak to it", "Sleep all day", "Eat food", "Watch TV"],
+          yo: ["Respond when we speak to it", "Sleep all day", "Eat food", "Watch TV"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "Can AI talk exactly like a person?", ig: "Can AI talk exactly like a person?", yo: "Can AI talk exactly like a person?" },
+        opts: {
+          en: ["Yes, AI is a human", "No, AI uses technology to respond to people.", "Yes, AI has a human mouth", "Yes, AI goes to school"],
+          ig: ["Yes, AI is a human", "No, AI uses technology to respond to people.", "Yes, AI has a human mouth", "Yes, AI goes to school"],
+          yo: ["Yes, AI is a human", "No, AI uses technology to respond to people.", "Yes, AI has a human mouth", "Yes, AI goes to school"]
+        },
+        ans: 1
+      }
+    ]
+  },
+  "t-a1m2-l4": {
+    title: "AI Can Learn Patterns",
+    video_url: "https://youtu.be/d24j_K4puCk",
+    story: {
+      en: "Some Artificial Intelligence systems work with pictures, sounds, and patterns! By noticing repeating patterns in pictures, sounds, or spoken words, AI can recognize things and respond helpfully.",
+      ig: "Ụfọdụ usoro AI na-arụ ọrụ na foto, ụda, na usoro (patterns)! Site n'ịchọpụta usoro na-emegharị emegharị, AI nwere ike ịmata ihe ma zaa nke ọma.",
+      yo: "Àwọn ẹ̀rọ AI kan ń ṣiṣẹ́ pẹ̀lú fọ́tò, ohùn, àti àpẹẹrẹ (patterns)! Nípa kíyèsí àwọn àpẹẹrẹ tó ń tún ara wọn ṣe, AI lè dá nǹkan mọ̀ kí ó sì dáhùn."
+    },
+    quiz: [
+      {
+        q: { en: "What can some Artificial Intelligence systems work with?", ig: "What can some Artificial Intelligence systems work with?", yo: "What can some Artificial Intelligence systems work with?" },
+        opts: {
+          en: ["Pictures and sounds", "Food and toys", "Pillows and blankets", "Shoes and socks"],
+          ig: ["Pictures and sounds", "Food and toys", "Pillows and blankets", "Shoes and socks"],
+          yo: ["Pictures and sounds", "Food and toys", "Pillows and blankets", "Shoes and socks"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can a microphone do?", ig: "What can a microphone do?", yo: "What can a microphone do?" },
+        opts: {
+          en: ["Capture sounds", "Take pictures", "Turn into a person", "Clean the house"],
+          ig: ["Capture sounds", "Take pictures", "Turn into a person", "Clean the house"],
+          yo: ["Capture sounds", "Take pictures", "Turn into a person", "Clean the house"]
+        },
+        ans: 0
+      },
+      {
+        q: { en: "What can some Artificial Intelligence systems do?", ig: "What can some Artificial Intelligence systems do?", yo: "What can some Artificial Intelligence systems do?" },
+        opts: {
+          en: ["Recognize some pictures, sounds, or spoken words and respond", "Become a human", "Eat and sleep like a child", "Cook dinner"],
+          ig: ["Recognize some pictures, sounds, or spoken words and respond", "Become a human", "Eat and sleep like a child", "Cook dinner"],
+          yo: ["Recognize some pictures, sounds, or spoken words and respond", "Become a human", "Eat and sleep like a child", "Cook dinner"]
+        },
+        ans: 0
+      }
+    ]
+  }
+};
+
+// Returns interactive stories and matching quizzes on the fly for all lessons!
 function generateLessonDetails(lId: string, title: string, ageGroup: AgeGroup): Partial<Lesson> {
   const codeNum = lId.split("-l")[1] || "1";
   const codeChar = title.substring(0, 1).toUpperCase();
   const code = `${codeChar}${codeNum}`;
+
+  if (APPROVED_EARLY_EXPLORERS_LESSONS[lId]) {
+    const approved = APPROVED_EARLY_EXPLORERS_LESSONS[lId];
+    return {
+      id: lId,
+      title: { en: approved.title, ig: approved.title, yo: approved.title },
+      code: `L${codeNum}`,
+      duration: "⏱ 3 min",
+      type: "story",
+      video_url: approved.video_url,
+      story: approved.story,
+      quiz: approved.quiz
+    };
+  }
 
   // Custom tailored content engine based on matching words or topics in lesson title
   let enStory = "";
@@ -776,6 +1101,19 @@ function generateLessonDetails(lId: string, title: string, ageGroup: AgeGroup): 
     qOptsYo = ["Àpẹẹrẹ dídùn láti mọ bí bọ́tìnì àti ojú-ewé ṣe máa wà", "Gba irin kọmputa kan láti mú rọrùn fún laptop"];
     correctOpt = 0;
   }
+  else if (t.includes("mistake") || t.includes("learning every day") || t.includes("exploring new ideas") || t.includes("working together") || t.includes("adventure quest")) {
+    enStory = `Every day is a new learning adventure! Curious explorers know that asking questions, trying new ideas, working together with friends, and learning from mistakes help our brains grow stronger and smarter.`;
+    igStory = `Ụbọchị ọ bụla bụ njem mmụta ọhụrụ! Ndị nchọpụta maara na ịjụ ajụjụ, ịnwale echiche ọhụrụ, ịrụkọ ọrụ ọnụ, na ịmụta ihe site na mmejọ na-eme ka ụbụrụ anyị sie ike.`;
+    yoStory = `Ojoojúmọ́ ni ìrìn-àjò ẹ̀kọ́ tuntun! Àwọn olùṣàwárí mọ̀ pé bíbéèrè ìbéèrè, gbígbìyànjú èrò tuntun, ṣíṣiṣẹ́ papọ̀, àti kíkọ́ láti inú àṣìṣe ń mú kí ọpọlọ wa lágbára sí i.`;
+
+    qEnPost = `What helps an explorer succeed in "${title}"?`;
+    qIgPost = `Kedu ihe na-enyere onye nchọpụta aka ịga nke ọma na "${title}"?`;
+    qYoPost = `Kí ni ó ń ran olùṣàwárí lọ́wọ́ láti ṣàṣeyọrí nínú "${title}"?`;
+    qOptsEn = ["Staying curious, trying again after mistakes, and working together", "Giving up the first time something feels tricky"];
+    qOptsIg = ["Ịchọ ịmata ihe, ịnwale ọzọ mgbe e mejọrọ, na ịrụkọ ọrụ ọnụ", "Ịkwụsị ozugbo ihe siri ike"];
+    qOptsYo = ["Níní ìfẹ́-ìmọ̀, gbígbìyànjú lẹ́ẹ̀kan sí i, àti ṣíṣiṣẹ́ papọ̀", "Ṣíṣíwọ́ lẹ́sẹ̀kẹsẹ̀ tí nǹkan bá le"];
+    correctOpt = 0;
+  }
   else if (t.includes("career") || t.includes("careers") || t.includes("startup") || t.includes("dream") || t.includes("business") || t.includes("linkedin") || t.includes("cv") || t.includes("professional") || t.includes("freelancing") || t.includes("global")) {
     enStory = `Step into the future of work! Modern careers in technology revolve around product design, software engineering, and innovative entrepreneurship. Creating a digital portfolio to display your creations helps connect you with teams globally and launch your dream pathways.`;
     igStory = `Nye aka n'ọrụ ọdịnihu gị! Ọrụ na teknụzụ gụnyere imepụta ngwa, ide koodu, na imeghe startups ọhụrụ. Okike nke portfolio gị na-akwado gị maka ohere gburugburu ụwa!`;
@@ -848,8 +1186,48 @@ function generateLessonDetails(lId: string, title: string, ageGroup: AgeGroup): 
   };
 }
 
+// Helper to hydrate a static ModuleMetadata block into a full Module
+function hydrateStaticModule(mMeta: ModuleMetadata, ageGroupKey: AgeGroup): Module {
+  const lessons: Lesson[] = mMeta.lessons.map((lessonTitle, idx) => {
+    const lessonId = `${mMeta.id}-l${idx + 1}`;
+    const baseDetails = generateLessonDetails(lessonId, lessonTitle, ageGroupKey);
+
+    return {
+      id: lessonId,
+      title: baseDetails.title || { en: lessonTitle, ig: lessonTitle, yo: lessonTitle },
+      code: baseDetails.code || `L${idx + 1}`,
+      duration: baseDetails.duration || "⏱ 3 min",
+      type: baseDetails.type || "story",
+      video_url: baseDetails.video_url,
+      story: baseDetails.story,
+      quiz: baseDetails.quiz || []
+    } as Lesson;
+  });
+
+  return {
+    id: mMeta.id,
+    name: {
+      en: mMeta.name.en,
+      ig: mMeta.name.ig,
+      yo: mMeta.name.yo
+    },
+    goal: {
+      en: mMeta.goal.en,
+      ig: mMeta.goal.ig,
+      yo: mMeta.goal.yo
+    },
+    badge: {
+      name: mMeta.badge.name,
+      icon: mMeta.badge.icon
+    },
+    lessons
+  } as Module;
+}
+
 // Convert base flat metadata definitions dynamically into full Course definitions
 function getDynamicCourse(ageGroupKey: AgeGroup): Course {
+  const metadataList = ACADEMY_METADATA[ageGroupKey] || [];
+
   // Check for administrative localized curriculum overrides from in-memory cache
   if (typeof window !== "undefined") {
     try {
@@ -869,14 +1247,18 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
 
         // 3. Format modules and lessons matching standard frontend Course types
         const mappedModules: Module[] = groupModules.map((rm: any) => {
+          const matchingStaticMeta = metadataList.find((m) => m.id === rm.id);
+
           // Find lessons belonging to this module
           const rawLessons = cache.lessons || [];
           const moduleLessons: Lesson[] = rawLessons
             .filter((rl: any) => rl.module_id === rm.id && rl.status !== "draft")
             .map((rl: any, idx: number) => {
               const lessonId = rl.id || `${rm.id}-l${idx + 1}`;
-              
-              const titleEn = typeof rl.title === 'string' ? rl.title : (rl.title?.en || `Lesson ${idx + 1}`);
+              const approvedLesson = APPROVED_EARLY_EXPLORERS_LESSONS[lessonId];
+
+              const rawTitleEn = typeof rl.title === 'string' ? rl.title : (rl.title?.en || `Lesson ${idx + 1}`);
+              const titleEn = approvedLesson ? approvedLesson.title : rawTitleEn;
               const titleIg = typeof rl.title === 'object' && rl.title?.ig ? rl.title.ig : titleEn;
               const titleYo = typeof rl.title === 'object' && rl.title?.yo ? rl.title.yo : titleEn;
 
@@ -911,7 +1293,7 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
                   ig: rl.description || baseDetails.story?.ig || "Metere ihe omumu gbara ozi.",
                   yo: rl.description || baseDetails.story?.yo || "Eko ekunrere lori ohun."
                 },
-                video_url: rl.video_url || undefined,
+                video_url: rl.video_url || baseDetails.video_url || undefined,
                 quiz: quizQuestions.length > 0 ? quizQuestions : (baseDetails.quiz || [])
               } as Lesson;
             });
@@ -922,6 +1304,18 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
             const bNum = Number(b.code?.replace(/\D/g, '')) || 0;
             return aNum - bNum;
           });
+
+          // Reconcile approved Young Explorers module names (e.g. t-a1m2 -> "Module 2: Learning With AI")
+          if (ageGroupKey === "early explorers" && matchingStaticMeta) {
+            return {
+              id: rm.id,
+              pathwayId: rm.pathway_id,
+              name: matchingStaticMeta.name,
+              goal: matchingStaticMeta.goal,
+              badge: matchingStaticMeta.badge,
+              lessons: moduleLessons.length > 0 ? moduleLessons : hydrateStaticModule(matchingStaticMeta, ageGroupKey).lessons
+            } as Module;
+          }
 
           const titleClean = typeof rm.title === 'string' ? rm.title : (rm.title?.en || "Custom Module");
           const descClean = rm.description || "Admin structured module category.";
@@ -935,9 +1329,17 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
               ig: `Mechaa usoro ihe omumu maka ${titleClean}`, 
               yo: `Pari eko fun ${titleClean}` 
             },
-            badge: { name: `${titleClean} Badge`, icon: "🎖" },
+            badge: matchingStaticMeta?.badge || { name: `${titleClean} Badge`, icon: "🎖" },
             lessons: moduleLessons
           } as Module;
+        });
+
+        // Ensure any approved curriculum modules not yet seeded in Supabase cache are included in sequence
+        const mappedIds = new Set(mappedModules.map((m) => m.id));
+        metadataList.forEach((mMeta) => {
+          if (!mappedIds.has(mMeta.id)) {
+            mappedModules.push(hydrateStaticModule(mMeta, ageGroupKey));
+          }
         });
 
         // Course standard metadata headers
@@ -974,8 +1376,6 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
     }
   }
 
-  const metadataList = ACADEMY_METADATA[ageGroupKey] || [];
-  
   // Custom headers for each age group course
   const courseHeaders: Record<AgeGroup, { title: any; desc: any }> = {
     "early explorers": {
@@ -1019,41 +1419,7 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
   const currentHeader = courseHeaders[ageGroupKey];
 
   // Map each metadata block into fully hydrated type-safe Modules with 100% playable lessons
-  const modules: Module[] = metadataList.map((mMeta) => {
-    const lessons: Lesson[] = mMeta.lessons.map((lessonTitle, idx) => {
-      const lessonId = `${mMeta.id}-l${idx + 1}`;
-      const baseDetails = generateLessonDetails(lessonId, lessonTitle, ageGroupKey);
-      
-      return {
-        id: lessonId,
-        title: baseDetails.title || { en: lessonTitle, ig: lessonTitle, yo: lessonTitle },
-        code: baseDetails.code || `L${idx + 1}`,
-        duration: baseDetails.duration || "⏱ 3 min",
-        type: baseDetails.type || "story",
-        story: baseDetails.story,
-        quiz: baseDetails.quiz || []
-      } as Lesson;
-    });
-
-    return {
-      id: mMeta.id,
-      name: {
-        en: mMeta.name.en,
-        ig: mMeta.name.ig,
-        yo: mMeta.name.yo
-      },
-      goal: {
-        en: mMeta.goal.en,
-        ig: mMeta.goal.ig,
-        yo: mMeta.goal.yo
-      },
-      badge: {
-        name: mMeta.badge.name,
-        icon: mMeta.badge.icon
-      },
-      lessons
-    } as Module;
-  });
+  const modules: Module[] = metadataList.map((mMeta) => hydrateStaticModule(mMeta, ageGroupKey));
 
   return {
     id: ageGroupKey,

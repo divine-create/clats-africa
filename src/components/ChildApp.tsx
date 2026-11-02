@@ -24,6 +24,7 @@ import { LessonContent } from "./LessonContent";
 import { ChildGames } from "./ChildGames";
 import { ChildRewards } from "./ChildRewards";
 import { ChildChat } from "./ChildChat";
+import { PracticeSandbox } from "./PracticeSandbox";
 import { CURRICULUM } from "../data/curriculum";
 import { PaywallModal } from "./PaywallModal";
 import { computeEffectiveStreak, recordDailyActivityStreak } from "../utils/streak";
@@ -39,7 +40,7 @@ interface ChildAppProps {
   onToggleTheme?: () => void;
 }
 
-type TabType = "home" | "map" | "progress" | "chat" | "lesson" | "games" | "rewards";
+type TabType = "home" | "map" | "progress" | "chat" | "lesson" | "games" | "rewards" | "sandbox";
 
 const AGE_META_RESOLVE = (ag: string) => {
   if (ag === "early explorers") return { color: C.amber, soft: C.yellowSoft };
@@ -166,7 +167,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      const validTabs: TabType[] = ["home", "map", "progress", "chat", "lesson", "games", "rewards"];
+      const validTabs: TabType[] = ["home", "map", "progress", "chat", "lesson", "games", "rewards", "sandbox"];
       if (validTabs.includes(hash as TabType)) {
         return hash as TabType;
       }
@@ -174,6 +175,11 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     return "home";
   });
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [sandboxFilter, setSandboxFilter] = useState<{
+    adventureId?: string;
+    moduleId?: string;
+    lessonId?: string;
+  }>({});
   const [selModule, setSelModule] = useState<Module | null>(null);
   const [selLesson, setSelLesson] = useState<Lesson | null>(null);
   const [showHandoff, setShowHandoff] = useState(false);
@@ -201,7 +207,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     }
 
     const handlePopState = (e: PopStateEvent) => {
-      const validTabs: TabType[] = ["home", "map", "progress", "chat", "lesson", "games", "rewards"];
+      const validTabs: TabType[] = ["home", "map", "progress", "chat", "lesson", "games", "rewards", "sandbox"];
       if (e.state && validTabs.includes(e.state.tab)) {
         setActiveTab(e.state.tab);
       } else {
@@ -746,6 +752,10 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               setSelectedGameId(gameId || null);
               navigateToTab("games");
             }}
+            onOpenSandbox={(adventureId, moduleId, lessonId) => {
+              setSandboxFilter({ adventureId, moduleId, lessonId });
+              navigateToTab("sandbox");
+            }}
             onOpenChat={() => navigateToTab("chat")}
             onOpenRewards={() => navigateToTab("rewards")}
             lang={lang}
@@ -793,6 +803,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           child={child}
           lang={lang}
           theme={theme}
+          initialAdventureId={selectedAcademyId}
           onBack={() => navigateToTab("home")}
           onSelectLesson={(l) => {
             const course = CURRICULUM[child.ageGroup || "early explorers"];
@@ -801,7 +812,37 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             setSelLesson(l);
             navigateToTab("lesson");
           }}
+          onOpenSandbox={(adventureId, moduleId, lessonId) => {
+            setSandboxFilter({ adventureId, moduleId, lessonId });
+            navigateToTab("sandbox");
+          }}
           onShowPaywall={() => setShowHandoff(true)}
+        />
+      )}
+
+      {/* Young Explorers Practice Sandbox */}
+      {activeTab === "sandbox" && (
+        <PracticeSandbox
+          child={child}
+          lang={lang}
+          theme={theme}
+          initialAdventureId={sandboxFilter.adventureId}
+          initialModuleId={sandboxFilter.moduleId}
+          initialLessonId={sandboxFilter.lessonId}
+          onBack={() => navigateToTab("home")}
+          onShowPaywall={() => setShowHandoff(true)}
+          onSelectLesson={(lessonId) => {
+            const course = CURRICULUM[child.ageGroup || "early explorers"];
+            for (const mod of course?.modules || []) {
+              const found = mod.lessons.find((l) => l.id === lessonId);
+              if (found) {
+                setSelModule(mod);
+                setSelLesson(found);
+                navigateToTab("lesson");
+                return;
+              }
+            }
+          }}
         />
       )}
 
@@ -950,6 +991,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           {(isYoungExplorer
             ? [
                 { id: "home" as const, label: "Home", icon: "🏠" },
+                { id: "sandbox" as const, label: "Sandbox", icon: "🧪" },
                 { id: "chat" as const, label: "AI Tutor", icon: "🤖" },
                 { id: "rewards" as const, label: "Rewards", icon: "🏆" },
                 { id: "progress" as const, label: "Profile", icon: "📊" }

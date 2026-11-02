@@ -10,12 +10,14 @@ import { T, C, F } from "../utils/config";
 import { Lock, Star, Check, Play, Compass, Sparkles, Trophy, Shield, Palette, Cpu, ChevronRight, Volume2 } from "lucide-react";
 import { sfx, companionVoice } from "../utils/audio";
 import { KobeAvatar } from "./KobeAvatar";
+import { SANDBOX_ACTIVITIES } from "../data/sandboxActivities";
 
 interface SagaMapProps {
   child: Child;
   lang: Language;
   onSelectLesson: (l: Lesson) => void;
   onShowPaywall: () => void;
+  onOpenSandbox?: (adventureId?: string, moduleId?: string, lessonId?: string) => void;
   onBack?: () => void;
   theme?: "light" | "dark";
   initialAdventureId?: string;
@@ -137,6 +139,7 @@ export const SagaMap: React.FC<SagaMapProps> = ({
   lang,
   onSelectLesson,
   onShowPaywall,
+  onOpenSandbox,
   onBack,
   theme = "dark",
   initialAdventureId
@@ -564,6 +567,18 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                       <Volume2 size={13} />
                       <span>Read</span>
                     </button>
+                    {onOpenSandbox && (
+                      <button
+                        onClick={() => {
+                          sfx.playTap();
+                          onOpenSandbox(selectedAdventure.id);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border border-amber-500 text-xs font-black cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                        title="Open Hands-On Practice Sandbox for this Adventure"
+                      >
+                        <span>🧪 Practice Sandbox</span>
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 mt-1 mb-0 max-w-2xl">
                     {selectedAdventure.description}
@@ -665,7 +680,18 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-start sm:self-center flex-shrink-0">
+                    <div className="flex items-center gap-2 self-start sm:self-center flex-shrink-0 flex-wrap">
+                      {onOpenSandbox && !isLockedByPaywall && (
+                        <button
+                          onClick={() => {
+                            sfx.playTap();
+                            onOpenSandbox(selectedAdventure.id, mod.id);
+                          }}
+                          className="text-xs font-black px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-700 dark:text-teal-300 border border-teal-400/40 cursor-pointer transition-transform active:scale-95"
+                        >
+                          🧪 Module Sandbox
+                        </button>
+                      )}
                       <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                         {modCompletedCount} / {modLessons.length} Levels Done
                       </span>
@@ -877,6 +903,24 @@ export const SagaMap: React.FC<SagaMapProps> = ({
                                 </span>
                               )}
                             </div>
+
+                            {onOpenSandbox &&
+                              !isLocked &&
+                              SANDBOX_ACTIVITIES.some((a) => a.lessonId === les.id) && (
+                                <div className="mt-2 pt-2 border-t border-slate-200/70 dark:border-slate-700/70 flex justify-center">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      sfx.playTap();
+                                      onOpenSandbox(selectedAdventure.id, mod.id, les.id);
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[11px] font-black text-amber-700 dark:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 px-2.5 py-1 rounded-full cursor-pointer"
+                                  >
+                                    <span>🧪 Hands-On Practice</span>
+                                  </button>
+                                </div>
+                              )}
                           </div>
                         </div>
                       );
