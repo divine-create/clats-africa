@@ -670,7 +670,6 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
                   >
                     <option value="Parent">Parent</option>
                     <option value="Legal Guardian">Legal Guardian</option>
-                    <option value="Teacher / School Coordinator">Teacher / School Coordinator</option>
                     <option value="Relative">Family Member / Relative</option>
                   </select>
                 </div>
