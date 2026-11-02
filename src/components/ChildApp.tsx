@@ -27,8 +27,9 @@ import { ChildChat } from "./ChildChat";
 import { PracticeSandbox } from "./PracticeSandbox";
 import { CURRICULUM } from "../data/curriculum";
 import { PaywallModal } from "./PaywallModal";
-import { computeEffectiveStreak, recordDailyActivityStreak } from "../utils/streak";
+import { computeEffectiveStreak, recordDailyActivityStreak, toLocalDateStr } from "../utils/streak";
 import { evaluateChildBadges, UNIFIED_BADGE_MAP } from "../utils/badges";
+import { resolveEffectiveScreenMonitoring, isWithinPreferredHours } from "../utils/childMeta";
 
 interface ChildAppProps {
   child: Child;
@@ -299,130 +300,258 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     }
   };
 
-  // Screen time tracking
+  // Screen time & Healthy Digital Habits monitoring (cloud-synced per child + parent/school policy resolution)
+  const effectiveMonitoring = React.useMemo(
+    () => resolveEffectiveScreenMonitoring(child, parent?.email),
+    [child, parent?.email]
+  );
+
   const [slot, setSlot] = useState<"morning" | "afternoon" | "evening" | null>(getCurrentSlot());
   const [limitsEnabled, setLimitsEnabled] = useState(false);
   const [slotLimit, setSlotLimit] = useState(0); // in seconds
   const [slotUsed, setSlotUsed] = useState(0); // in seconds
+  const [dailyUsed, setDailyUsed] = useState(0); // in seconds today across all sessions
+  const [sessionUsed, setSessionUsed] = useState(0); // in seconds for current continuous session
+  const [sinceLastBreak, setSinceLastBreak] = useState(0); // in seconds since last break reminder
+  const [showBreakModal, setShowBreakModal] = useState(false);
+  const [breakCountdown, setBreakCountdown] = useState(60);
   const [blocked, setBlocked] = useState(false);
+  const [blockReason, setBlockReason] = useState<"daily_limit" | "session_limit" | "slot_limit" | "preferred_hours" | null>(null);
+  const limitNotifiedRef = React.useRef(false);
 
   // HUD Warnings
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Auto-record child's portal study session directly to Supabase
+  // Activity-categorized session tracking (distinguishes Learning Time vs. Other Platform Activity)
+  const trackerLessonId = React.useMemo(() => {
+    if (activeTab === "lesson") return `lesson:${selLesson?.id || "active"}`;
+    if (activeTab === "sandbox") return `sandbox:${sandboxFilter.adventureId || "lab"}`;
+    if (activeTab === "map") return `map:${selectedAcademyId || "world"}`;
+    if (activeTab === "games") return `games:${selectedGameId || "arcade"}`;
+    if (activeTab === "chat") return "chat:ai-tutor";
+    if (activeTab === "rewards") return "portal:rewards";
+    if (activeTab === "progress") return "portal:profile";
+    return "portal:hub";
+  }, [activeTab, selLesson?.id, sandboxFilter.adventureId, selectedAcademyId, selectedGameId]);
+
   useLearningTimeTracker({
     childId: child.id,
-    activityType: "portal"
+    lessonId: trackerLessonId,
+    activityType:
+      activeTab === "lesson"
+        ? "lesson"
+        : activeTab === "sandbox"
+        ? "sandbox"
+        : activeTab === "games"
+        ? "games"
+        : activeTab === "chat"
+        ? "chat"
+        : activeTab === "map"
+        ? "map"
+        : "portal"
   });
 
-  // Calculate slot time from Supabase
-  const computeSlotTimeFromSupabase = (sessions: any[], currentSlot: "morning" | "afternoon" | "evening"): number => {
-    const todayStr = new Date().toISOString().split("T")[0];
-    let seconds = 0;
-    sessions.forEach(s => {
+  // Calculate today's total & current-slot time from Supabase sessions using local calendar date
+  const computeTodayUsageFromSupabase = (
+    sessions: any[],
+    currentSlot: "morning" | "afternoon" | "evening" | null
+  ): { slotSecs: number; dailySecs: number } => {
+    const todayLocal = toLocalDateStr(new Date());
+    let slotSecs = 0;
+    let dailySecs = 0;
+    sessions.forEach((s) => {
       try {
         const sessDate = new Date(s.started_at);
-        const sDateStr = sessDate.toISOString().split("T")[0];
-        if (sDateStr === todayStr) {
-          const h = sessDate.getHours();
-          const sSlot = h >= 5 && h < 12 ? "morning" : h >= 12 && h < 18 ? "afternoon" : "evening";
-          if (sSlot === currentSlot) {
-            seconds += Number(s.duration_seconds || 0);
+        const sDateLocal = toLocalDateStr(sessDate);
+        if (sDateLocal === todayLocal) {
+          const dur = Number(s.duration_seconds || 0);
+          dailySecs += dur;
+          if (currentSlot) {
+            const h = sessDate.getHours();
+            const sSlot = h >= 5 && h < 12 ? "morning" : h >= 12 && h < 18 ? "afternoon" : "evening";
+            if (sSlot === currentSlot) {
+              slotSecs += dur;
+            }
           }
         }
       } catch (e) {
-        console.warn("computeSlotTimeFromSupabase parse error:", e);
+        console.warn("computeTodayUsageFromSupabase parse error:", e);
       }
     });
-    return seconds;
+    return { slotSecs, dailySecs };
   };
 
-  // Fetch initial study minutes/seconds spent for current slot today from Supabase
+  // Fetch initial study minutes/seconds spent today from Supabase
   useEffect(() => {
     if (!child?.id) return;
     const curS = getCurrentSlot();
-    if (!curS) return;
 
     fetch(`/api/supabase/sessions/child/${child.id}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.ok && data.sessions) {
-          const initialUsed = computeSlotTimeFromSupabase(data.sessions, curS);
-          setSlotUsed(initialUsed);
+          const { slotSecs, dailySecs } = computeTodayUsageFromSupabase(data.sessions, curS);
+          setSlotUsed(slotSecs);
+          setDailyUsed(dailySecs);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Error fetching child app sessions on load:", err);
       });
   }, [child?.id]);
 
+  // Evaluate effective screen monitoring policy (Parent + School policy resolution)
   const checkTimingLimits = React.useCallback(() => {
-    if (parent) {
-      const parentS = S_RESOLVE();
-      const parentEmail = parent.email;
-      const settings = parentS[parentEmail?.toLowerCase()];
-      if (settings && settings.limitsEnabled) {
-        setLimitsEnabled(prev => !prev ? true : prev);
-        const curS = getCurrentSlot();
-        setSlot(prev => prev !== curS ? curS : prev);
-        if (curS) {
-          const limitSecs = settings.slots[curS] || 0;
-          setSlotLimit(prev => prev !== limitSecs ? limitSecs : prev);
-          setBlocked(prev => {
-            const isBlocked = limitSecs > 0 && slotUsed >= limitSecs;
-            return prev !== isBlocked ? isBlocked : prev;
-          });
-        } else {
-          setSlotLimit(prev => prev !== 0 ? 0 : prev);
-          setBlocked(prev => prev ? false : prev);
-        }
-      } else {
-        setLimitsEnabled(prev => prev ? false : prev);
-        setSlotLimit(prev => prev !== 0 ? 0 : prev);
-        setBlocked(prev => prev ? false : prev);
-      }
-    } else {
-      // Offline fallback: 40 mins
-      setLimitsEnabled(prev => !prev ? true : prev);
-      setSlotLimit(prev => prev !== 40 * 60 ? 40 * 60 : prev);
-    }
-  }, [parent, slotUsed]);
+    const curS = getCurrentSlot();
+    setSlot((prev) => (prev !== curS ? curS : prev));
 
-  // Initial check on mount or parent update
+    if (!effectiveMonitoring.enabled) {
+      setLimitsEnabled(false);
+      setSlotLimit(0);
+      setBlocked(false);
+      setBlockReason(null);
+      return;
+    }
+
+    setLimitsEnabled(true);
+
+    // Check preferred learning hours window first
+    if (effectiveMonitoring.preferredHoursEnabled && !isWithinPreferredHours(effectiveMonitoring)) {
+      setBlocked(true);
+      setBlockReason("preferred_hours");
+      return;
+    }
+
+    const dailyLimitSecs =
+      effectiveMonitoring.dailyLimitMins > 0 ? effectiveMonitoring.dailyLimitMins * 60 : 0;
+    const sessionLimitSecs =
+      effectiveMonitoring.sessionLimitMins > 0 ? effectiveMonitoring.sessionLimitMins * 60 : 0;
+    const slotLimitSecs = curS && effectiveMonitoring.slots?.[curS] ? effectiveMonitoring.slots[curS] : 0;
+
+    // Effective remaining cap for the HUD indicator
+    const activeCaps = [dailyLimitSecs, sessionLimitSecs, slotLimitSecs].filter((v) => v > 0);
+    const displayCap = activeCaps.length > 0 ? Math.min(...activeCaps) : 0;
+    setSlotLimit(displayCap);
+
+    if (dailyLimitSecs > 0 && dailyUsed >= dailyLimitSecs) {
+      setBlocked(true);
+      setBlockReason("daily_limit");
+    } else if (sessionLimitSecs > 0 && sessionUsed >= sessionLimitSecs) {
+      setBlocked(true);
+      setBlockReason("session_limit");
+    } else if (slotLimitSecs > 0 && slotUsed >= slotLimitSecs) {
+      setBlocked(true);
+      setBlockReason("slot_limit");
+    } else {
+      setBlocked(false);
+      setBlockReason(null);
+    }
+  }, [effectiveMonitoring, dailyUsed, sessionUsed, slotUsed]);
+
   useEffect(() => {
     checkTimingLimits();
   }, [checkTimingLimits]);
 
-  // Only tick when screen time limits are configured, avoiding high-frequency lag when unlimited
+  // Second-by-second ticker for active session, daily time, slot time, and break reminders
   useEffect(() => {
-    if (!limitsEnabled || slotLimit <= 0 || blocked) return;
+    if (!limitsEnabled || blocked || showBreakModal) return;
 
     const timer = setInterval(() => {
-      setSlotUsed(p => {
-        const next = p + 1;
-        if (slotLimit > 0 && next >= slotLimit) {
-          setBlocked(true);
-        }
-        return next;
-      });
+      setSlotUsed((p) => p + 1);
+      setDailyUsed((p) => p + 1);
+      setSessionUsed((p) => p + 1);
+      if (effectiveMonitoring.breakRemindersEnabled && effectiveMonitoring.breakIntervalMins > 0) {
+        setSinceLastBreak((p) => {
+          const next = p + 1;
+          if (next >= effectiveMonitoring.breakIntervalMins * 60) {
+            setShowBreakModal(true);
+            setBreakCountdown(Math.max(15, (effectiveMonitoring.breakDurationMins || 2) * 30));
+            return 0;
+          }
+          return next;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [limitsEnabled, slotLimit, blocked]);
+  }, [
+    limitsEnabled,
+    blocked,
+    showBreakModal,
+    effectiveMonitoring.breakRemindersEnabled,
+    effectiveMonitoring.breakIntervalMins,
+    effectiveMonitoring.breakDurationMins
+  ]);
 
-  // Warning trigger checks
+  // Countdown timer while Break Modal is open
   useEffect(() => {
-    if (slotLimit > 0) {
-      const remain = slotLimit - slotUsed;
-      if (remain === 300) {
-        setToastMessage(T[lang]?.fiveMinsLeft || "5 minutes left!");
-        setTimeout(() => setToastMessage(null), 8000);
-      }
-      if (remain <= 0) {
-        setBlocked(true);
-      }
+    if (!showBreakModal) return;
+    const companionChar = child.companion === "chibi" ? "chibi" : "kobe";
+    companionVoice.speak(
+      `Time for a quick stretch and eye rest, ${child.name}! Look away from the screen, blink your eyes, and stretch your arms!`,
+      companionChar,
+      child.ageGroup
+    );
+    const t = setInterval(() => {
+      setBreakCountdown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [showBreakModal, child.companion, child.name, child.ageGroup]);
+
+  // Warning trigger checks & parent notification when screen limit is reached
+  useEffect(() => {
+    if (!limitsEnabled) return;
+    const dailyLimitSecs =
+      effectiveMonitoring.dailyLimitMins > 0 ? effectiveMonitoring.dailyLimitMins * 60 : 0;
+    const sessionLimitSecs =
+      effectiveMonitoring.sessionLimitMins > 0 ? effectiveMonitoring.sessionLimitMins * 60 : 0;
+
+    const dailyRemain = dailyLimitSecs > 0 ? dailyLimitSecs - dailyUsed : Infinity;
+    const sessionRemain = sessionLimitSecs > 0 ? sessionLimitSecs - sessionUsed : Infinity;
+    const minRemain = Math.min(dailyRemain, sessionRemain);
+
+    if (minRemain === 300) {
+      setToastMessage(T[lang]?.fiveMinsLeft || "5 minutes of learning time left!");
+      setTimeout(() => setToastMessage(null), 8000);
+    } else if (minRemain === 60) {
+      setToastMessage("1 minute left before rest time! ⏳");
+      setTimeout(() => setToastMessage(null), 8000);
     }
-  }, [slotUsed, slotLimit, lang]);
+
+    if (blocked && !limitNotifiedRef.current && parent?.email) {
+      limitNotifiedRef.current = true;
+      fetch("/api/supabase/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parent_email: parent.email,
+          child_id: child.id,
+          type: "screen_time_limit",
+          title: "Screen Time Limit Reached ⏱️",
+          message:
+            blockReason === "daily_limit"
+              ? `${child.name} reached their daily screen-time limit (${effectiveMonitoring.dailyLimitMins} mins).`
+              : blockReason === "session_limit"
+              ? `${child.name} completed their ${effectiveMonitoring.sessionLimitMins}-minute session limit.`
+              : `${child.name} reached their scheduled screen-time boundary.`,
+          icon: "⏱️",
+          badge_color: "bg-amber-50 text-amber-600"
+        })
+      }).catch(() => {});
+    }
+  }, [
+    dailyUsed,
+    sessionUsed,
+    limitsEnabled,
+    blocked,
+    blockReason,
+    effectiveMonitoring.dailyLimitMins,
+    effectiveMonitoring.sessionLimitMins,
+    lang,
+    parent?.email,
+    child.id,
+    child.name
+  ]);
 
   // Ensure child.streak and child.streak_count stay synchronized and reflect active/expired status
   useEffect(() => {
@@ -482,12 +611,21 @@ export const ChildApp: React.FC<ChildAppProps> = ({
 
     const currentCompletedCount = Object.keys(freshCompleted).length;
 
-    // Record daily learning activity and compute updated streak
-    const streakUpdate = recordDailyActivityStreak({
-      ...child,
-      completed: freshCompleted,
-      quizResults: freshQuizResults
-    });
+    // Record daily learning activity and compute updated streak ONLY when the child passes the lesson/quiz
+    const currentStatus = computeEffectiveStreak(child);
+    const streakUpdate = isPass
+      ? recordDailyActivityStreak({
+          ...child,
+          completed: freshCompleted,
+          quizResults: freshQuizResults
+        })
+      : {
+          streak: currentStatus.streak,
+          streak_count: currentStatus.streak,
+          best_streak: currentStatus.bestStreak,
+          last_active_at: child.last_active_at || new Date().toISOString(),
+          badges: child.badges || []
+        };
     const finalStreak = streakUpdate.streak_count;
     const finalBestStreak = streakUpdate.best_streak;
     const finalLastActive = streakUpdate.last_active_at;
@@ -497,7 +635,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         .filter((b) => b.unlocked)
         .map((b) => b.id)
     );
-    const currentBadges = child.badges || [];
+    const currentBadges = streakUpdate.badges || child.badges || [];
 
     const candidateChild: Child = {
       ...child,
@@ -565,7 +703,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         .filter((b) => b.unlocked)
         .map((b) => b.id)
     );
-    const currentBadges = child.badges || [];
+    const currentBadges = streakUpdate.badges || child.badges || [];
 
     const candidateChild: Child = {
       ...child,
@@ -592,6 +730,10 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       badges: newBadgesList
     };
     onUpdateChild(updated);
+  };
+
+  const handleSandboxComplete = async (_activityId: string, xpEarned: number) => {
+    await handleAddGamesXP(xpEarned);
   };
 
   const BADGE_MAP = UNIFIED_BADGE_MAP;
@@ -691,13 +833,118 @@ export const ChildApp: React.FC<ChildAppProps> = ({
         </div>
       )}
 
-      {/* Screen Time Blocked Overlay */}
+      {/* Periodic Break Reminder Modal (Healthy Digital Habits) */}
+      {showBreakModal && !blocked && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.85)",
+            backdropFilter: "blur(8px)",
+            zIndex: 99998,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 440,
+              width: "100%",
+              background: isDark ? "#1e293b" : "#ffffff",
+              border: "4px solid #2EC4B6",
+              borderRadius: 32,
+              padding: "28px 24px",
+              textAlign: "center",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.35)"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+              <KobeAvatar
+                size={96}
+                character={child.companion || "kobe"}
+                ageGroup={child.ageGroup}
+                expression="happy"
+                pulse
+              />
+            </div>
+            <div
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: 999,
+                background: "rgba(46, 196, 182, 0.15)",
+                color: "#2EC4B6",
+                fontSize: 11,
+                fontWeight: 900,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8
+              }}
+            >
+              🌿 Healthy Explorer Break
+            </div>
+            <Heading size={24} style={{ color: isDark ? "#fff" : "#0f172a", fontWeight: 900, marginBottom: 8 }}>
+              Time for a Quick Stretch!
+            </Heading>
+            <Txt
+              size={14.5}
+              color={isDark ? "#cbd5e1" : "#475569"}
+              style={{ display: "block", lineHeight: 1.5, marginBottom: 16, fontWeight: 700 }}
+            >
+              {child.companion === "chibi" ? "Chibi" : "Kobe"} says: You&apos;ve been exploring for{" "}
+              {effectiveMonitoring.breakIntervalMins} minutes! Look at something far away, blink your eyes, and stretch your arms! 🙆✨
+            </Txt>
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: 20,
+                background: isDark ? "#0f172a" : "#f0fdfa",
+                border: "2px dashed #2EC4B6",
+                marginBottom: 18
+              }}
+            >
+              <Txt size={11} weight={800} color="#2EC4B6" style={{ display: "block", textTransform: "uppercase" }}>
+                Rest Timer
+              </Txt>
+              <Txt size={26} weight={950} color={isDark ? "#fff" : "#0f172a"}>
+                {breakCountdown > 0 ? `${breakCountdown}s` : "Ready! 🌟"}
+              </Txt>
+            </div>
+            <button
+              onClick={() => {
+                sfx.playTap();
+                setShowBreakModal(false);
+                setSinceLastBreak(0);
+              }}
+              style={{
+                width: "100%",
+                background: "#2EC4B6",
+                color: "#ffffff",
+                padding: "14px 24px",
+                borderRadius: 18,
+                fontWeight: 900,
+                fontSize: 15,
+                border: "none",
+                borderBottom: "4px solid #0f766e",
+                cursor: "pointer"
+              }}
+            >
+              I Stretched — Continue Exploring! 🚀
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Screen Time / Preferred Learning Hours Blocked Overlay */}
       {blocked && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: isDark ? "#0f172a" : "#ffffff",
+            backgroundColor: isDark ? "#0f172a" : "#f8fafc",
             zIndex: 99999,
             display: "flex",
             flexDirection: "column",
@@ -706,29 +953,79 @@ export const ChildApp: React.FC<ChildAppProps> = ({
             padding: 20
           }}
         >
-          <div style={{ fontSize: 64, marginBottom: 20 }}>⏱️</div>
-          <Heading size={28} className="font-black mb-2 text-center" style={{ color: isDark ? "#fff" : "#111" }}>
-            Time is up!
-          </Heading>
-          <Txt size={16} className="font-bold text-center mb-8" color={isDark ? "#94a3b8" : "#64748b"}>
-            You've reached your learning time limit for this session. Take a break and come back later!
-          </Txt>
-          <button
-            onClick={onExit}
+          <div
             style={{
-              background: "#2EC4B6",
-              color: "white",
-              padding: "16px 32px",
-              borderRadius: 16,
-              fontWeight: 900,
-              fontSize: 16,
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(46, 196, 182, 0.3)"
+              maxWidth: 460,
+              width: "100%",
+              background: isDark ? "#1e293b" : "#ffffff",
+              border: "4px solid #FFD166",
+              borderRadius: 32,
+              padding: "32px 26px",
+              textAlign: "center",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.25)"
             }}
           >
-            Exit Portal
-          </button>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <KobeAvatar
+                size={100}
+                character={child.companion || "kobe"}
+                ageGroup={child.ageGroup}
+                expression="happy"
+              />
+            </div>
+            <div
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: 999,
+                background: "rgba(255, 209, 102, 0.2)",
+                color: "#d97706",
+                fontSize: 11,
+                fontWeight: 900,
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                marginBottom: 8
+              }}
+            >
+              {blockReason === "preferred_hours" ? "🌙 Quiet Rest Hours" : "⏱️ Healthy Screen Time Complete"}
+            </div>
+            <Heading size={26} style={{ color: isDark ? "#fff" : "#0f172a", fontWeight: 900, marginBottom: 10 }}>
+              {blockReason === "preferred_hours"
+                ? "Learning Window Closed for Now!"
+                : blockReason === "daily_limit"
+                ? "Awesome Learning Today!"
+                : "Great Session! Time for a Break!"}
+            </Heading>
+            <Txt
+              size={15}
+              color={isDark ? "#cbd5e1" : "#475569"}
+              style={{ display: "block", lineHeight: 1.55, marginBottom: 22, fontWeight: 700 }}
+            >
+              {blockReason === "preferred_hours"
+                ? `${child.companion === "chibi" ? "Chibi" : "Kobe"} is resting right now! Your learning window is open from ${effectiveMonitoring.preferredStartHour} to ${effectiveMonitoring.preferredEndHour}. See you then!`
+                : blockReason === "daily_limit"
+                ? `You completed your ${effectiveMonitoring.dailyLimitMins}-minute daily learning goal! Give your eyes a rest, play outside, and come back tomorrow for your next adventure!`
+                : `You finished your ${effectiveMonitoring.sessionLimitMins}-minute learning session! Take a healthy break and come back refreshed later!`}
+            </Txt>
+            <button
+              onClick={onExit}
+              style={{
+                width: "100%",
+                background: "#2EC4B6",
+                color: "white",
+                padding: "16px 32px",
+                borderRadius: 18,
+                fontWeight: 900,
+                fontSize: 16,
+                border: "none",
+                borderBottom: "4px solid #0f766e",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(46, 196, 182, 0.3)"
+              }}
+            >
+              Exit Portal 👋
+            </button>
+          </div>
         </div>
       )}
 
@@ -843,6 +1140,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
               }
             }
           }}
+          onCompleteActivity={handleSandboxComplete}
         />
       )}
 

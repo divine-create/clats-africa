@@ -15,6 +15,15 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 
 import { companionVoice } from "../utils/audio";
 import { S, pullCurriculumFromSupabase, getDynamicAgeGroups, saveDynamicAgeGroups, DynamicAgeGroupItem, getAgeLabel, getAgeRange } from "../utils/config";
+import {
+  APPROVED_AGE_SEGMENTS,
+  getApprovedSegmentByIdOrGroup,
+  extractChildMeta,
+  getCleanBadges,
+  mergeChildMetaOntoBadges,
+  resolveEffectiveScreenMonitoring,
+} from "../utils/childMeta";
+import { getSystemStreakRules, saveSystemStreakRules, SystemStreakRules } from "../utils/streak";
 
 // Types
 type AdminRole = 
@@ -128,6 +137,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [healthChecking, setHealthChecking] = useState(false);
 
   const [liveStudyTimeSecs, setLiveStudyTimeSecs] = useState<number>(0);
+  const [allStudySessions, setAllStudySessions] = useState<any[]>([]);
+  const [streakRules, setStreakRules] = useState<SystemStreakRules>(() => getSystemStreakRules());
+  const [platformScreenDefaults, setPlatformScreenDefaults] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cl_platform_screen_defaults");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      dailyLimitMinutes: 30,
+      sessionLimitMinutes: 20,
+      breakReminderIntervalMinutes: 15,
+      preferredStartHour: "08:00",
+      preferredEndHour: "19:30",
+    };
+  });
 
   useEffect(() => {
     const fetchTime = async () => {
@@ -136,6 +162,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
         if (res.ok) {
           const data = await res.json();
           if (data.ok && data.sessions) {
+            setAllStudySessions(data.sessions);
             const total = data.sessions.reduce((acc: number, cur: any) => acc + Number(cur.duration_seconds || 0), 0);
             setLiveStudyTimeSecs(total);
           }
@@ -402,6 +429,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   const [adminPartners, setAdminPartners] = useState<any[]>([]);
   const [adminPayouts, setAdminPayouts] = useState<any[]>([]);
 
+  const persistLearnerUpdateToSupabase = async (childId: string, patchPayload: Record<string, any>) => {
+    try {
+      const res = await fetch("/api/supabase/b2b/manage-student", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ childId, ...patchPayload }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   // Fetch real parents and children from Supabase
   useEffect(() => {
     const fetchUsers = async () => {
@@ -424,23 +464,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
             // Map children (learners)
             const lList = (data.children || []).map((c: any) => {
-              // Assume completed is stored as JSON or object
               const completedCount = c.completed && typeof c.completed === "object" ? Object.keys(c.completed).length : 0;
+              const rawGroup = String(c.age_group || c.ageGroup || "young explorers").toLowerCase().trim();
+              const seg = getApprovedSegmentByIdOrGroup(rawGroup);
+              const tabBucket: AgeGroupType =
+                seg.id === "early_explorers" || seg.id === "young_explorers"
+                  ? "early"
+                  : seg.id === "young_builders"
+                  ? "young"
+                  : "future";
+              const rawBadges = Array.isArray(c.badges) ? c.badges : [];
+              const meta = extractChildMeta(rawBadges);
               return {
                 id: c.id,
                 name: c.name,
-                ageGroup: (c.ageGroup === "tiny" || c.ageGroup === "early explorers" || c.ageGroup === "early") 
-                  ? "early" 
-                  : (c.ageGroup === "junior" || c.ageGroup === "young innovators" || c.ageGroup === "young") 
-                  ? "young" 
-                  : "future",
+                age: c.age || seg.minAge,
+                ageGroup: tabBucket,
+                approvedAgeGroup: seg.ageGroup,
+                approvedSegmentLabel: `${seg.emoji} ${seg.label} (${seg.agesLabel})`,
+                companion: c.companion === "chibi" ? "chibi" : "kobe",
+                streakCount: Number(c.streak_count || 0),
+                bestStreak: Math.max(Number(c.best_streak || 0), Number(c.streak_count || 0)),
+                rawBestStreak: Number(c.best_streak || 0),
+                lastActiveAt: c.last_active_at || null,
                 xp: c.xp || 0,
-                badges: c.interests || ["Onboard Explorer"],
-                status: "Active",
-                parentId: c.parent_email,
-                progress: `${completedCount * 10}%`,
+                badges: rawBadges,
+                cleanBadges: getCleanBadges(rawBadges),
+                meta,
+                status: meta.enrolment?.schoolName === "SUSPENDED" ? "Suspended" : "Active",
+                parentId: c.parent_email || "School Enrolled",
+                orgId: c.org_id || null,
+                pin: c.pin || "",
+                is_premium: Boolean(c.is_premium),
+                progress: `${Math.min(100, completedCount * 10)}%`,
                 lessonsDone: completedCount,
-                rawChild: c // Keep raw for quiz results logic
+                rawChild: c
               };
             });
             setLearners(lList);
@@ -2612,58 +2670,159 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
             </div>
           );})()}
 
-          {/* TAB 3: USERS & PARENTS MANAGEMENT */}
-          {activeTab === "users" && (
+          {/* TAB 3: USERS, ENROLMENT, STREAKS & SCREEN MONITORING MANAGEMENT */}
+          {activeTab === "users" && (() => {
+            const totalActiveStreaks = learners.filter(l => (l.streakCount || 0) > 0).length;
+            const maxPlatformStreak = Math.max(0, ...learners.map(l => l.bestStreak || 0));
+            const streakAnomalies = learners.filter(l => (l.streakCount || 0) > (l.rawBestStreak || 0));
+
+            let learningSecsTotal = 0;
+            let otherSecsTotal = 0;
+            const childSecsMap: Record<string, { learning: number; other: number; total: number }> = {};
+            allStudySessions.forEach((sess: any) => {
+              const dur = Math.max(0, Number(sess.duration_seconds || 0));
+              const rawLesson = String(sess.lesson_id || "").toLowerCase();
+              const isOther = rawLesson.startsWith("games:") || rawLesson.startsWith("chat:") || rawLesson.startsWith("map:") || rawLesson === "games" || rawLesson === "chat";
+              if (isOther) otherSecsTotal += dur;
+              else learningSecsTotal += dur;
+              const cid = sess.child_id;
+              if (cid) {
+                if (!childSecsMap[cid]) childSecsMap[cid] = { learning: 0, other: 0, total: 0 };
+                childSecsMap[cid].total += dur;
+                if (isOther) childSecsMap[cid].other += dur;
+                else childSecsMap[cid].learning += dur;
+              }
+            });
+
+            return (
             <div className="space-y-6">
-              {/* FILTERED CHILDREN LIST BY FOCUS AGE GROUP */}
+              {/* 1. ENROLMENT, AGE-STAGE & COMPANION MANAGEMENT */}
               <div className={`p-6 rounded-3xl border ${bgCard} space-y-4`}>
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <div>
                     <h3 className={`text-sm font-black m-0 ${textPrimary}`}>
-                      Active Children Portfolios: {selectedAgeGroup === "early" ? "Ages 6-10" : selectedAgeGroup === "young" ? "Ages 11-13" : "Ages 14-18"}
+                      🎓 Learner Enrolment, Age-Stage & Companion Management ({learners.filter(c => c.ageGroup === selectedAgeGroup).length} in view · {learners.length} total)
                     </h3>
                     <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
-                      Click child record to adjust XP balances, add milestone credentials, or override statuses.
+                      Verify approved age-group assignments (2–5, 6–10, 11–13, 14–18), manage Kobe & Chibi companion assignments, parent/school links, and persist directly to Supabase.
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      const name = prompt("Enter new child name:");
-                      if (name) {
-                        const newC = {
-                          id: "c" + Date.now(),
-                          name,
-                          ageGroup: selectedAgeGroup,
-                          xp: 100,
-                          badges: ["Onboard Scout"],
-                          status: "Active",
-                          parentId: "p1",
-                          progress: "10%",
-                          lessonsDone: 0
-                        };
-                        setLearners([...learners, newC]);
-                        showToast(`Registered '${name}' to portal database successfully.`);
-                      }
+                    onClick={async () => {
+                      const name = prompt("Enter new learner's first/display name:");
+                      if (!name || !name.trim()) return;
+                      const ageStr = prompt("Enter learner's age (2–18):", "8");
+                      const ageNum = Math.min(18, Math.max(2, Number(ageStr) || 8));
+                      const seg = APPROVED_AGE_SEGMENTS.find(s => ageNum >= s.minAge && ageNum <= s.maxAge) || APPROVED_AGE_SEGMENTS[1];
+                      const compInput = (prompt("Select Learning Companion (kobe or chibi):", "kobe") || "kobe").toLowerCase().trim();
+                      const companion: "kobe" | "chibi" = compInput === "chibi" ? "chibi" : "kobe";
+                      const parentEmail = prompt("Parent/Guardian Email (optional):", parentRecords[0]?.email || "admin@clats.africa") || "admin@clats.africa";
+                      const newId = "c_" + Date.now();
+                      const initBadges = mergeChildMetaOntoBadges(["seedling"], {
+                        enrolment: { enrolledAt: new Date().toISOString(), guardianRelationship: "Parent" },
+                        screenMonitoring: {
+                          enabled: true,
+                          dailyLimitMinutes: platformScreenDefaults.dailyLimitMinutes,
+                          sessionLimitMinutes: platformScreenDefaults.sessionLimitMinutes,
+                          breakRemindersEnabled: true,
+                          breakReminderIntervalMinutes: platformScreenDefaults.breakReminderIntervalMinutes,
+                          breakDurationMinutes: 2,
+                          updatedBy: "admin",
+                          updatedAt: new Date().toISOString(),
+                        },
+                      });
+                      try {
+                        await fetch("/api/supabase/b2b/enroll-student", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            org_id: "admin",
+                            name: name.trim(),
+                            age: ageNum,
+                            age_group: seg.ageGroup,
+                            companion,
+                            badges: initBadges,
+                            pin: "1234",
+                            parent_email: parentEmail,
+                          }),
+                        });
+                      } catch {}
+                      const tabBucket: AgeGroupType =
+                        seg.id === "early_explorers" || seg.id === "young_explorers"
+                          ? "early"
+                          : seg.id === "young_builders"
+                          ? "young"
+                          : "future";
+                      const newC = {
+                        id: newId,
+                        name: name.trim(),
+                        age: ageNum,
+                        ageGroup: tabBucket,
+                        approvedAgeGroup: seg.ageGroup,
+                        approvedSegmentLabel: `${seg.emoji} ${seg.label} (${seg.agesLabel})`,
+                        companion,
+                        streakCount: 0,
+                        bestStreak: 0,
+                        rawBestStreak: 0,
+                        lastActiveAt: null,
+                        xp: 0,
+                        badges: initBadges,
+                        cleanBadges: ["seedling"],
+                        meta: extractChildMeta(initBadges),
+                        status: "Active",
+                        parentId: parentEmail,
+                        orgId: null,
+                        pin: "1234",
+                        is_premium: false,
+                        progress: "0%",
+                        lessonsDone: 0
+                      };
+                      setLearners([...learners, newC]);
+                      showToast(`Enrolled '${name.trim()}' (${seg.label} · Companion: ${companion === "chibi" ? "Chibi" : "Kobe"}) and synced to Supabase.`);
                     }}
-                    className="bg-[#2EC4B6] hover:bg-[#25a195] text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all"
+                    className="bg-[#2EC4B6] hover:bg-[#25a195] text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all cursor-pointer"
                   >
-                    <Plus size={12} /> Register Learner Profile
+                    <Plus size={12} /> Enroll Learner Profile
                   </button>
+                </div>
+
+                {/* Approved 4-Segment Reference Strip */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {APPROVED_AGE_SEGMENTS.map(seg => {
+                    const count = learners.filter(l => l.approvedAgeGroup === seg.ageGroup).length;
+                    return (
+                      <div key={seg.id} className={`p-3 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50 border-slate-200"} flex items-center justify-between`}>
+                        <div>
+                          <div className={`text-xs font-extrabold ${textPrimary}`}>{seg.emoji} {seg.label}</div>
+                          <div className="text-[10px] font-mono text-slate-400">{seg.agesLabel}</div>
+                        </div>
+                        <span className="text-base font-black text-[#2EC4B6]">{count}</span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {learners
                     .filter(c => c.ageGroup === selectedAgeGroup)
-                    .map((ch) => (
+                    .map((ch) => {
+                      const studyStats = childSecsMap[ch.id] || { learning: 0, other: 0, total: 0 };
+                      const effMon = resolveEffectiveScreenMonitoring(ch.rawChild || ch);
+                      return (
                       <div
                         key={ch.id}
                         className={`p-4 rounded-2xl border transition-all hover:border-[#2EC4B6] relative ${isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-200"}`}
                       >
-                        <div className="flex justify-between items-start">
-                          <span className={`font-black text-sm ${textPrimary}`}>
-                            {ch.name} 
-                            {ch.is_premium && <span className="ml-2 text-xs bg-amber-400/20 text-amber-500 px-2 py-0.5 rounded-full" title="Premium Access">👑 PRO</span>}
-                          </span>
+                        <div className="flex justify-between items-start gap-2">
+                          <div>
+                            <span className={`font-black text-sm ${textPrimary}`}>
+                              {ch.name}
+                              {ch.is_premium && <span className="ml-2 text-xs bg-amber-400/20 text-amber-500 px-2 py-0.5 rounded-full" title="Premium Access">👑 PRO</span>}
+                            </span>
+                            <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                              Parent/School: <span className="font-mono">{ch.parentId}</span> {ch.orgId ? `· Org: ${ch.orgId}` : ""}
+                            </div>
+                          </div>
                           <span className={`px-2 py-0.5 rounded text-[8px] font-mono tracking-wider font-extrabold block uppercase ${
                             ch.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-rose-500"
                           }`}>
@@ -2672,6 +2831,66 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         </div>
 
                         <div className="mt-3 space-y-1.5 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">🎯 Approved Stage:</span>
+                            <select
+                              value={ch.approvedAgeGroup || "young explorers"}
+                              onChange={async (e) => {
+                                const newGrp = e.target.value;
+                                const seg = getApprovedSegmentByIdOrGroup(newGrp);
+                                const tabBucket: AgeGroupType =
+                                  seg.id === "early_explorers" || seg.id === "young_explorers"
+                                    ? "early"
+                                    : seg.id === "young_builders"
+                                    ? "young"
+                                    : "future";
+                                setLearners(learners.map(l => l.id === ch.id ? {
+                                  ...l,
+                                  ageGroup: tabBucket,
+                                  approvedAgeGroup: seg.ageGroup,
+                                  approvedSegmentLabel: `${seg.emoji} ${seg.label} (${seg.agesLabel})`
+                                } : l));
+                                await persistLearnerUpdateToSupabase(ch.id, { ageGroup: seg.ageGroup });
+                                showToast(`Updated ${ch.name} stage to ${seg.label} (${seg.agesLabel})`);
+                              }}
+                              className={`text-[10px] font-bold rounded px-1.5 py-0.5 border ${isDark ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-200 text-slate-800"}`}
+                            >
+                              {APPROVED_AGE_SEGMENTS.map(s => (
+                                <option key={s.id} value={s.ageGroup}>{s.emoji} {s.label} ({s.agesLabel})</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">✨ Learning Companion:</span>
+                            <button
+                              onClick={async () => {
+                                const nextComp: "kobe" | "chibi" = ch.companion === "chibi" ? "kobe" : "chibi";
+                                setLearners(learners.map(l => l.id === ch.id ? { ...l, companion: nextComp } : l));
+                                await persistLearnerUpdateToSupabase(ch.id, { companion: nextComp });
+                                showToast(`Switched ${ch.name}'s companion to ${nextComp === "chibi" ? "Chibi" : "Kobe"} (synced to DB)`);
+                              }}
+                              className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#B8A0FF]/15 text-[#B8A0FF] hover:opacity-80 cursor-pointer"
+                              title="Click to switch between Kobe and Chibi"
+                            >
+                              {ch.companion === "chibi" ? "🎀 Chibi (Switch)" : "🌟 Kobe (Switch)"}
+                            </button>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">🔥 Learning Streak:</span>
+                            <span className="font-bold text-amber-500">
+                              {ch.streakCount || 0}d current · Best {ch.bestStreak || 0}d
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">⏱️ Screen Monitoring:</span>
+                            <span className="font-bold text-[#2EC4B6]">
+                              {Math.round(studyStats.total / 60)}m logged · {effMon.enabled ? `${effMon.dailyLimitMinutes}m/d cap (${effMon.activeSource})` : "No Cap"}
+                            </span>
+                          </div>
+
                           <div className="flex justify-between">
                             <span className="text-slate-500">🏆 Accumulated Wallet:</span>
                             <span className="font-bold text-[#FFD166]">{ch.xp} XP</span>
@@ -2683,25 +2902,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         </div>
 
                         {/* Fast Adjust controllers inside bento card */}
-                        <div className={`mt-4 pt-3 border-t flex justify-between gap-1 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                        <div className={`mt-4 pt-3 border-t flex flex-wrap justify-between gap-1 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                           <button
-                            onClick={() => {
-                              setLearners(learners.map(l => l.id === ch.id ? { ...l, xp: l.xp + 50 } : l));
-                              showToast(`Granted +50 XP to ${ch.name}`);
+                            onClick={async () => {
+                              const nextXp = (ch.xp || 0) + 50;
+                              setLearners(learners.map(l => l.id === ch.id ? { ...l, xp: nextXp } : l));
+                              await persistLearnerUpdateToSupabase(ch.id, { xp: nextXp });
+                              showToast(`Granted +50 XP to ${ch.name} (synced to DB)`);
                             }}
-                            className="text-[9px] bg-[#2EC4B6]/10 text-[#2EC4B6] font-bold px-2 py-1 rounded"
+                            className="text-[9px] bg-[#2EC4B6]/10 text-[#2EC4B6] font-bold px-2 py-1 rounded cursor-pointer"
                           >
                             +50 XP
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               const badge = prompt("Award unique custom badge label:");
-                              if (badge) {
-                                setLearners(learners.map(l => l.id === ch.id ? { ...l, badges: [...l.badges, badge] } : l));
-                                showToast(`Awarded ${badge} badge!`);
+                              if (badge && badge.trim()) {
+                                const updatedBadges = [...(ch.badges || []), badge.trim()];
+                                setLearners(learners.map(l => l.id === ch.id ? { ...l, badges: updatedBadges, cleanBadges: getCleanBadges(updatedBadges) } : l));
+                                await persistLearnerUpdateToSupabase(ch.id, { badges: updatedBadges });
+                                showToast(`Awarded ${badge.trim()} badge (synced to DB)!`);
                               }
                             }}
-                            className="text-[9px] bg-[#B8A0FF]/15 text-[#B8A0FF] font-bold px-2 py-1 rounded"
+                            className="text-[9px] bg-[#B8A0FF]/15 text-[#B8A0FF] font-bold px-2 py-1 rounded cursor-pointer"
                           >
                             Award Badge
                           </button>
@@ -2726,24 +2949,209 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                                   }
                                 }
                               }}
-                              className="text-[9px] bg-amber-400/20 text-amber-500 font-bold px-2 py-1 rounded"
+                              className="text-[9px] bg-amber-400/20 text-amber-500 font-bold px-2 py-1 rounded cursor-pointer"
                             >
                               👑 Upgrade
                             </button>
                           )}
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               const next = ch.status === "Active" ? "Suspended" : "Active";
-                              setLearners(learners.map(l => l.id === ch.id ? { ...l, status: next } : l));
-                              showToast(`Account set to ${next}`);
+                              const updatedBadges = mergeChildMetaOntoBadges(ch.badges || [], {
+                                enrolment: {
+                                  ...(ch.meta?.enrolment || {}),
+                                  schoolName: next === "Suspended" ? "SUSPENDED" : undefined,
+                                },
+                              });
+                              setLearners(learners.map(l => l.id === ch.id ? { ...l, status: next, badges: updatedBadges } : l));
+                              await persistLearnerUpdateToSupabase(ch.id, { badges: updatedBadges });
+                              showToast(`Account set to ${next} (synced to DB)`);
                             }}
-                            className={`text-[9px] font-medium px-2 py-1 rounded ${isDark ? "bg-slate-800 text-slate-400" : "bg-slate-200 text-slate-500"}`}
+                            className={`text-[9px] font-medium px-2 py-1 rounded cursor-pointer ${isDark ? "bg-slate-800 text-slate-400" : "bg-slate-200 text-slate-500"}`}
                           >
-                            Ban/Unban
+                            {ch.status === "Active" ? "Suspend" : "Activate"}
                           </button>
                         </div>
                       </div>
-                    ))}
+                    );})}
+                </div>
+              </div>
+
+              {/* 2. STREAK SYSTEM MANAGEMENT & ANOMALY MONITOR */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className={`p-6 rounded-3xl border ${bgCard} space-y-4`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className={`text-sm font-black m-0 ${textPrimary}`}>
+                        🔥 Streak System Governance & Anomaly Monitor
+                      </h3>
+                      <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
+                        Consecutive local-calendar day tracking, milestone celebrations, and database integrity checks.
+                      </p>
+                    </div>
+                    <span className="text-xs font-black text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full">
+                      {totalActiveStreaks} Active · Max {maxPlatformStreak}d
+                    </span>
+                  </div>
+
+                  {/* Streak Rules Configuration */}
+                  <div className={`p-4 rounded-2xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50 border-slate-200"} space-y-3 text-xs`}>
+                    <div className="font-extrabold uppercase tracking-wider text-[10px] text-slate-400">
+                      Qualifying Daily Streak Activities (1 Increment Max / Calendar Day)
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: "qualifyLessonCompletion", label: "✅ Passing a Lesson Quiz" },
+                        { key: "qualifyPracticeSandbox", label: "🎨 Completing a Practice Sandbox Activity" },
+                        { key: "qualifyBrainGames", label: "🎮 Completing an Educational Game" },
+                      ].map((rule) => (
+                        <label key={rule.key} className="flex items-center gap-2 cursor-pointer font-bold">
+                          <input
+                            type="checkbox"
+                            checked={Boolean((streakRules as any)[rule.key])}
+                            onChange={(e) => {
+                              const updated = { ...streakRules, [rule.key]: e.target.checked };
+                              setStreakRules(updated);
+                              saveSystemStreakRules(updated);
+                              showToast("Saved system-wide streak qualification rules.");
+                            }}
+                          />
+                          <span>{rule.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Milestone Celebrations: <strong>{(streakRules.milestones || []).map(m => m.days).join(", ")} Days</strong> · Missed-Day Policy: <strong>Reset current streak to 1 on next return while preserving Longest Streak</strong>.
+                    </div>
+                  </div>
+
+                  {/* Anomaly Detector */}
+                  <div className={`p-4 rounded-2xl border ${streakAnomalies.length > 0 ? "border-amber-500/40 bg-amber-500/5" : isDark ? "bg-slate-900/40 border-slate-800" : "bg-slate-50 border-slate-200"} text-xs space-y-2`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold">
+                        {streakAnomalies.length === 0
+                          ? "✅ Zero Streak Anomalies Detected Across All Profiles"
+                          : `⚠️ ${streakAnomalies.length} Profile(s) Need Best-Streak Normalization`}
+                      </span>
+                      {streakAnomalies.length > 0 && (
+                        <button
+                          onClick={async () => {
+                            for (const a of streakAnomalies) {
+                              const correctedBest = Math.max(a.streakCount || 0, a.rawBestStreak || 0);
+                              await persistLearnerUpdateToSupabase(a.id, {
+                                streak_count: a.streakCount,
+                                best_streak: correctedBest,
+                              });
+                            }
+                            setLearners(learners.map(l => ({
+                              ...l,
+                              rawBestStreak: Math.max(l.streakCount || 0, l.rawBestStreak || 0),
+                              bestStreak: Math.max(l.streakCount || 0, l.rawBestStreak || 0),
+                            })));
+                            showToast("Normalized all streak records and synced to Supabase!");
+                          }}
+                          className="text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-lg cursor-pointer"
+                        >
+                          Normalize & Sync DB
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. SCREEN MONITORING & DIGITAL WELLBEING MANAGEMENT */}
+                <div className={`p-6 rounded-3xl border ${bgCard} space-y-4`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className={`text-sm font-black m-0 ${textPrimary}`}>
+                        ⏱️ Screen Monitoring & Digital Wellbeing
+                      </h3>
+                      <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
+                        Platform-wide usage telemetry from real learning sessions & default Young Explorers safeguards.
+                      </p>
+                    </div>
+                    <span className="text-xs font-black text-[#2EC4B6] bg-[#2EC4B6]/10 px-2.5 py-1 rounded-full">
+                      {Math.round((learningSecsTotal + otherSecsTotal) / 60)}m Total Tracked
+                    </span>
+                  </div>
+
+                  {/* Learning vs Other Breakdown */}
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className={`p-3 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                      <div className="text-[9px] font-bold uppercase text-slate-400">📚 Learning Time</div>
+                      <div className="text-lg font-black text-emerald-500 mt-0.5">{Math.round(learningSecsTotal / 60)}m</div>
+                      <div className="text-[9px] text-slate-400">Lessons, Quizzes, Sandbox</div>
+                    </div>
+                    <div className={`p-3 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                      <div className="text-[9px] font-bold uppercase text-slate-400">🎮 Other Activity</div>
+                      <div className="text-lg font-black text-[#B8A0FF] mt-0.5">{Math.round(otherSecsTotal / 60)}m</div>
+                      <div className="text-[9px] text-slate-400">Games, AI Chat, Map</div>
+                    </div>
+                    <div className={`p-3 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                      <div className="text-[9px] font-bold uppercase text-slate-400">🛡️ Active Policies</div>
+                      <div className="text-lg font-black text-[#2EC4B6] mt-0.5">
+                        {learners.filter(l => resolveEffectiveScreenMonitoring(l.rawChild || l).enabled).length} / {learners.length}
+                      </div>
+                      <div className="text-[9px] text-slate-400">Parent + School Protected</div>
+                    </div>
+                  </div>
+
+                  {/* Platform Defaults Config */}
+                  <div className={`p-4 rounded-2xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50 border-slate-200"} space-y-2 text-xs`}>
+                    <div className="font-extrabold uppercase tracking-wider text-[10px] text-slate-400">
+                      Platform Default Limits for Young Explorers (Ages 6–10)
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 block font-bold">Default Daily Cap</label>
+                        <select
+                          value={platformScreenDefaults.dailyLimitMinutes}
+                          onChange={(e) => {
+                            const updated = { ...platformScreenDefaults, dailyLimitMinutes: Number(e.target.value) };
+                            setPlatformScreenDefaults(updated);
+                            localStorage.setItem("cl_platform_screen_defaults", JSON.stringify(updated));
+                            showToast("Updated platform default daily limit.");
+                          }}
+                          className={`w-full p-1.5 rounded border text-xs font-bold ${isDark ? "bg-slate-950 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                        >
+                          {[20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m} mins/day</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 block font-bold">Default Session Cap</label>
+                        <select
+                          value={platformScreenDefaults.sessionLimitMinutes}
+                          onChange={(e) => {
+                            const updated = { ...platformScreenDefaults, sessionLimitMinutes: Number(e.target.value) };
+                            setPlatformScreenDefaults(updated);
+                            localStorage.setItem("cl_platform_screen_defaults", JSON.stringify(updated));
+                            showToast("Updated platform default session limit.");
+                          }}
+                          className={`w-full p-1.5 rounded border text-xs font-bold ${isDark ? "bg-slate-950 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                        >
+                          {[15, 20, 30, 45].map(m => <option key={m} value={m}>{m} mins/session</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 block font-bold">Break Reminder</label>
+                        <select
+                          value={platformScreenDefaults.breakReminderIntervalMinutes}
+                          onChange={(e) => {
+                            const updated = { ...platformScreenDefaults, breakReminderIntervalMinutes: Number(e.target.value) };
+                            setPlatformScreenDefaults(updated);
+                            localStorage.setItem("cl_platform_screen_defaults", JSON.stringify(updated));
+                            showToast("Updated platform default break reminder interval.");
+                          }}
+                          className={`w-full p-1.5 rounded border text-xs font-bold ${isDark ? "bg-slate-950 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                        >
+                          {[10, 15, 20, 30].map(m => <option key={m} value={m}>Every {m}m</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-slate-400">
+                      Parent & School Co-Existence Rule: Parent and School policies are stored independently (`parentPolicy` & `schoolPolicy`) and resolved using the more protective active daily/session cap.
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2801,7 +3209,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                 </div>
               </div>
             </div>
-          )}
+          );})()}
 
           {/* TAB 4: CURRICULUM MANAGEMENT COGNITIVE PATHWAYS */}
           {activeTab === "curriculum" && (
@@ -3425,7 +3833,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className={`text-base font-black m-0 ${textPrimary}`}>
-                    🏆 Gamified Rewards, Stickers & Certification Templates
+                    🏆 Gamified Rewards & Certification Templates
                   </h3>
                   <p className={`text-xs m-0 mt-0.5 ${textSecondary}`}>
                     Unlock triggers & compliance settings for the {selectedAgeGroup === "early" ? "Ages 6-10" : selectedAgeGroup === "young" ? "Ages 11-13" : "Ages 14-18"} pool.

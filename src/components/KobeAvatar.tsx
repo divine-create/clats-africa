@@ -12,7 +12,7 @@ interface KobeAvatarProps {
   pulse?: boolean;
   style?: React.CSSProperties;
   className?: string;
-  expression?: "happy" | "thinking" | "celebrating";
+  expression?: "happy" | "thinking" | "celebrating" | "excited";
   character?: "kobe" | "chibi"; // Select which mascot is needed
 }
 

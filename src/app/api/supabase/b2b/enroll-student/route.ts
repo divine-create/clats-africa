@@ -9,10 +9,19 @@ const getSB = () => {
 };
 
 /** Normalize age_group to full app AgeGroup type */
-function normalizeAge(raw: string): string {
-  const v = (raw || "").toLowerCase();
-  if (v === "early explorers" || v === "early") return "early explorers";
-  if (v === "future builders" || v === "future") return "future builders";
+function normalizeAge(raw: string, ageNum?: number): string {
+  if (typeof ageNum === "number" && !Number.isNaN(ageNum)) {
+    if (ageNum <= 10) return "early explorers";
+    if (ageNum <= 13) return "young innovators";
+    return "future builders";
+  }
+  const v = (raw || "").toLowerCase().trim();
+  if (v === "early explorers" || v === "young explorers" || v === "early" || v === "young_explorers" || v === "early_explorers") {
+    return "early explorers";
+  }
+  if (v === "future builders" || v === "future innovators" || v === "future" || v === "future_innovators") {
+    return "future builders";
+  }
   return "young innovators";
 }
 
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
   if (!sb) return NextResponse.json({ ok: false, msg: "Supabase not configured." }, { status: 503 });
 
   try {
-    const { org_id, name, age_group, avatar, pin, parent_email } = await req.json();
+    const { org_id, name, age_group, age, avatar, pin, parent_email, companion, badges } = await req.json();
 
     if (!org_id || !name || !pin) {
       return NextResponse.json({ ok: false, msg: "org_id, name and pin are required." }, { status: 400 });
@@ -59,6 +68,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, msg: "PIN must be exactly 4 digits." }, { status: 400 });
     }
 
+    const normalizedAgeGroup = normalizeAge(age_group, age ? Number(age) : undefined);
+
+    // Prevent duplicate student enrolment in the same school
+    const { data: existingMatch } = await sb
+      .from("clats_children")
+      .select("id, student_id, name")
+      .eq("org_id", org_id)
+      .ilike("name", name.trim())
+      .eq("age_group", normalizedAgeGroup)
+      .maybeSingle();
+
+    if (existingMatch) {
+      return NextResponse.json(
+        {
+          ok: false,
+          msg: `A student named "${existingMatch.name}" (ID: ${existingMatch.student_id}) is already enrolled in this age group for your school.`
+        },
+        { status: 409 }
+      );
+    }
+
     // Auto-generate a unique random student ID for this school
     const student_id = await generateUniqueStudentId(sb, org_id);
     if (!student_id) {
@@ -66,6 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     const childId = `b2b-${org_id}-${student_id}-${Date.now()}`;
+    const resolvedCompanion = companion === "chibi" ? "chibi" : "kobe";
 
     const { data: child, error } = await sb
       .from("clats_children")
@@ -73,7 +104,7 @@ export async function POST(req: NextRequest) {
         id: childId,
         parent_email: parent_email || `b2b-coord-${org_id}@clats.local`,
         name: name.trim(),
-        age_group: normalizeAge(age_group),
+        age_group: normalizedAgeGroup,
         avatar: avatar || ["👦🏾", "👧🏽", "🧑🏿", "👩🏾", "👦🏽", "👧🏾"][Math.floor(Math.random() * 6)],
         pin,
         org_id,
@@ -83,7 +114,8 @@ export async function POST(req: NextRequest) {
         xp: 0,
         stars: {},
         quiz_results: {},
-        companion: Math.random() > 0.5 ? "kobe" : "chibi",
+        badges: Array.isArray(badges) ? badges : [],
+        companion: resolvedCompanion,
       })
       .select()
       .single();

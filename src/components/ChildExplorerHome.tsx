@@ -16,7 +16,7 @@ import { Child, Language, Module, Lesson } from "../types";
 import { CURRICULUM } from "../data/curriculum";
 import { KobeAvatar } from "./KobeAvatar";
 import { sfx, companionVoice } from "../utils/audio";
-import { computeEffectiveStreak } from "../utils/streak";
+import { computeEffectiveStreak, getEncouragingStreakMessage } from "../utils/streak";
 import {
   BookOpen,
   Gamepad2,
@@ -99,7 +99,8 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
   }
 
   // Meaningful streak calculation from existing engine
-  const { streak: computedStreak } = computeEffectiveStreak(child);
+  const { streak: computedStreak, bestStreak } = computeEffectiveStreak(child);
+  const streakMessage = getEncouragingStreakMessage(child, companionName);
 
   // Navigation handlers with SFX
   const handleLearnClick = useCallback(() => {
@@ -187,20 +188,29 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
               <p className="text-base sm:text-lg font-bold text-slate-600 dark:text-slate-300 mt-1.5 mb-0">
                 What would you like to explore today?
               </p>
-            </div>
 
-            {/* Subtle Companion Badge (if streak available) */}
-            {computedStreak > 0 && (
-              <div className="hidden lg:flex flex-col items-center justify-center px-4 py-2.5 rounded-2xl bg-amber-500/10 border-2 border-amber-400/40 text-amber-800 dark:text-amber-300">
-                <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wide">
-                  <Flame size={16} className="text-orange-500 animate-bounce" />
-                  <span>Streak</span>
-                </div>
-                <span className="text-lg font-black text-orange-950 dark:text-amber-200 mt-0.5">
-                  {computedStreak} {computedStreak === 1 ? "Day" : "Days"}
+              {/* Encouraging Streak Status Pill */}
+              <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-400/30 text-left">
+                <Flame size={15} className="text-orange-500 shrink-0" />
+                <span className="text-xs font-extrabold text-slate-700 dark:text-amber-200">
+                  {streakMessage.headline} <span className="opacity-75 font-semibold hidden sm:inline">— {streakMessage.subtext}</span>
                 </span>
               </div>
-            )}
+            </div>
+
+            {/* Streak & Best Streak Badge */}
+            <div className="flex flex-col items-center justify-center px-4 py-2.5 rounded-2xl bg-amber-500/10 border-2 border-amber-400/40 text-amber-800 dark:text-amber-300 shrink-0">
+              <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wide">
+                <Flame size={16} className="text-orange-500 animate-bounce" />
+                <span>Streak</span>
+              </div>
+              <span className="text-lg font-black text-orange-950 dark:text-amber-200 mt-0.5">
+                {computedStreak} {computedStreak === 1 ? "Day" : "Days"}
+              </span>
+              <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300/80 uppercase tracking-wider">
+                Best: {bestStreak} {bestStreak === 1 ? "Day" : "Days"}
+              </span>
+            </div>
           </div>
         </div>
       </header>

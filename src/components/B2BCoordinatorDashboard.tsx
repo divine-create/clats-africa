@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Parent, Language } from "../types";
 import { F } from "../utils/config";
+import {
+  APPROVED_AGE_SEGMENTS,
+  getApprovedSegmentForAge,
+  getApprovedSegmentByIdOrGroup,
+  extractChildMeta,
+  mergeChildMetaOntoBadges,
+} from "../utils/childMeta";
 import { LogOut, Users, FileText, BarChart2, Plus, Shield, X, Copy, Check, TrendingUp, Award, AlertCircle, Download, Printer } from "lucide-react";
 
 interface Props {
@@ -34,8 +41,14 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   // Add Student Modal
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newAgeGroup, setNewAgeGroup] = useState("young innovators");
+  const [newAge, setNewAge] = useState<number>(8);
+  const [newAgeGroup, setNewAgeGroup] = useState("young explorers");
+  const [newCompanion, setNewCompanion] = useState<"kobe" | "chibi">("kobe");
   const [newPin, setNewPin] = useState("");
+  const [newSchoolLimitEnabled, setNewSchoolLimitEnabled] = useState(true);
+  const [newSchoolDailyLimit, setNewSchoolDailyLimit] = useState(30);
+  const [newSchoolSessionLimit, setNewSchoolSessionLimit] = useState(20);
+  const [newSchoolBreakInterval, setNewSchoolBreakInterval] = useState(15);
   const [addingStudent, setAddingStudent] = useState(false);
   const [addError, setAddError] = useState("");
   const [newlyAdded, setNewlyAdded] = useState<any>(null);
@@ -58,9 +71,8 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
         const name = parts[0];
         const rawAgeGroup = parts[1] || "";
         const pin = parts[2] || "";
-        let age_group = "young innovators";
-        if (rawAgeGroup.toLowerCase().includes("early")) age_group = "early explorers";
-        else if (rawAgeGroup.toLowerCase().includes("future")) age_group = "future builders";
+        const seg = getApprovedSegmentByIdOrGroup(rawAgeGroup);
+        const age_group = seg.ageGroup;
         return { name, age_group, pin };
       }).filter(s => s.name.length > 0);
 
@@ -108,9 +120,15 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
   // Edit Student Modal
   const [showEditStudent, setShowEditStudent] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [editingStudentBadges, setEditingStudentBadges] = useState<string[]>([]);
   const [editName, setEditName] = useState("");
   const [editPin, setEditPin] = useState("");
   const [editAgeGroup, setEditAgeGroup] = useState("");
+  const [editCompanion, setEditCompanion] = useState<"kobe" | "chibi">("kobe");
+  const [editSchoolLimitEnabled, setEditSchoolLimitEnabled] = useState(false);
+  const [editSchoolDailyLimit, setEditSchoolDailyLimit] = useState(30);
+  const [editSchoolSessionLimit, setEditSchoolSessionLimit] = useState(20);
+  const [editSchoolBreakInterval, setEditSchoolBreakInterval] = useState(15);
   const [updatingStudent, setUpdatingStudent] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -126,10 +144,10 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           b2b_license_keys: [{ code: "DEMO-LICENSE-KEY", max_uses: 100, current_uses: 4 }] 
         });
         setB2bStudents([
-          { id: "1", student_id: "0001", name: "Alice K.", xp: 450, lessonsDone: 12, status: "Excelling" },
-          { id: "2", student_id: "0002", name: "Brian M.", xp: 320, lessonsDone: 8, status: "Active" },
-          { id: "3", student_id: "0003", name: "Chidi O.", xp: 120, lessonsDone: 3, status: "Needs Support" },
-          { id: "4", student_id: "0004", name: "Fatima S.", xp: 600, lessonsDone: 15, status: "Excelling" },
+          { id: "1", student_id: "0001", name: "Alice K.", age_group: "young explorers", companion: "kobe", streak_count: 5, best_streak: 8, xp: 450, lessonsDone: 12, status: "Excelling" },
+          { id: "2", student_id: "0002", name: "Brian M.", age_group: "young explorers", companion: "chibi", streak_count: 3, best_streak: 4, xp: 320, lessonsDone: 8, status: "Active" },
+          { id: "3", student_id: "0003", name: "Chidi O.", age_group: "early explorers", companion: "kobe", streak_count: 1, best_streak: 2, xp: 120, lessonsDone: 3, status: "Needs Support" },
+          { id: "4", student_id: "0004", name: "Fatima S.", age_group: "young builders", companion: "chibi", streak_count: 7, best_streak: 10, xp: 600, lessonsDone: 15, status: "Excelling" },
         ]);
         setLoading(false);
         return;
@@ -185,8 +203,17 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     setEditingStudentId(student.id);
     setEditName(student.name);
     setEditPin(student.pin || "");
-
-    setEditAgeGroup(student.age_group || "young");
+    const seg = getApprovedSegmentByIdOrGroup(student.age_group);
+    setEditAgeGroup(seg.ageGroup);
+    setEditCompanion(student.companion === "chibi" ? "chibi" : "kobe");
+    const rawBadges = Array.isArray(student.badges) ? student.badges : [];
+    setEditingStudentBadges(rawBadges);
+    const meta = extractChildMeta(rawBadges);
+    const schoolPol = meta.screenMonitoring?.schoolPolicy;
+    setEditSchoolLimitEnabled(Boolean(schoolPol?.enabled));
+    setEditSchoolDailyLimit(schoolPol?.dailyLimitMinutes || 30);
+    setEditSchoolSessionLimit(schoolPol?.sessionLimitMinutes || 20);
+    setEditSchoolBreakInterval(schoolPol?.breakReminderIntervalMinutes || 15);
     setEditError("");
     setShowEditStudent(true);
   };
@@ -198,11 +225,44 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
     setUpdatingStudent(true);
     setEditError("");
 
+    const existingMeta = extractChildMeta(editingStudentBadges);
+    const updatedBadges = mergeChildMetaOntoBadges(editingStudentBadges, {
+      screenMonitoring: {
+        enabled: editSchoolLimitEnabled,
+        dailyLimitMins: editSchoolDailyLimit,
+        dailyLimitMinutes: editSchoolDailyLimit,
+        sessionLimitMins: editSchoolSessionLimit,
+        sessionLimitMinutes: editSchoolSessionLimit,
+        breakReminderEnabled: true,
+        breakRemindersEnabled: true,
+        breakIntervalMins: editSchoolBreakInterval,
+        breakReminderIntervalMinutes: editSchoolBreakInterval,
+        breakDurationMins: 2,
+        breakDurationMinutes: 2,
+        ...(existingMeta.screenMonitoring || {}),
+        schoolPolicy: {
+          enabled: editSchoolLimitEnabled,
+          dailyLimitMins: editSchoolDailyLimit,
+          dailyLimitMinutes: editSchoolDailyLimit,
+          sessionLimitMins: editSchoolSessionLimit,
+          sessionLimitMinutes: editSchoolSessionLimit,
+          breakReminderEnabled: true,
+          breakRemindersEnabled: true,
+          breakIntervalMins: editSchoolBreakInterval,
+          breakReminderIntervalMinutes: editSchoolBreakInterval,
+          breakDurationMins: 2,
+          breakDurationMinutes: 2,
+          updatedBy: "school",
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    });
+
     const orgId = localStorage.getItem("cl_b2b_org_id");
     if (!orgId) {
       setB2bStudents(prev => prev.map(s => {
         if (s.id === editingStudentId) {
-          return { ...s, name: editName.trim(), pin: editPin, age_group: editAgeGroup };
+          return { ...s, name: editName.trim(), pin: editPin, age_group: editAgeGroup, companion: editCompanion, badges: updatedBadges };
         }
         return s;
       }));
@@ -219,7 +279,9 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
           childId: editingStudentId,
           name: editName.trim(),
           pin: editPin || undefined,
-          ageGroup: editAgeGroup
+          ageGroup: editAgeGroup,
+          companion: editCompanion,
+          badges: updatedBadges,
         })
       });
       const data = await res.json();
@@ -245,6 +307,32 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
 
     const orgId = localStorage.getItem("cl_b2b_org_id");
     const schoolCode = b2bOrg?.b2b_license_keys?.[0]?.code || "No Active Code";
+    const initialBadges = mergeChildMetaOntoBadges(["seedling"], {
+      enrolment: {
+        enrolledAt: new Date().toISOString(),
+        schoolName: b2bOrg?.name || undefined,
+      },
+      screenMonitoring: {
+        enabled: newSchoolLimitEnabled,
+        dailyLimitMinutes: newSchoolDailyLimit,
+        sessionLimitMinutes: newSchoolSessionLimit,
+        breakRemindersEnabled: true,
+        breakReminderIntervalMinutes: newSchoolBreakInterval,
+        breakDurationMinutes: 2,
+        updatedBy: "school",
+        updatedAt: new Date().toISOString(),
+        schoolPolicy: {
+          enabled: newSchoolLimitEnabled,
+          dailyLimitMinutes: newSchoolDailyLimit,
+          sessionLimitMinutes: newSchoolSessionLimit,
+          breakRemindersEnabled: true,
+          breakReminderIntervalMinutes: newSchoolBreakInterval,
+          breakDurationMinutes: 2,
+          updatedBy: "school",
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    });
 
     try {
       const res = await fetch("/api/supabase/b2b/enroll-student", {
@@ -253,7 +341,10 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
         body: JSON.stringify({
           org_id: orgId || "mock",
           name: newName.trim(),
+          age: newAge,
           age_group: newAgeGroup,
+          companion: newCompanion,
+          badges: initialBadges,
           pin: newPin,
           parent_email: parent.email,
           // student_id is intentionally omitted — the server auto-generates a unique random ID
@@ -263,18 +354,18 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
 
       if (res.ok && data.ok) {
         const assignedId = data.student?.student_id || "????";
-        const enrolled = { ...data.student, student_id: assignedId, schoolCode };
+        const enrolled = { ...data.student, student_id: assignedId, schoolCode, companion: newCompanion };
         setNewlyAdded(enrolled);
-        setNewName(""); setNewPin(""); setNewAgeGroup("young innovators");
+        setNewName(""); setNewPin(""); setNewAge(8); setNewAgeGroup("young explorers"); setNewCompanion("kobe");
         await fetchStats();
       } else {
         // Mock mode: add locally if DB not available
         if (!orgId) {
           const mockId = String(Math.floor(1000 + Math.random() * 9000));
-          const mock = { id: Date.now().toString(), student_id: mockId, name: newName.trim(), xp: 0, lessonsDone: 0, status: "Active", schoolCode };
+          const mock = { id: Date.now().toString(), student_id: mockId, name: newName.trim(), age_group: newAgeGroup, companion: newCompanion, streak_count: 0, best_streak: 0, xp: 0, lessonsDone: 0, status: "Active", schoolCode, badges: initialBadges };
           setB2bStudents(prev => [...prev, mock]);
           setNewlyAdded({ ...mock, pin: newPin });
-          setNewName(""); setNewPin(""); setNewAgeGroup("young innovators");
+          setNewName(""); setNewPin(""); setNewAge(8); setNewAgeGroup("young explorers"); setNewCompanion("kobe");
         } else {
           setAddError(data.msg || "Failed to enroll student.");
         }
@@ -734,6 +825,8 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                     <tr>
                       <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Student ID</th>
                       <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Name</th>
+                      <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Stage & Companion</th>
+                      <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-center">Streak</th>
                       <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">XP</th>
                       <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-center">Lessons</th>
                       <th className="px-4 py-3 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-center">Status</th>
@@ -743,44 +836,58 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                   <tbody>
                     {b2bStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-slate-400 text-sm">
+                        <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-sm">
                           No students enrolled yet. Click <strong>Enroll Student</strong> to add your first learner!
                         </td>
                       </tr>
-                    ) : b2bStudents.map((s, i) => (
-                      <tr key={i} className={`border-t ${isDark ? "border-slate-800 hover:bg-slate-800/30" : "border-slate-100 hover:bg-slate-50"} transition`}>
-                        <td className="px-4 py-4">
-                          <code className="text-xs font-mono font-bold bg-[#7A6FF0]/10 text-[#7A6FF0] px-2 py-1 rounded-lg border border-[#7A6FF0]/20">
-                            {s.student_id || `000${i+1}`.slice(-4)}
-                          </code>
-                        </td>
-                        <td className="px-4 py-4 font-bold">{s.name}</td>
-                        <td className="px-4 py-4 font-mono text-right text-[#19C6C6] font-bold">{s.xp}</td>
-                        <td className="px-4 py-4 text-center">{s.lessonsDone}</td>
-                        <td className="px-4 py-4 text-center">
-                          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            s.status === "Excelling" ? "bg-emerald-500/15 text-emerald-500" :
-                            s.status === "Needs Support" ? "bg-rose-500/15 text-rose-500" :
-                            "bg-slate-500/15 text-slate-500"
-                          }`}>{s.status}</span>
-                        </td>
-                        <td className="px-4 py-4 text-right space-x-2">
-                          <button
-                            onClick={() => handleOpenEdit(s)}
-                            className="text-xs font-bold text-[#19C6C6] hover:underline cursor-pointer"
-                          >
-                            Edit / PIN
-                          </button>
-                          <span className="text-slate-400">|</span>
-                          <button
-                            onClick={() => handleDeleteStudent(s.id, s.name)}
-                            className="text-xs font-bold text-rose-500 hover:underline cursor-pointer"
-                          >
-                            Unenroll
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    ) : b2bStudents.map((s, i) => {
+                      const seg = getApprovedSegmentByIdOrGroup(s.age_group);
+                      const comp = s.companion === "chibi" ? "Chibi" : "Kobe";
+                      return (
+                        <tr key={i} className={`border-t ${isDark ? "border-slate-800 hover:bg-slate-800/30" : "border-slate-100 hover:bg-slate-50"} transition`}>
+                          <td className="px-4 py-4">
+                            <code className="text-xs font-mono font-bold bg-[#7A6FF0]/10 text-[#7A6FF0] px-2 py-1 rounded-lg border border-[#7A6FF0]/20">
+                              {s.student_id || `000${i+1}`.slice(-4)}
+                            </code>
+                          </td>
+                          <td className="px-4 py-4 font-bold">{s.name}</td>
+                          <td className="px-4 py-4">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs font-bold text-slate-300 dark:text-slate-200">{seg.emoji} {seg.label} ({seg.agesLabel})</span>
+                              <span className="text-[10px] font-bold text-[#7A6FF0]">✨ Companion: {comp}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="text-xs font-black text-amber-500">🔥 {s.streak_count || 0}d</span>
+                            <span className="block text-[10px] text-slate-400">Best: {s.best_streak || s.streak_count || 0}d</span>
+                          </td>
+                          <td className="px-4 py-4 font-mono text-right text-[#19C6C6] font-bold">{s.xp}</td>
+                          <td className="px-4 py-4 text-center">{s.lessonsDone}</td>
+                          <td className="px-4 py-4 text-center">
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              s.status === "Excelling" ? "bg-emerald-500/15 text-emerald-500" :
+                              s.status === "Needs Support" ? "bg-rose-500/15 text-rose-500" :
+                              "bg-slate-500/15 text-slate-500"
+                            }`}>{s.status}</span>
+                          </td>
+                          <td className="px-4 py-4 text-right space-x-2">
+                            <button
+                              onClick={() => handleOpenEdit(s)}
+                              className="text-xs font-bold text-[#19C6C6] hover:underline cursor-pointer"
+                            >
+                              Edit / PIN
+                            </button>
+                            <span className="text-slate-400">|</span>
+                            <button
+                              onClick={() => handleDeleteStudent(s.id, s.name)}
+                              className="text-xs font-bold text-rose-500 hover:underline cursor-pointer"
+                            >
+                              Unenroll
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1148,18 +1255,109 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
                   />
                 </div>
 
-                {/* Age group */}
+                {/* Age & Auto-Assigned Stage */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Age (2–18)</label>
+                    <select
+                      value={newAge}
+                      onChange={e => {
+                        const a = Number(e.target.value);
+                        setNewAge(a);
+                        setNewAgeGroup(getApprovedSegmentForAge(a).ageGroup);
+                      }}
+                      className={`w-full px-3 py-3 rounded-xl border outline-none text-sm font-bold transition ${isDark ? "bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]" : "bg-slate-50 border-slate-200 focus:border-[#7A6FF0]"}`}
+                    >
+                      {Array.from({ length: 17 }, (_, i) => i + 2).map(a => (
+                        <option key={a} value={a}>{a} yrs</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Approved Learning Stage</label>
+                    <select
+                      value={newAgeGroup}
+                      onChange={e => setNewAgeGroup(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-bold transition ${isDark ? "bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]" : "bg-slate-50 border-slate-200 focus:border-[#7A6FF0]"}`}
+                    >
+                      {APPROVED_AGE_SEGMENTS.map(seg => (
+                        <option key={seg.id} value={seg.ageGroup}>
+                          {seg.emoji} {seg.label} ({seg.agesLabel})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Learning Companion Selection (Kobe vs. Chibi) */}
                 <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Age Group</label>
-                  <select
-                    value={newAgeGroup}
-                    onChange={e => setNewAgeGroup(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-bold transition ${isDark ? "bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]" : "bg-slate-50 border-slate-200 focus:border-[#7A6FF0]"}`}
-                  >
-                     <option value="early explorers">Early Explorers (Ages 5–8)</option>
-                     <option value="young innovators">Young Innovators (Ages 9–12)</option>
-                     <option value="future builders">Future Builders (Ages 13+)</option>
-                  </select>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Learning Companion</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { id: "kobe", name: "Kobe", role: "Warm Guide 🌟" },
+                      { id: "chibi", name: "Chibi", role: "Playful Buddy 🎀" },
+                    ] as const).map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setNewCompanion(c.id)}
+                        className={`p-2.5 rounded-xl border-2 text-left transition cursor-pointer ${
+                          newCompanion === c.id
+                            ? "border-[#7A6FF0] bg-[#7A6FF0]/10"
+                            : isDark ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50"
+                        }`}
+                      >
+                        <div className="text-sm font-black">{c.name}</div>
+                        <div className="text-[10px] font-bold text-slate-400">{c.role}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Classroom Screen Monitoring Policy */}
+                <div className={`p-3 rounded-xl border ${isDark ? "bg-slate-900/70 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-extrabold">🛡️ Classroom Screen Limit Policy</span>
+                    <input
+                      type="checkbox"
+                      checked={newSchoolLimitEnabled}
+                      onChange={e => setNewSchoolLimitEnabled(e.target.checked)}
+                    />
+                  </div>
+                  {newSchoolLimitEnabled && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 block">Daily Cap</label>
+                        <select
+                          value={newSchoolDailyLimit}
+                          onChange={e => setNewSchoolDailyLimit(Number(e.target.value))}
+                          className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                        >
+                          {[20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m}m</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 block">Session Cap</label>
+                        <select
+                          value={newSchoolSessionLimit}
+                          onChange={e => setNewSchoolSessionLimit(Number(e.target.value))}
+                          className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                        >
+                          {[15, 20, 30, 45].map(m => <option key={m} value={m}>{m}m</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 block">Break Alert</label>
+                        <select
+                          value={newSchoolBreakInterval}
+                          onChange={e => setNewSchoolBreakInterval(Number(e.target.value))}
+                          className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                        >
+                          {[10, 15, 20, 30].map(m => <option key={m} value={m}>{m}m</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* PIN */}
@@ -1209,7 +1407,7 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
               <div>
                 <h3 className="text-lg font-extrabold">Edit Student Profile</h3>
                 <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                  Modify student details or reset their login PIN.
+                  Modify student stage, companion, classroom screen policy, or PIN.
                 </p>
               </div>
               <button onClick={() => setShowEditStudent(false)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition">
@@ -1236,16 +1434,91 @@ export const B2BCoordinatorDashboard: React.FC<Props> = ({
 
               {/* Age group */}
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Age Group</label>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Approved Learning Stage</label>
                 <select
                   value={editAgeGroup}
                   onChange={e => setEditAgeGroup(e.target.value)}
                   className={`w-full px-4 py-3 rounded-xl border outline-none text-sm font-bold transition ${isDark ? "bg-slate-900 border-slate-700 text-white focus:border-[#7A6FF0]" : "bg-slate-50 border-slate-200 focus:border-[#7A6FF0]"}`}
                 >
-                   <option value="early explorers">Early Explorers (Ages 5–8)</option>
-                   <option value="young innovators">Young Innovators (Ages 9–12)</option>
-                   <option value="future builders">Future Builders (Ages 13+)</option>
-                 </select>
+                  {APPROVED_AGE_SEGMENTS.map(seg => (
+                    <option key={seg.id} value={seg.ageGroup}>
+                      {seg.emoji} {seg.label} ({seg.agesLabel})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Learning Companion */}
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block">Learning Companion</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { id: "kobe", name: "Kobe 🌟" },
+                    { id: "chibi", name: "Chibi 🎀" },
+                  ] as const).map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setEditCompanion(c.id)}
+                      className={`p-2.5 rounded-xl border-2 text-xs font-black transition cursor-pointer ${
+                        editCompanion === c.id
+                          ? "border-[#7A6FF0] bg-[#7A6FF0]/10 text-[#7A6FF0]"
+                          : isDark ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Classroom Screen Monitoring Policy */}
+              <div className={`p-3 rounded-xl border ${isDark ? "bg-slate-900/70 border-slate-700" : "bg-slate-50 border-slate-200"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-extrabold">🛡️ Classroom Screen Limit Policy</span>
+                  <input
+                    type="checkbox"
+                    checked={editSchoolLimitEnabled}
+                    onChange={e => setEditSchoolLimitEnabled(e.target.checked)}
+                  />
+                </div>
+                {editSchoolLimitEnabled && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 block">Daily Cap</label>
+                      <select
+                        value={editSchoolDailyLimit}
+                        onChange={e => setEditSchoolDailyLimit(Number(e.target.value))}
+                        className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                      >
+                        {[20, 30, 45, 60, 90].map(m => <option key={m} value={m}>{m}m</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 block">Session Cap</label>
+                      <select
+                        value={editSchoolSessionLimit}
+                        onChange={e => setEditSchoolSessionLimit(Number(e.target.value))}
+                        className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                      >
+                        {[15, 20, 30, 45].map(m => <option key={m} value={m}>{m}m</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 block">Break Alert</label>
+                      <select
+                        value={editSchoolBreakInterval}
+                        onChange={e => setEditSchoolBreakInterval(Number(e.target.value))}
+                        className={`w-full px-2 py-1.5 rounded-lg border text-xs font-bold ${isDark ? "bg-slate-800 border-slate-700 text-white" : "bg-white border-slate-200"}`}
+                      >
+                        {[10, 15, 20, 30].map(m => <option key={m} value={m}>{m}m</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  Saved to School Policy without overwriting the parent's home screen policy.
+                </p>
               </div>
 
               {/* PIN reset */}

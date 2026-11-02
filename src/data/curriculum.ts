@@ -1429,19 +1429,39 @@ function getDynamicCourse(ageGroupKey: AgeGroup): Course {
   };
 }
 
+function resolveCanonicalCurriculumAgeGroup(prop: string): AgeGroup | null {
+  const norm = (prop || "").toLowerCase().trim();
+  if (norm === "early explorers" || norm === "young explorers" || norm === "early" || norm === "tots") {
+    return "early explorers";
+  }
+  if (norm === "young innovators" || norm === "young builders" || norm === "young") {
+    return "young innovators";
+  }
+  if (norm === "future builders" || norm === "future innovators" || norm === "future") {
+    return "future builders";
+  }
+  return null;
+}
+
 // Proxied CURRICULUM engine aggregates live data for the active child apps
 const baseCURRICULUM: Record<AgeGroup, Course> = {
   "early explorers": getDynamicCourse("early explorers"),
+  "young explorers": getDynamicCourse("early explorers"),
   "young innovators": getDynamicCourse("young innovators"),
-  "future builders": getDynamicCourse("future builders")
+  "young builders": getDynamicCourse("young innovators"),
+  "future builders": getDynamicCourse("future builders"),
+  "future innovators": getDynamicCourse("future builders")
 };
 
 export const CURRICULUM: Record<AgeGroup, Course> = typeof window === "undefined"
   ? baseCURRICULUM
   : new Proxy(baseCURRICULUM, {
       get(target, prop) {
-        if (prop === "early explorers" || prop === "young innovators" || prop === "future builders") {
-          return getDynamicCourse(prop as AgeGroup);
+        if (typeof prop === "string") {
+          const canonical = resolveCanonicalCurriculumAgeGroup(prop);
+          if (canonical) {
+            return getDynamicCourse(canonical);
+          }
         }
         return Reflect.get(target, prop);
       }

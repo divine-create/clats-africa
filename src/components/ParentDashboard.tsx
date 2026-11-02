@@ -22,6 +22,7 @@ import { supabase } from "../utils/supabaseClient";
 import { CLATSLogo } from "./CLATSLogo";
 import { computeEffectiveStreak } from "../utils/streak";
 import { evaluateChildBadges } from "../utils/badges";
+import { resolveEffectiveScreenMonitoring, getApprovedSegmentByIdOrGroup } from "../utils/childMeta";
 import {
   Sun,
   Moon,
@@ -362,7 +363,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const courseProgressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   const childXp = child ? child.xp || 0 : 0;
-  const streakDays = child ? computeEffectiveStreak(child).streak : 0;
+  const streakInfo = child ? computeEffectiveStreak(child) : { streak: 0, bestStreak: 0 };
+  const streakDays = streakInfo.streak;
+  const bestStreakDays = streakInfo.bestStreak;
+  const effectiveMonitoring = child ? resolveEffectiveScreenMonitoring(child, parent.email) : null;
+  const assignedSegment = child ? getApprovedSegmentByIdOrGroup(child.ageGroup, child.age) : null;
 
   const quizResultsList = child?.quizResults ? Object.values(child.quizResults) as Array<{ score: number }> : [];
   const quizAverage = quizResultsList.length > 0
@@ -1437,13 +1442,17 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </div>
               </div>
 
-              {/* KPI CARD 4: CURRENT STREAK */}
+              {/* KPI CARD 4: CURRENT & BEST STREAK */}
               <div className={`p-6 rounded-2xl border relative overflow-hidden transition-all duration-300 ${isDark ? "bg-[#111827] border-slate-800" : "bg-white border-[#EAEAEA] shadow-sm hover:shadow-md"}`}>
                 <div className="absolute top-0 left-0 h-1 w-full bg-[#2EC4B6]" />
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Current Streak</span>
-                    <strong className={`text-2xl font-black block mt-2 ${isDark ? "text-white" : "text-[#111111]"}`}>{streakDays} Days</strong>
+                    <span className="text-xs font-semibold text-slate-400 block uppercase tracking-wider">Learning Streak</span>
+                    <strong className={`text-2xl font-black block mt-1 ${isDark ? "text-white" : "text-[#111111]"}`}>{streakDays} Days</strong>
+                    <div className="flex gap-3 mt-2 text-[10px] text-slate-400 font-mono">
+                      <span>Best: <strong className="text-amber-500">{bestStreakDays}d</strong></span>
+                      <span>Guide: <strong className="text-[#2EC4B6] uppercase">{child?.companion || "kobe"}</strong></span>
+                    </div>
                   </div>
                   <div className="p-2 bg-[#2EC4B6]/10 rounded-lg text-[#2EC4B6]">
                     <Flame size={16} />
@@ -1452,6 +1461,141 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               </div>
 
             </div>
+
+            {/* COMPREHENSIVE SCREEN MONITORING & USAGE TELEMETRY PANEL */}
+            {child && effectiveMonitoring && (
+              <div className={`p-6 rounded-2xl border shadow-sm mt-6 ${isDark ? "bg-[#111827] border-slate-800" : "bg-white border-slate-200"}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Tv size={18} className="text-[#2EC4B6]" />
+                      <h4 className="text-base font-extrabold uppercase tracking-wider m-0 font-mono text-[#2EC4B6]">
+                        Screen Monitoring & Healthy Digital Habits ({child.name})
+                      </h4>
+                    </div>
+                    <p className={`text-xs mt-1 mb-0 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      Stage: <strong>{assignedSegment?.label} ({assignedSegment?.rangeLabel} yrs)</strong> · Companion: <strong className="uppercase">{child.companion || "Kobe"}</strong> · Active Policy:{" "}
+                      <strong>
+                        {effectiveMonitoring.enabled
+                          ? `${effectiveMonitoring.dailyLimitMins > 0 ? `${effectiveMonitoring.dailyLimitMins}m/day` : "No daily cap"} · ${effectiveMonitoring.sessionLimitMins > 0 ? `${effectiveMonitoring.sessionLimitMins}m/session` : "No session cap"} · ${effectiveMonitoring.breakRemindersEnabled ? `Break every ${effectiveMonitoring.breakIntervalMins}m` : "Breaks off"}`
+                          : "Monitoring Paused"}
+                      </strong>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onNavigate("settings")}
+                    className="px-4 py-2 rounded-xl bg-[#2EC4B6]/15 hover:bg-[#2EC4B6] text-[#2EC4B6] hover:text-white text-xs font-extrabold uppercase tracking-wider transition-all shrink-0 cursor-pointer border border-[#2EC4B6]/30"
+                  >
+                    ⚙ Configure Screen Limits
+                  </button>
+                </div>
+
+                {/* Learning Time vs Other Platform Activity */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-teal-50/50 border-teal-100"}`}>
+                    <span className="text-[10px] font-mono uppercase font-bold text-[#2EC4B6] block">
+                      📚 Core Learning Time (Lessons, Quizzes & Sandbox)
+                    </span>
+                    <strong className={`text-xl font-black block mt-1 ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {studyStats.learningMinsToday}m Today
+                    </strong>
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      7-Day: <strong>{studyStats.learningMinsWeek}m</strong> · All-Time: <strong>{studyStats.learningMinsTotal}m</strong>
+                    </span>
+                  </div>
+
+                  <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-purple-50/50 border-purple-100"}`}>
+                    <span className="text-[10px] font-mono uppercase font-bold text-[#B8A0FF] block">
+                      🎮 Other Platform Activity (Games, AI Chat & Hub)
+                    </span>
+                    <strong className={`text-xl font-black block mt-1 ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {studyStats.otherMinsToday}m Today
+                    </strong>
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      7-Day: <strong>{studyStats.otherMinsWeek}m</strong> · All-Time: <strong>{studyStats.otherMinsTotal}m</strong>
+                    </span>
+                  </div>
+
+                  <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/50 border-slate-800" : "bg-amber-50/50 border-amber-100"}`}>
+                    <span className="text-[10px] font-mono uppercase font-bold text-amber-500 block">
+                      🛡️ Active Guardrails & Break Schedule
+                    </span>
+                    <strong className={`text-sm font-black block mt-1.5 ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {effectiveMonitoring.enabled
+                        ? `Daily Cap: ${effectiveMonitoring.dailyLimitMins > 0 ? `${effectiveMonitoring.dailyLimitMins} mins` : "Flexible"}`
+                        : "Screen Limits Disabled"}
+                    </strong>
+                    <span className="text-[11px] text-slate-400 font-mono block mt-1">
+                      {effectiveMonitoring.preferredHoursEnabled
+                        ? `Window: ${effectiveMonitoring.preferredStartHour}–${effectiveMonitoring.preferredEndHour}`
+                        : "Permitted Hours: All Daytime"}
+                      {effectiveMonitoring.schoolPolicy ? " · 🏫 School Policy Linked" : ""}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 7-Day Daily Usage Breakdown & Recent Sessions */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
+                    <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-3">
+                      📊 7-Day Daily Screen-Time Breakdown (Learning vs. Other)
+                    </span>
+                    <div className="grid grid-cols-7 gap-2 items-end h-28 pt-4">
+                      {studyStats.dailyBreakdown.map((d) => {
+                        const maxMins = Math.max(30, effectiveMonitoring.dailyLimitMins || 30, ...studyStats.dailyBreakdown.map((x) => x.totalMins));
+                        const totalHeightPct = Math.min(100, Math.round((d.totalMins / maxMins) * 100));
+                        return (
+                          <div key={d.date} className="flex flex-col items-center justify-end h-full gap-1">
+                            <span className="text-[9px] font-mono font-bold text-slate-400">{d.totalMins}m</span>
+                            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-t-md h-16 flex flex-col justify-end overflow-hidden">
+                              <div
+                                style={{ height: `${Math.max(d.totalMins > 0 ? 12 : 0, totalHeightPct)}%` }}
+                                className="w-full bg-gradient-to-t from-[#2EC4B6] to-[#B8A0FF] rounded-t-md transition-all"
+                                title={`${d.label}: ${d.learningMins}m learning, ${d.otherMins}m other`}
+                              />
+                            </div>
+                            <span className="text-[10px] font-extrabold text-slate-500">{d.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={`p-4 rounded-xl border ${isDark ? "bg-slate-950/40 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
+                    <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-3">
+                      🕒 Recent Sessions & Activities Accessed
+                    </span>
+                    {studyStats.recentLogs.length === 0 ? (
+                      <div className="text-xs text-slate-400 font-mono py-6 text-center">
+                        No telemetry sessions recorded yet. Sessions appear automatically as {child.name} explores CLATS.
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
+                        {studyStats.recentLogs.slice(0, 5).map((log) => (
+                          <div key={log.id} className="flex items-center justify-between text-xs py-1 border-b border-slate-200/40 dark:border-slate-800/60 last:border-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                                  log.category === "learning"
+                                    ? "bg-teal-500/15 text-[#2EC4B6]"
+                                    : "bg-purple-500/15 text-[#B8A0FF]"
+                                }`}
+                              >
+                                {log.category === "learning" ? "Learn" : "Play/Hub"}
+                              </span>
+                              <span className="font-bold truncate">{log.activityLabel}</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-400 shrink-0 ml-2">
+                              {log.durationMins}m · {log.deviceType}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
@@ -1693,7 +1837,14 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               <Clock size={18} className="text-[#FFD166]" />
               <h4 className="text-sm font-black uppercase tracking-wider m-0 font-mono">Study Time Limit</h4>
             </div>
-            <p className="text-xs text-slate-500 m-0">Daily Limit: <strong>60 Minutes</strong></p>
+            <p className="text-xs text-slate-500 m-0">
+              Daily Limit:{" "}
+              <strong>
+                {effectiveMonitoring?.enabled && effectiveMonitoring.dailyLimitMins > 0
+                  ? `${effectiveMonitoring.dailyLimitMins} Minutes`
+                  : "Flexible / No Cap"}
+              </strong>
+            </p>
             <button onClick={() => onNavigate("settings")} className="text-xs font-black text-[#2EC4B6] hover:underline flex items-center gap-1">
               <span>{t.adjustLimit}</span>
               <ChevronRight size={12} />

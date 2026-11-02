@@ -209,24 +209,33 @@ export function getNextLevel(xp: number) {
 
 // Dev allowance timing presets (in seconds)
 export const DEV_DEFAULTS: Record<string, { morning: number; afternoon: number; evening: number }> = {
+  "tots": { morning: 120, afternoon: 120, evening: 60 },
   "early explorers": { morning: 120, afternoon: 120, evening: 60 },
   "young explorers": { morning: 120, afternoon: 120, evening: 60 },
   "young innovators": { morning: 300, afternoon: 300, evening: 300 },
-  "future builders": { morning: 900, afternoon: 0, evening: 900 }
+  "young builders": { morning: 300, afternoon: 300, evening: 300 },
+  "future builders": { morning: 900, afternoon: 0, evening: 900 },
+  "future innovators": { morning: 900, afternoon: 0, evening: 900 }
 };
 
 export const AGE_LABEL: Record<string, string> = {
+  "tots": "Early Explorers",
   "early explorers": "Young Explorers",
   "young explorers": "Young Explorers",
-  "young innovators": "Young Innovators",
-  "future builders": "Future Builders"
+  "young innovators": "Young Builders",
+  "young builders": "Young Builders",
+  "future builders": "Future Innovators",
+  "future innovators": "Future Innovators"
 };
 
 export const AGE_AGES: Record<string, string> = {
+  "tots": "2–5",
   "early explorers": "6–10",
   "young explorers": "6–10",
   "young innovators": "11–13",
-  "future builders": "14–18"
+  "young builders": "11–13",
+  "future builders": "14–18",
+  "future innovators": "14–18"
 };
 
 export interface DynamicAgeGroupItem {
@@ -245,8 +254,19 @@ export const DYNAMIC_AGE_STORAGE_KEY = "clats_dynamic_age_groups_v1";
 
 export const DEFAULT_AGE_GROUPS: DynamicAgeGroupItem[] = [
   {
+    id: "early_explorers_2_5",
+    key: "early explorers",
+    label: "Early Explorers",
+    ages: "2–5",
+    icon: "🧸",
+    color: "#F472B6",
+    sub: "Ages 2 - 5",
+    description: "Gentle sensory discovery, voice-guided stories, colours, shapes, and playful sound exploration.",
+    defaultMins: 15
+  },
+  {
     id: "young_explorers",
-    key: "young explorers",
+    key: "early explorers",
     label: "Young Explorers",
     ages: "6–10",
     icon: "🌱",
@@ -258,7 +278,7 @@ export const DEFAULT_AGE_GROUPS: DynamicAgeGroupItem[] = [
   {
     id: "young_innovators",
     key: "young innovators",
-    label: "Young Innovators",
+    label: "Young Builders",
     ages: "11–13",
     icon: "⚡",
     color: "#2EC4B6",
@@ -269,7 +289,7 @@ export const DEFAULT_AGE_GROUPS: DynamicAgeGroupItem[] = [
   {
     id: "future_builders",
     key: "future builders",
-    label: "Future Builders",
+    label: "Future Innovators",
     ages: "14–18",
     icon: "🚀",
     color: "#A78BFA",

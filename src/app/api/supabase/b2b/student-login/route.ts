@@ -10,9 +10,9 @@ const getSB = () => {
 
 /** Normalize short age_group values to full app AgeGroup type */
 function normalizeAgeGroup(raw: string): "early explorers" | "young innovators" | "future builders" {
-  const v = (raw || "").toLowerCase();
-  if (v === "early explorers" || v === "early") return "early explorers";
-  if (v === "future builders" || v === "future") return "future builders";
+  const v = (raw || "").toLowerCase().trim();
+  if (v === "early explorers" || v === "young explorers" || v === "early" || v === "young_explorers" || v === "early_explorers") return "early explorers";
+  if (v === "future builders" || v === "future innovators" || v === "future" || v === "future_innovators") return "future builders";
   return "young innovators"; // default
 }
 

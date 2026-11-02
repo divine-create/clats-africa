@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
   if (!sb) return NextResponse.json({ ok: false, msg: "Supabase not configured." }, { status: 503 });
 
   try {
-    const { childId, name, pin, ageGroup, avatar } = await req.json();
+    const { childId, name, pin, ageGroup, avatar, companion, badges, streak_count, best_streak, parent_email, org_id } = await req.json();
 
     if (!childId) {
       return NextResponse.json({ ok: false, msg: "childId is required." }, { status: 400 });
@@ -62,6 +62,12 @@ export async function PATCH(req: NextRequest) {
     }
     if (ageGroup !== undefined) updatePayload.age_group = ageGroup;
     if (avatar !== undefined) updatePayload.avatar = avatar;
+    if (companion === "kobe" || companion === "chibi") updatePayload.companion = companion;
+    if (Array.isArray(badges)) updatePayload.badges = badges;
+    if (streak_count !== undefined) updatePayload.streak_count = Number(streak_count);
+    if (best_streak !== undefined) updatePayload.best_streak = Number(best_streak);
+    if (parent_email !== undefined) updatePayload.parent_email = parent_email;
+    if (org_id !== undefined) updatePayload.org_id = org_id;
 
     const { data: updatedChild, error } = await sb
       .from("clats_children")
@@ -89,7 +95,7 @@ export async function POST(req: NextRequest) {
     const { 
       action, studentId, xp, completed, completed_lessons, stars, 
       quiz_results, streak_count, best_streak, last_active_at, badges,
-      name, pin, ageGroup, avatar 
+      name, pin, ageGroup, avatar, companion
     } = await req.json();
 
     if (!studentId) {
@@ -114,12 +120,15 @@ export async function POST(req: NextRequest) {
       if (best_streak !== undefined) updatePayload.best_streak = best_streak;
       if (last_active_at !== undefined) updatePayload.last_active_at = last_active_at;
       if (badges !== undefined) updatePayload.badges = badges;
+      if (companion === "kobe" || companion === "chibi") updatePayload.companion = companion;
     } else {
       // General profile update
       if (name !== undefined) updatePayload.name = name.trim();
       if (pin !== undefined) updatePayload.pin = pin;
       if (ageGroup !== undefined) updatePayload.age_group = ageGroup;
       if (avatar !== undefined) updatePayload.avatar = avatar;
+      if (companion === "kobe" || companion === "chibi") updatePayload.companion = companion;
+      if (Array.isArray(badges)) updatePayload.badges = badges;
     }
 
     if (Object.keys(updatePayload).length === 0) {

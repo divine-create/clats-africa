@@ -54,6 +54,7 @@ interface PracticeSandboxProps {
   onBack: () => void;
   onShowPaywall: () => void;
   onSelectLesson?: (lessonId: string) => void;
+  onCompleteActivity?: (activityId: string, xpEarned: number) => void;
 }
 
 interface AdventureMeta {
@@ -135,7 +136,8 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
   initialActivityId,
   onBack,
   onShowPaywall,
-  onSelectLesson
+  onSelectLesson,
+  onCompleteActivity
 }) => {
   const isDark = theme === "dark";
   const companion = child.companion === "chibi" ? "chibi" : "kobe";
@@ -257,11 +259,15 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
   const handleCompleteActivity = useCallback(
     (activity: SandboxActivity) => {
       sfx.playSuccess();
+      const wasAlreadyDone = Boolean(progressMap[activity.id]?.completed);
       const updated = markSandboxActivityCompleted(child.id, activity);
       setProgressMap({ ...updated });
       speakText(`${activity.successMessage} ${activity.learningObjective}`);
+      if (onCompleteActivity) {
+        onCompleteActivity(activity.id, wasAlreadyDone ? 5 : 25);
+      }
     },
-    [child.id, speakText]
+    [child.id, speakText, progressMap, onCompleteActivity]
   );
 
   const handleLaunchActivity = (act: SandboxActivity) => {

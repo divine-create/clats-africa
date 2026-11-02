@@ -29,9 +29,10 @@ import {
   getCurrentWeekStreakDays,
   STREAK_MILESTONES,
   getClaimedStreakMilestones,
-  saveClaimedStreakMilestones
+  saveClaimedStreakMilestones,
+  getEncouragingStreakMessage
 } from "../utils/streak";
-import { evaluateChildBadges, evaluateAdventureStickers } from "../utils/badges";
+import { evaluateChildBadges } from "../utils/badges";
 
 interface ChildRewardsProps {
   child: Child;
@@ -81,10 +82,11 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   // 2. Dynamic Streak & Best Streak from centralized engine
   const { streak, bestStreak } = computeEffectiveStreak(child);
+  const streakMessage = getEncouragingStreakMessage(child, child.companion === "chibi" ? "Chibi" : "Kobe");
 
-  // Keep track of claimed rewards in unified localStorage
+  // Keep track of claimed rewards in unified localStorage + cloud metadata
   const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() =>
-    getClaimedStreakMilestones(child.id, Math.max(1, resolvedCompletedCount, streak))
+    getClaimedStreakMilestones(child.id, Math.max(1, resolvedCompletedCount, streak), child)
   );
 
   // Certificate Interaction States
@@ -291,10 +293,6 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
 
   const earnedCertificatesCount = certificatesData.filter(c => c.unlocked).length;
 
-  // 7. Sequenced Sticker Sheet items for Ages 6–10
-  const adventureStickers = evaluateAdventureStickers(child);
-  const earnedStickersCount = adventureStickers.filter(s => s.unlocked).length;
-
   // Interaction handlers
   const handleOpenCertificate = (cert: any) => {
     sfx.playLevelUp();
@@ -352,12 +350,13 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
     sfx.playCheer();
     const nextClaimed = [...claimedMilestones, id];
     setClaimedMilestones(nextClaimed);
-    saveClaimedStreakMilestones(child.id, nextClaimed);
+    const updatedBadges = saveClaimedStreakMilestones(child.id, nextClaimed, child.badges);
 
     if (onUpdateChild) {
       onUpdateChild({
         ...child,
-        xp: currentXP + bonus
+        xp: currentXP + bonus,
+        badges: updatedBadges
       });
     }
   };
@@ -563,10 +562,10 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
             </div>
             <div>
               <Txt size={11} color={isDark ? "#ffffff" : "#000000"} style={{ display: "block", fontWeight: 900, textTransform: "uppercase", fontSize: 10, letterSpacing: 0.8 }}>
-                Streak
+                Streak (Best: {bestStreak}d)
               </Txt>
               <Txt size={24} weight={950} color={isDark ? "#ffffff" : "#000000"} style={{ display: "block", marginTop: 2 }}>
-                {streak} Days
+                {streak} {streak === 1 ? "Day" : "Days"}
               </Txt>
             </div>
           </div>
@@ -594,7 +593,7 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                 Badges
               </Txt>
               <Txt size={24} weight={950} color={isDark ? "#ffffff" : "#000000"} style={{ display: "block", marginTop: 2 }}>
-                {child.ageGroup === "early explorers" ? earnedStickersCount : earnedBadgesCount}
+                {earnedBadgesCount}
               </Txt>
             </div>
           </div>
@@ -634,95 +633,8 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
           {/* MAIN SPACE (col-span-8) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }} className="xl:col-span-8">
             
-            {/* STICKER SHEETS FOR TINY AGES 6-10 */}
-            {child.ageGroup === "early explorers" && (
-              <div 
-                style={{
-                  background: isDark ? "#1e293b" : "#ffffff",
-                  border: `2px solid ${isDark ? "#334155" : "#e2e8f0"}`,
-                  borderRadius: 28,
-                  padding: "24px 22px"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-                  <div>
-                    <Heading size={20} style={{ color: "#2EC4B6", fontWeight: 800 }}>
-                      🌈 Adventure Stickers Album
-                    </Heading>
-                    <Txt size={13} color={isDark ? "#94a3b8" : "#64748b"}>
-                      Complete standard lessons to unlock gorgeous, colorful stickers!
-                    </Txt>
-                  </div>
-                  <Chip bg="rgba(46,196,182,0.15)" color="#2EC4B6" style={{ fontWeight: 900 }}>
-                    ✨ COLLECTED: {earnedStickersCount} / {adventureStickers.length}
-                  </Chip>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(145px, 1fr))", gap: 14 }}>
-                  {adventureStickers.map(stick => (
-                    <div
-                      key={stick.id}
-                      className="transition-all hover:rotate-2 duration-200"
-                      style={{
-                        background: stick.unlocked 
-                          ? (isDark ? "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06))" : "#faf5ff")
-                          : (isDark ? "#0f172a" : "#f1f5f9"),
-                        border: stick.unlocked 
-                          ? `2px solid ${isDark ? "#475569" : "#B8A0FF"}`
-                          : `2.5px dashed ${isDark ? "#334155" : "#cbd5e1"}`,
-                        borderRadius: 20,
-                        padding: 12,
-                        textAlign: "center",
-                        opacity: stick.unlocked ? 1 : 0.72,
-                        position: "relative"
-                      }}
-                    >
-                      <div style={{ fontSize: 9, fontWeight: 900, color: stick.unlocked ? "#2EC4B6" : "#94a3b8", textTransform: "uppercase", marginBottom: 4 }}>
-                        Step {stick.step}
-                      </div>
-                      <div 
-                        style={{
-                          width: 64,
-                          height: 64,
-                          margin: "0 auto 8px",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 34,
-                          background: stick.unlocked ? `linear-gradient(135deg, ${stick.color || "from-[#2EC4B6] to-[#B8A0FF]"})` : "#cbd5e122",
-                          border: stick.unlocked ? "3px solid #ffffff" : "2px dashed #94a3b8",
-                          boxShadow: stick.unlocked ? "0 8px 12px rgba(0,0,0,0.1)" : "none"
-                        }}
-                      >
-                        {stick.emoji}
-                      </div>
-                      <Heading size={13.5} style={{ fontWeight: 800, color: isDark ? "#fff" : "#1e293b" }}>{stick.name}</Heading>
-                      <Txt size={10} color={isDark ? "#cbd5e1" : "#475569"} style={{ display: "block", marginTop: 4, lineHeight: 1.25, fontWeight: 700 }}>
-                        {stick.howToEarn}
-                      </Txt>
-                      <Txt size={9.5} color={isDark ? "#94a3b8" : "#64748b"} style={{ display: "block", marginTop: 2, lineHeight: 1.2 }}>
-                        {stick.desc}
-                      </Txt>
-                      {stick.unlocked ? (
-                        <div style={{ display: "flex", justifyContent: "center", gap: 3, alignItems: "center", marginTop: 6, color: "#10b981" }}>
-                          <Check size={10} strokeWidth={4} />
-                          <Txt size={9.5} weight={900}>GOT IT ({stick.progressText})</Txt>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", justifyContent: "center", gap: 3, alignItems: "center", marginTop: 6, color: "#94a3b8" }}>
-                          <Lock size={10} />
-                          <Txt size={9.5} weight={850}>LOCKED • {stick.progressText}</Txt>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* AGE-ADAPTIVE EXPERIENCE: HERO XP PROGRESS OR GENERAL LEVEL CARDS */}
-            {child.ageGroup !== "early explorers" && (
+            {/* HERO XP PROGRESS & LEVEL CARDS */}
+            {(
               <div 
                 style={{
                   background: isDark ? "#1e293b" : "#ffffff",
@@ -1282,12 +1194,29 @@ export const ChildRewards: React.FC<ChildRewardsProps> = ({
                 padding: "20px 18px"
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <Heading size={17} style={{ fontWeight: 800 }}>
                   🔥 Learning Streak
                 </Heading>
                 <Txt size={11} color="#ef4444" weight={800}>
-                  BEST: {bestStreak} DAYS
+                  CURRENT: {streak}D • BEST: {bestStreak}D
+                </Txt>
+              </div>
+
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 14,
+                  marginBottom: 12,
+                  background: isDark ? "rgba(46,196,182,0.08)" : "rgba(46,196,182,0.06)",
+                  border: `1.5px solid ${isDark ? "rgba(46,196,182,0.25)" : "rgba(46,196,182,0.2)"}`
+                }}
+              >
+                <Txt size={12} weight={900} color="#2EC4B6" style={{ display: "block", marginBottom: 2 }}>
+                  {streakMessage.headline}
+                </Txt>
+                <Txt size={11} color={isDark ? "#cbd5e1" : "#475569"} style={{ display: "block", lineHeight: 1.35 }}>
+                  {streakMessage.subtext}
                 </Txt>
               </div>
 

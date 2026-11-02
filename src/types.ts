@@ -10,6 +10,7 @@ export type AgeGroup = "early explorers" | "young explorers" | "young innovators
 export interface Child {
   id: string;
   name: string;
+  age?: number;
   ageGroup: AgeGroup;
   avatar?: string;
   username: string;

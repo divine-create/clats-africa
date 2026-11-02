@@ -146,7 +146,10 @@ export async function POST(req: Request) {
       .filter(Boolean);
 
     const companion = child.companion === "chibi" ? "Chibi" : "Kobe";
-    const badges = Array.isArray(child.badges) && child.badges.length > 0 ? child.badges.join(", ") : "None yet";
+    const cleanBadges = Array.isArray(child.badges)
+      ? child.badges.filter((b: any) => typeof b === "string" && !b.startsWith("__clats_meta__:"))
+      : [];
+    const badges = cleanBadges.length > 0 ? cleanBadges.join(", ") : "None yet";
 
     // 7. Meta AI / Llama 3 Prompt Specification
     const systemPrompt = `You are a distinguished child education specialist and developmental technologist advising families and schools on the CLATS platform (Building Tomorrow’s Tech Minds, Today).

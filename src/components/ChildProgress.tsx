@@ -45,9 +45,11 @@ import {
   toLocalDateStr,
   getCalendarDaysDiff,
   getClaimedStreakMilestones,
-  saveClaimedStreakMilestones
+  saveClaimedStreakMilestones,
+  getEncouragingStreakMessage
 } from "../utils/streak";
-import { evaluateChildBadges, evaluateAdventureStickers } from "../utils/badges";
+import { evaluateChildBadges } from "../utils/badges";
+import { APPROVED_AGE_SEGMENTS, getApprovedSegmentByIdOrGroup } from "../utils/childMeta";
 
 interface ChildProgressScreenProps {
   child: Child;
@@ -138,10 +140,11 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
   // Streak state from centralized streak engine
   const { streak, bestStreak, lastActiveAt } = computeEffectiveStreak(child);
+  const streakMessage = getEncouragingStreakMessage(child, child.companion === "chibi" ? "Chibi" : "Kobe");
 
   // Track claimed reward milestones to prevent multiple claims
   const [claimedMilestones, setClaimedMilestones] = useState<string[]>(() =>
-    getClaimedStreakMilestones(child.id, Math.max(1, completedCount, streak))
+    getClaimedStreakMilestones(child.id, Math.max(1, completedCount, streak), child)
   );
 
   // Chosen Avatar frame & decoration stored in local Fallback
@@ -156,6 +159,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempName, setTempName] = useState(child.name);
   const [tempAvatar, setTempAvatar] = useState(child.avatar);
+  const [tempCompanion, setTempCompanion] = useState<"kobe" | "chibi">(child.companion === "chibi" ? "chibi" : "kobe");
 
   const [tempFrame, setTempFrame] = useState(selectedFrame);
 
@@ -212,10 +216,6 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
   const activeFocus = findCurrentFocus();
 
-  // STICKER SHEETS FOR AGES 6-10 (Unified Sequenced Stickers)
-  const adventureStickers = evaluateAdventureStickers(child);
-  const earnedStickersCount = adventureStickers.filter(s => s.unlocked).length;
-
   // UNIFIED 8-STEP BADGES SEQUENCE
   const badgesData = evaluateChildBadges(child);
   const earnedBadgesCount = badgesData.filter(b => b.unlocked).length;
@@ -256,12 +256,13 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
     if (soundEnabled) sfx.playCheer();
     const nextClaims = [...claimedMilestones, id];
     setClaimedMilestones(nextClaims);
-    saveClaimedStreakMilestones(child.id, nextClaims);
+    const updatedBadges = saveClaimedStreakMilestones(child.id, nextClaims, child.badges);
 
     if (onUpdateChild) {
       onUpdateChild({
         ...child,
-        xp: currentXP + bonusXP
+        xp: currentXP + bonusXP,
+        badges: updatedBadges
       });
     }
   };
@@ -275,7 +276,8 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
     if (onUpdateChild) {
       onUpdateChild({
         ...child,
-        name: tempName || child.name
+        name: tempName || child.name,
+        companion: tempCompanion
       });
     }
     setIsEditingProfile(false);
@@ -365,14 +367,14 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
   // Mascot dynamic advice quote
   const getMascotChat = () => {
-    if (child.ageGroup === "early explorers") {
+    if (child.ageGroup === "early explorers" || child.ageGroup === "young explorers") {
       return {
         mascot: (child.companion || "kobe") as "kobe" | "chibi",
         title: child.companion === "kobe" ? "KOBE CHIRP" : "CHIBI CHIRP",
-        quote: "You have sticker album collections! Do more tasks to get fun stickers! 🦈"
+        quote: "Keep exploring your Adventure Levels and Practice Sandbox to unlock shiny new badges! 🚀"
       };
     }
-    if (child.ageGroup === "future builders") {
+    if (child.ageGroup === "future builders" || child.ageGroup === "future innovators") {
       return {
         mascot: (child.companion || "kobe") as "kobe" | "chibi",
         title: child.companion === "kobe" ? "KOBE CHIRP" : "CHIBI PILOT",
@@ -523,12 +525,13 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                         if (soundEnabled) sfx.playTap();
                         setTempName(child.name);
                         setTempAvatar(child.avatar);
+                        setTempCompanion(child.companion === "chibi" ? "chibi" : "kobe");
                         setTempFrame(selectedFrame);
                         setIsEditingProfile(true);
                       }}
                       className="inline-flex items-center gap-1 bg-[#2EC4B6] hover:bg-[#20877d] text-white text-xs font-black px-4 py-2 rounded-xl border-b-4 border-[#1c786e] active:border-b-0 active:translate-y-[4px] transition-all"
                     >
-                      <Edit2 size={12} /> Edit Avatar & Frames
+                      <Edit2 size={12} /> Edit Companion & Profile
                     </button>
                     <button
                       onClick={() => {
@@ -549,32 +552,30 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               </div>
             </div>
 
-            {/* AGE GROUP VISUAL ADAPTATIONS */}
+            {/* AGE GROUP VISUAL ADAPTATIONS (4 Approved Segments) */}
             <div className="space-y-4">
               <label className="text-xs font-bold text-[#B8A0FF] uppercase tracking-wider block">
                 Learner Stage Category
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  { tag: "early explorers", label: "Early Explorer", emoji: "🌈", style: "border-amber-300 bg-amber-500/5 text-amber-500" },
-                  { tag: "young innovators", label: "Young Innovator", emoji: "🚀", style: "border-[#2EC4B6] bg-[#2EC4B6]/5 text-[#2EC4B6]" },
-                  { tag: "future builders", label: "Future Builder", emoji: "🎯", style: "border-[#B8A0FF] bg-[#B8A0FF]/5 text-[#B8A0FF]" }
-                ].map((item) => {
-                  const isActive = child.ageGroup === item.tag;
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {APPROVED_AGE_SEGMENTS.map((seg) => {
+                  const activeSeg = getApprovedSegmentByIdOrGroup(child.ageGroup, child.age);
+                  const isActive = activeSeg.id === seg.id;
                   return (
                     <div
-                      key={item.tag}
-                      className={`p-4 rounded-2xl border text-center transition-all ${
+                      key={seg.id}
+                      className={`p-3.5 rounded-2xl border text-center transition-all ${
                         isActive 
-                          ? `${item.style} border-2 scale-100 shadow-sm font-black` 
-                          : "border-slate-300/40 dark:border-slate-850/40 text-slate-400 opacity-40 select-none"
+                          ? "border-[#2EC4B6] bg-[#2EC4B6]/10 text-[#2EC4B6] border-2 scale-100 shadow-sm font-black" 
+                          : "border-slate-300/40 dark:border-slate-850/40 text-slate-400 opacity-45 select-none"
                       }`}
                     >
-                      <div className="text-3xl mb-1">{item.emoji}</div>
-                      <div className="text-xs font-extrabold uppercase">{item.label}</div>
+                      <div className="text-2xl mb-1">{seg.emoji}</div>
+                      <div className="text-xs font-extrabold uppercase">{seg.label}</div>
+                      <div className="text-[10px] font-bold opacity-80">Ages {seg.rangeLabel}</div>
                       {isActive && (
                         <span className="inline-block mt-2 bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                          ACTIVE CURRENT
+                          ACTIVE STAGE
                         </span>
                       )}
                     </div>
@@ -654,67 +655,8 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               </div>
             </div>
 
-            {/* TINY STICKERS VS GENERAL ROADMAP */}
-            {child.ageGroup === "early explorers" ? (
-              <div className={`p-6 rounded-3xl border ${
-                isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
-              }`}>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-                  <div>
-                    <h3 className="text-xl font-black text-amber-500 flex items-center gap-2">
-                      <span>🌈</span> Adventure Stickers Album
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Complete learning modules to collect glowing sticker trophies!
-                    </p>
-                  </div>
-                  <span className="bg-amber-500/10 text-amber-500 text-xs px-3 py-1 rounded-full font-black">
-                    🐳 Collected: {earnedStickersCount} / {adventureStickers.length} Stickers
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {adventureStickers.map((stick) => (
-                    <div
-                      key={stick.id}
-                      className={`p-3.5 rounded-2xl border text-center transition-transform hover:scale-105 duration-350 ${
-                        stick.unlocked
-                          ? (isDark ? "bg-slate-855 border-slate-700" : "bg-gradient-to-br from-amber-50/20 to-yellow-50/50 border-[#FFD166]")
-                          : "border-dashed border-slate-200 dark:border-slate-800 opacity-70"
-                      }`}
-                    >
-                      <div className="text-[9px] font-black uppercase tracking-wider text-[#2EC4B6] mb-1">
-                        Step {stick.step}
-                      </div>
-                      <div className={`w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center text-3xl shadow-sm ${
-                        stick.unlocked ? `bg-gradient-to-br ${stick.color} text-white` : "bg-slate-100 dark:bg-slate-850 grayscale"
-                      }`}>
-                        {stick.emoji}
-                      </div>
-                      <div className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">
-                        {stick.name}
-                      </div>
-                      <div className="text-[9.5px] font-bold text-[#2EC4B6] mt-0.5 leading-tight">
-                        {stick.howToEarn}
-                      </div>
-                      <div className="text-[9px] text-slate-400 mt-1 leading-tight">
-                        {stick.desc}
-                      </div>
-                      {stick.unlocked ? (
-                        <div className="text-[10px] text-emerald-500 font-extrabold mt-1.5 flex items-center justify-center gap-1 uppercase">
-                          <Check size={8} strokeWidth={4} /> GOT IT ({stick.progressText})
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center justify-center gap-1 uppercase">
-                          <Lock size={8} /> {stick.progressText}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* THE GENERAL 4 ACADEMIES ROADMAP */
+            {/* THE GENERAL 4 ACADEMIES ROADMAP */}
+            {(
               <div className={`p-6 rounded-3xl border ${
                 isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
               }`}>
@@ -1033,7 +975,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-6 bg-slate-50 dark:bg-slate-850 p-3 rounded-2xl">
+              <div className="grid grid-cols-2 gap-3 mb-4 bg-slate-50 dark:bg-slate-850 p-3 rounded-2xl">
                 <div className="text-center">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase">Current Streak</span>
                   <span className="text-xl font-black text-rose-500 flex items-center justify-center gap-1">
@@ -1045,6 +987,13 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                   <span className="text-xl font-black text-emerald-500 flex items-center justify-center gap-1">
                     ⚡ {bestStreak}
                   </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl mb-4 bg-[#2EC4B6]/10 border border-[#2EC4B6]/20">
+                <div className="text-xs font-black text-[#2EC4B6]">{streakMessage.headline}</div>
+                <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-300 mt-0.5 leading-snug">
+                  {streakMessage.subtext}
                 </div>
               </div>
 
@@ -1297,24 +1246,24 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
       </div>
 
-      {/* AVATAR FRAMES CUSTOMIZER MODAL */}
+      {/* AVATAR & COMPANION CUSTOMIZER MODAL */}
       {isEditingProfile && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 z-[999]">
-          <div className={`p-2.5 rounded-2xl w-full max-w-[280px] border relative clats-no-scale ${
-            isDark ? "bg-black border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
+          <div className={`p-4 rounded-3xl w-full max-w-[360px] border relative clats-no-scale ${
+            isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-800"
           }`}>
             <h3 className="text-base font-black mb-0.5 text-[#2EC4B6] flex items-center gap-1.5">
-              <span>🌈</span> Character Customizer HQ
+              <span>🌈</span> Profile & Learning Companion
             </h3>
-            <p className="text-[10px] text-slate-400 mb-2.5">
-              Unlock avatars, badges, and customizable frames as you conquer lessons.
+            <p className="text-[11px] text-slate-400 mb-3">
+              Update your Explorer name or switch between Kobe and Chibi anytime!
             </p>
  
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {/* Name Editor inline */}
               <div>
                 <label className="text-[10px] font-bold text-slate-400 block uppercase mb-1">
-                  Change Display Name
+                  Display Name
                 </label>
                 <input
                   type="text"
@@ -1326,14 +1275,54 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                   }`}
                 />
               </div>
- 
 
+              {/* Learning Companion Switcher: Kobe vs Chibi */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block uppercase mb-1.5">
+                  Choose Your Learning Companion
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {([
+                    { id: "kobe" as const, name: "Kobe", role: "Tech & Logic Guide", color: "#2EC4B6" },
+                    { id: "chibi" as const, name: "Chibi", role: "Creative & Story Guide", color: "#B8A0FF" }
+                  ]).map((comp) => {
+                    const selected = tempCompanion === comp.id;
+                    return (
+                      <button
+                        key={comp.id}
+                        type="button"
+                        onClick={() => {
+                          if (soundEnabled) sfx.playTap();
+                          setTempCompanion(comp.id);
+                        }}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
+                          selected
+                            ? "border-[#2EC4B6] bg-[#2EC4B6]/10 shadow-md scale-[1.02]"
+                            : isDark
+                              ? "border-slate-800 bg-slate-950/60 opacity-75 hover:opacity-100"
+                              : "border-slate-200 bg-slate-50 opacity-80 hover:opacity-100"
+                        }`}
+                      >
+                        <KobeAvatar size={54} character={comp.id} ageGroup={child.ageGroup} expression={selected ? "excited" : "happy"} />
+                        <div className="text-xs font-black">{comp.name}</div>
+                        <div className="text-[9.5px] font-bold text-slate-400 leading-tight">{comp.role}</div>
+                        {selected && (
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#2EC4B6] text-white">
+                            ✓ Selected
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+ 
               {/* Trigger Footer */}
-              <div className="pt-2 flex gap-1.5">
+              <div className="pt-2 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setIsEditingProfile(false)}
-                  className={`flex-1 border text-[10px] font-black py-2 rounded-xl transition-all ${
+                  className={`flex-1 border text-xs font-black py-2.5 rounded-xl transition-all ${
                     isDark 
                       ? "bg-black border-slate-800 text-white hover:bg-slate-900" 
                       : "bg-white border-slate-200 text-black hover:bg-slate-100"
@@ -1344,9 +1333,9 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveProfileCustomization}
-                  className="flex-1 bg-[#2EC4B6] text-white text-[10px] font-black py-2 rounded-xl border-b-2 border-[#1b756d] active:border-b-0 active:translate-y-[2px]"
+                  className="flex-1 bg-[#2EC4B6] text-white text-xs font-black py-2.5 rounded-xl border-b-2 border-[#1b756d] active:border-b-0 active:translate-y-[2px]"
                 >
-                  Save & Sparkle! ✨
+                  Save Changes ✨
                 </button>
               </div>
  
