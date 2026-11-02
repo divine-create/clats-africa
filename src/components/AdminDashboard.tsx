@@ -3002,7 +3002,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                     <div className="grid grid-cols-2 gap-2">
                       {[
                         { key: "qualifyLessonCompletion", label: "✅ Passing a Lesson Quiz" },
-                        { key: "qualifyPracticeSandbox", label: "🎨 Completing a Practice Sandbox Activity" },
+                        { key: "qualifyPracticeSandbox", label: "🎨 Completing a Wonder Lab Activity" },
                         { key: "qualifyBrainGames", label: "🎮 Completing an Educational Game" },
                       ].map((rule) => (
                         <label key={rule.key} className="flex items-center gap-2 cursor-pointer font-bold">

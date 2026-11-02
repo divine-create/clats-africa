@@ -357,11 +357,11 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
       </main>
 
       {/* ============================================================ */}
-      {/* SECTION D: HANDS-ON PRACTICE SANDBOX LAB                     */}
+      {/* SECTION D: HANDS-ON WONDER LAB                               */}
       {/* ============================================================ */}
       {onOpenSandbox && (
         <section
-          aria-label="Practice Sandbox"
+          aria-label="Wonder Lab"
           onClick={() => {
             sfx.playTap();
             onOpenSandbox();
@@ -380,14 +380,14 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-300">
-                    ✨ Hands-On Discovery Lab
+                    Hands-On Lab
                   </span>
                 </div>
                 <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate m-0 mt-0.5">
-                  Practice Sandbox
+                  Wonder Lab
                 </h4>
                 <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 m-0 mt-0.5">
-                  Sort smart tools, draw digital art, make music, and practise what you learn across all 4 Adventures!
+                  Explore hands-on experiments, creative drawing, music, and puzzles connected to your lessons!
                 </p>
               </div>
             </div>
@@ -402,7 +402,7 @@ export const ChildExplorerHome: React.FC<ChildExplorerHomeProps> = ({
                 }}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-[#2EC4B6] hover:bg-[#25a99d] text-white font-black text-sm shadow-md border-b-3 border-teal-700 flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
-                <span>Open Sandbox</span>
+                <span>Open Wonder Lab</span>
                 <ArrowRight size={16} className="stroke-[3]" />
               </button>
             </div>

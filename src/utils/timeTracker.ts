@@ -80,7 +80,7 @@ export function classifySessionRow(sess: SupabaseSession): {
     const id = raw.slice("sandbox:".length) || null;
     return {
       category: "learning",
-      activityLabel: id ? `Practice Sandbox (${id})` : "Practice Sandbox Activity",
+      activityLabel: id ? `Wonder Lab (${id})` : "Wonder Lab Activity",
       lessonOrItemId: id
     };
   }

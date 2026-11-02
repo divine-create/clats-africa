@@ -249,7 +249,7 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
       const advDone = adventureActivities.filter((a) => progressMap[a.id]?.completed).length;
       const timer = setTimeout(() => {
         speakText(
-          `Practice Sandbox: ${selectedAdventure.title}. Choose a hands-on activity to experiment and practise! You have completed ${advDone} of ${adventureActivities.length} activities in this Adventure.`
+          `Wonder Lab: ${selectedAdventure.title}. Choose a fun activity to explore and learn! You have completed ${advDone} of ${adventureActivities.length} activities in this Adventure.`
         );
       }, 500);
       return () => clearTimeout(timer);
@@ -310,7 +310,7 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
               }`}
             >
               <ArrowLeft size={18} />
-              <span>All Sandbox Activities</span>
+              <span>All Wonder Lab Activities</span>
             </button>
 
             <div className="hidden sm:block">
@@ -541,7 +541,7 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
               className="text-lg sm:text-2xl font-black leading-tight m-0"
               style={{ fontFamily: F.display }}
             >
-              Practice Sandbox
+              Wonder Lab
             </h1>
           </div>
         </div>
@@ -551,7 +551,7 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
             onClick={() => {
               sfx.playTap();
               speakText(
-                `Welcome to the Practice Sandbox! Pick one of the 4 Adventures below to sort, match, draw, make music, and solve puzzles connected to your lessons!`
+                `Welcome to the Wonder Lab! Pick an Adventure below to explore, draw, create, and solve fun challenges connected to your lessons!`
               );
             }}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#2EC4B6]/15 text-[#0F766E] dark:text-[#2EC4B6] border border-[#2EC4B6]/30 text-xs font-black cursor-pointer"

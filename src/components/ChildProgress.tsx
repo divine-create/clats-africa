@@ -371,7 +371,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
       return {
         mascot: (child.companion || "kobe") as "kobe" | "chibi",
         title: child.companion === "kobe" ? "KOBE CHIRP" : "CHIBI CHIRP",
-        quote: "Keep exploring your Adventure Levels and Practice Sandbox to unlock shiny new badges! 🚀"
+        quote: "Keep exploring your Adventure Levels and Wonder Lab to unlock shiny new badges! 🚀"
       };
     }
     if (child.ageGroup === "future builders" || child.ageGroup === "future innovators") {
@@ -552,37 +552,114 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
               </div>
             </div>
 
-            {/* AGE GROUP VISUAL ADAPTATIONS (4 Approved Segments) */}
-            <div className="space-y-4">
-              <label className="text-xs font-bold text-[#B8A0FF] uppercase tracking-wider block">
-                Learner Stage Category
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {APPROVED_AGE_SEGMENTS.map((seg) => {
-                  const activeSeg = getApprovedSegmentByIdOrGroup(child.ageGroup, child.age);
-                  const isActive = activeSeg.id === seg.id;
-                  return (
-                    <div
-                      key={seg.id}
-                      className={`p-3.5 rounded-2xl border text-center transition-all ${
-                        isActive 
-                          ? "border-[#2EC4B6] bg-[#2EC4B6]/10 text-[#2EC4B6] border-2 scale-100 shadow-sm font-black" 
-                          : "border-slate-300/40 dark:border-slate-850/40 text-slate-400 opacity-45 select-none"
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">{seg.emoji}</div>
-                      <div className="text-xs font-extrabold uppercase">{seg.label}</div>
-                      <div className="text-[10px] font-bold opacity-80">Ages {seg.rangeLabel}</div>
-                      {isActive && (
-                        <span className="inline-block mt-2 bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-                          ACTIVE STAGE
-                        </span>
-                      )}
+            {/* AGE GROUP CLARIFICATION: ACTIVE LEARNER STAGE & GROWTH ROADMAP */}
+            {(() => {
+              const activeSeg = getApprovedSegmentByIdOrGroup(child.ageGroup, child.age);
+              const activeIndex = APPROVED_AGE_SEGMENTS.findIndex(s => s.id === activeSeg.id);
+              const displayAge = typeof child.age === "number" && child.age >= 2 ? `${child.age} years old` : `Ages ${activeSeg.rangeLabel}`;
+
+              return (
+                <div className="space-y-4">
+                  {/* Current Assigned Learner Stage Card */}
+                  <div
+                    className={`p-5 rounded-3xl border-2 transition-all ${
+                      isDark
+                        ? "bg-slate-900/90 border-[#2EC4B6]/60 shadow-[0_8px_24px_rgba(46,196,182,0.15)]"
+                        : "bg-teal-50/80 border-[#2EC4B6] shadow-[0_8px_24px_rgba(46,196,182,0.12)]"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-14 h-14 rounded-2xl bg-[#2EC4B6]/20 border border-[#2EC4B6]/40 flex items-center justify-center text-3xl shrink-0">
+                          {activeSeg.emoji}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-black uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                              My Assigned Learning Stage
+                            </span>
+                            <span className="bg-emerald-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                              Active Stage
+                            </span>
+                          </div>
+                          <h4 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white m-0 mt-0.5">
+                            {activeSeg.label}
+                          </h4>
+                          <p className="text-xs font-bold text-slate-600 dark:text-slate-300 m-0 mt-0.5">
+                            Ages {activeSeg.rangeLabel} · {displayAge}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 max-w-xs sm:text-right">
+                        <span>{activeSeg.description}</span>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  </div>
+
+                  {/* Growth Roadmap across Ages 2–18 */}
+                  <div
+                    className={`p-5 rounded-3xl border ${
+                      isDark ? "bg-slate-900/50 border-slate-800" : "bg-white border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 m-0">
+                          Growing with CLATS (Age Progression Roadmap)
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 m-0 mt-0.5">
+                          Stages are determined by your age. Lessons, XP, and badges track what you learn!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {APPROVED_AGE_SEGMENTS.map((seg, idx) => {
+                        const isCurrent = idx === activeIndex;
+                        const isPast = idx < activeIndex;
+                        const isFuture = idx > activeIndex;
+
+                        return (
+                          <div
+                            key={seg.id}
+                            className={`p-3 rounded-2xl border text-center transition-all relative ${
+                              isCurrent
+                                ? "border-[#2EC4B6] bg-[#2EC4B6]/10 text-[#2EC4B6] border-2 shadow-sm font-black"
+                                : isPast
+                                ? "border-slate-300 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-950/40 text-slate-500"
+                                : "border-dashed border-slate-300 dark:border-slate-800 text-slate-400 opacity-60"
+                            }`}
+                          >
+                            <div className="text-2xl mb-1">{seg.emoji}</div>
+                            <div className="text-xs font-extrabold">{seg.label}</div>
+                            <div className="text-[10px] font-bold opacity-80 mt-0.5">Ages {seg.rangeLabel}</div>
+
+                            <div className="mt-2">
+                              {isCurrent && (
+                                <span className="inline-block bg-[#2EC4B6] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-xs">
+                                  You Are Here
+                                </span>
+                              )}
+                              {isPast && (
+                                <span className="inline-block bg-slate-300 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">
+                                  Past Stage
+                                </span>
+                              )}
+                              {isFuture && (
+                                <span className="inline-block bg-slate-200/80 dark:bg-slate-850 text-slate-400 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">
+                                  Age {seg.minAge}+
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* XP LEVEL DETAIL & MILESTONE LANDSCAPE CARDS */}
             <div className={`p-6 rounded-3xl border ${

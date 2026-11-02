@@ -89,7 +89,7 @@ export const APPROVED_AGE_SEGMENTS: ApprovedAgeSegment[] = [
     icon: "🌱",
     emoji: "🌱",
     color: "#F59E0B",
-    description: "Adventure-based AI & smart tech discovery, digital safety, creative play, and hands-on Practice Sandbox.",
+    description: "Adventure-based AI & smart tech discovery, digital safety, creative play, and hands-on Wonder Lab.",
     defaultDailyLimitMins: 30,
     defaultSessionLimitMins: 20,
     defaultBreakIntervalMins: 15

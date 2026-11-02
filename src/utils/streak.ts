@@ -463,7 +463,7 @@ export function getEncouragingStreakMessage(
   if (!activeToday && streak >= 1) {
     return {
       headline: `${streak}-Day Streak Ready to Grow!`,
-      subtext: `${companionName} says: "Welcome back! Complete 1 fun lesson or sandbox activity today to reach Day ${streak + 1}!"`,
+      subtext: `${companionName} says: "Welcome back! Complete 1 fun lesson or Wonder Lab activity today to reach Day ${streak + 1}!"`,
       milestoneBanner,
       tone: "continue"
     };
@@ -480,7 +480,7 @@ export function getEncouragingStreakMessage(
 
   return {
     headline: "Start Your 1st Learning Streak!",
-    subtext: `${companionName} says: "Complete any lesson, quiz, or sandbox activity today to light your very first adventure spark!"`,
+    subtext: `${companionName} says: "Complete any lesson, quiz, or Wonder Lab activity today to light your very first adventure spark!"`,
     milestoneBanner: null,
     tone: "start"
   };

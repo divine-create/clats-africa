@@ -1289,7 +1289,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
           {(isYoungExplorer
             ? [
                 { id: "home" as const, label: "Home", icon: "🏠" },
-                { id: "sandbox" as const, label: "Sandbox", icon: "🧪" },
+                { id: "sandbox" as const, label: "Wonder Lab", icon: "🧪" },
                 { id: "chat" as const, label: "AI Tutor", icon: "🤖" },
                 { id: "rewards" as const, label: "Rewards", icon: "🏆" },
                 { id: "progress" as const, label: "Profile", icon: "📊" }
