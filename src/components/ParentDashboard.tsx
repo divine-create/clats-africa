@@ -80,6 +80,10 @@ import {
   LayoutDashboard
 } from "lucide-react";
 import { PaywallModal } from "./PaywallModal";
+import { SettingsScreen } from "./Settings";
+import { ParentCommunity } from "./ParentCommunity";
+
+export type ParentDashboardTab = "overview" | "settings" | "community" | "refer";
 
 interface ParentDashboardProps {
   parent: Parent;
@@ -113,7 +117,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<"overview" | "refer">("overview");
+  const [activeTab, setActiveTab] = useState<ParentDashboardTab>("overview");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [manualSyncing, setManualSyncing] = useState(false);
   const [childSessions, setChildSessions] = useState<any[]>([]);
@@ -626,27 +630,35 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
 
               <button
                 onClick={() => {
-                  onNavigate("settings");
+                  setActiveTab("settings");
                   setMobileSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  isDark ? "text-slate-300 hover:bg-slate-800/60" : "text-slate-600 hover:bg-slate-100"
+                  activeTab === "settings"
+                    ? "bg-[#2EC4B6] text-white shadow-sm shadow-[#2EC4B6]/25"
+                    : isDark
+                      ? "text-slate-300 hover:bg-slate-800/60"
+                      : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
-                <Settings size={16} className="text-slate-400" />
+                <Settings size={16} className={activeTab === "settings" ? "text-white" : "text-slate-400"} />
                 <span>Screen Limits & Settings</span>
               </button>
 
               <button
                 onClick={() => {
-                  onNavigate("community");
+                  setActiveTab("community");
                   setMobileSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  isDark ? "text-slate-300 hover:bg-slate-800/60" : "text-slate-600 hover:bg-slate-100"
+                  activeTab === "community"
+                    ? "bg-[#2EC4B6] text-white shadow-sm shadow-[#2EC4B6]/25"
+                    : isDark
+                      ? "text-slate-300 hover:bg-slate-800/60"
+                      : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
-                <Users size={16} className="text-[#7A6FF0]" />
+                <Users size={16} className={activeTab === "community" ? "text-white" : "text-[#7A6FF0]"} />
                 <span>Parent Community Hub</span>
               </button>
             </div>
@@ -803,7 +815,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </button>
                 <div>
                   <h1 className="text-base sm:text-lg font-black tracking-tight leading-tight m-0">
-                    {activeTab === "overview" ? "Parent Intelligence Dashboard" : "Refer & Earn Rewards"}
+                    {activeTab === "overview"
+                      ? "Parent Intelligence Dashboard"
+                      : activeTab === "settings"
+                      ? "Screen Limits & Family Controls"
+                      : activeTab === "community"
+                      ? "Parent Community Hub"
+                      : "Refer & Earn Rewards"}
                   </h1>
                   <span className="text-[10px] text-slate-400 font-mono hidden sm:block">
                     {child ? `Active Learner: ${child.name} (${assignedSegment?.label || "Young Explorers"})` : "CLATS Future-Tech Platform"}
@@ -1537,7 +1555,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       </div>
 
                       <button
-                        onClick={() => onNavigate("settings")}
+                        onClick={() => setActiveTab("settings")}
                         className="px-3.5 py-2 rounded-xl bg-[#2EC4B6]/15 hover:bg-[#2EC4B6] text-[#2EC4B6] hover:text-white text-xs font-bold uppercase tracking-wider transition-all border border-[#2EC4B6]/30 self-start sm:self-auto"
                       >
                         Adjust Limits
@@ -1768,7 +1786,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                       </span>
                     </div>
                     <button
-                      onClick={() => onNavigate("community")}
+                      onClick={() => setActiveTab("community")}
                       className="text-xs font-bold text-[#2EC4B6] hover:underline flex items-center gap-1"
                     >
                       <span>View All</span>
@@ -1824,6 +1842,74 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 </section>
 
               </>
+            ) : activeTab === "settings" ? (
+              /* ========================================================= */
+              /* SCREEN LIMITS & SETTINGS TAB VIEW */
+              /* ========================================================= */
+              <div className="space-y-6">
+                <div className="flex items-center justify-between pb-1">
+                  <button
+                    onClick={() => setActiveTab("overview")}
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                      isDark
+                        ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
+                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
+                    }`}
+                  >
+                    <ChevronLeft size={14} />
+                    <span>Back to Overview</span>
+                  </button>
+                  <span className="text-xs font-mono font-bold text-slate-400">
+                    ⚙️ Screen Limits & Guardian Controls
+                  </span>
+                </div>
+
+                <div className={`rounded-3xl border overflow-hidden shadow-sm ${
+                  isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200"
+                }`}>
+                  <SettingsScreen
+                    parent={parent}
+                    lang={lang}
+                    theme={theme}
+                    onBack={() => setActiveTab("overview")}
+                    onParentRefresh={onRefreshParent}
+                    onLanguageChange={onLanguageChange}
+                    onToggleTheme={onToggleTheme}
+                  />
+                </div>
+              </div>
+            ) : activeTab === "community" ? (
+              /* ========================================================= */
+              /* PARENT COMMUNITY HUB TAB VIEW */
+              /* ========================================================= */
+              <div className="space-y-6">
+                <div className="flex items-center justify-between pb-1">
+                  <button
+                    onClick={() => setActiveTab("overview")}
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                      isDark
+                        ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
+                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
+                    }`}
+                  >
+                    <ChevronLeft size={14} />
+                    <span>Back to Overview</span>
+                  </button>
+                  <span className="text-xs font-mono font-bold text-[#7A6FF0]">
+                    👥 Parent Academy & Community Hub
+                  </span>
+                </div>
+
+                <div className={`rounded-3xl border overflow-hidden shadow-sm ${
+                  isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200"
+                }`}>
+                  <ParentCommunity
+                    lang={lang}
+                    theme={theme}
+                    onBack={() => setActiveTab("overview")}
+                  />
+                </div>
+              </div>
             ) : (
               /* ========================================================= */
               /* REFER & EARN TAB VIEW */

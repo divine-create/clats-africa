@@ -8,7 +8,7 @@ import { CLATSLogo } from "@/components/CLATSLogo"; // Adjust if logo is elsewhe
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [monthlyPrice, setMonthlyPrice] = useState({ price: 5000, currency: "NGN" });
-  const [yearlyPrice, setYearlyPrice] = useState({ price: 50000, currency: "NGN" });
+  const [yearlyPrice, setYearlyPrice] = useState({ price: 56000, currency: "NGN" });
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 

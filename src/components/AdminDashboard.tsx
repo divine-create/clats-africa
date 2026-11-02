@@ -716,9 +716,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
 
   // Pricing Settings
   const [monthlyPrice, setMonthlyPrice] = useState("5000");
-  const [yearlyPrice, setYearlyPrice] = useState("50000");
-  const [monthlyPriceUsd, setMonthlyPriceUsd] = useState("5");
-  const [yearlyPriceUsd, setYearlyPriceUsd] = useState("50");
+  const [yearlyPrice, setYearlyPrice] = useState("56000");
+  const [monthlyPriceUsd, setMonthlyPriceUsd] = useState("14");
+  const [yearlyPriceUsd, setYearlyPriceUsd] = useState("140");
 
   const fetchGatewaysAndPricing = async () => {
     try {
