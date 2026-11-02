@@ -90,7 +90,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   };
 
   // Active steps in the lesson progression
-  const [learningStep, setLearningStep] = useState<"video" | "practice" | "quiz" | "reward">("video");
+  const [learningStep, setLearningStep] = useState<"video" | "quiz" | "reward">("video");
   const [earnedXpState, setEarnedXpState] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false); // Default false, will wait for user interaction to avoid autoplay block
   const [watchedFraction, setWatchedFraction] = useState(0);
@@ -140,11 +140,23 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const dyslexicMode = false;
   const reducedMotion = false;
 
+  // Sync voiceAssistActive when global Reader Mode toggle changes
+  useEffect(() => {
+    const handleNarrationChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.enabled === "boolean") {
+        setVoiceAssistActive(customEvent.detail.enabled);
+      } else {
+        setVoiceAssistActive(companionVoice.isNarrationEnabled(child.ageGroup));
+      }
+    };
+    window.addEventListener("clats-narration-change", handleNarrationChange);
+    return () => window.removeEventListener("clats-narration-change", handleNarrationChange);
+  }, [child.ageGroup]);
+
   // Mini-Activity states
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [toolFeedback, setToolFeedback] = useState<string>("");
-  const [lastWrongIndex, setLastWrongIndex] = useState<number | null>(null);
-  const practiceCompletionLoggedRef = useRef(false);
   const [trainedDatabase, setTrainedDatabase] = useState<string[]>([]);
   const [trainFeedback, setTrainFeedback] = useState<string>("");
 
@@ -483,38 +495,30 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   const rawStoryText = getLessonStoryText();
   const storySlides = rawStoryText.split(/(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean);
 
-  // Greet/Narrate slide text on entrance
+  // Greet/Narrate slide text or lesson explanation on entrance when Reader Mode is active
   useEffect(() => {
-    if (learningStep === "video" && voiceAssistActive && storySlides.length > 0) {
-      const activeSlideText = storySlides[currentSlideIndex] || "";
-      const speakTimer = setTimeout(() => {
-        speakText(activeSlideText);
-      }, 700);
-      return () => clearTimeout(speakTimer);
+    if (learningStep === "video" && voiceAssistActive) {
+      if ((!currentVideoData || videoUnavailable || showConceptPreview) && storySlides.length > 0) {
+        const activeSlideText = storySlides[currentSlideIndex] || "";
+        const speakTimer = setTimeout(() => {
+          speakText(activeSlideText);
+        }, 700);
+        return () => clearTimeout(speakTimer);
+      } else if (currentVideoData && !isVideoPlaying) {
+        const titleText = lesson?.title?.[lang] || lesson?.title?.en || "";
+        const explText = lesson?.companion_explanation || `${child.name}, technology helps us solve problems! Let's explore how we use tools and data.`;
+        const speakTimer = setTimeout(() => {
+          speakText(`${titleText}. ${explText}`);
+        }, 700);
+        return () => clearTimeout(speakTimer);
+      }
     }
-  }, [learningStep, currentSlideIndex, voiceAssistActive, lesson]);
+  }, [learningStep, currentSlideIndex, voiceAssistActive, lesson?.id, showConceptPreview, videoUnavailable]);
 
-  // Interactive Mini-Activity items mapped dynamically from syllabus database or validated contextual fallbacks
+  // Interactive Mini-Activity items mapped dynamically from syllabus database
   const activePuzzle = lesson?.puzzle || (() => {
-    const titleLower = lesson?.title?.en?.toLowerCase() || "";
-
-    // 1. Module 1 (Technology Around Me) & technology-oriented lessons
-    if (titleLower.includes("technology") || titleLower.includes("smart things")) {
-      return {
-        text: {
-          en: "Spot the helper technology tools used around us!",
-          ig: "Chọpụta ngwa teknụzụ dị n'akụkụ anyị!",
-          yo: "Mọ àwọn ohun èlò ìmọ̀-ẹ̀rọ tí wà lọ́wọ́ wa!"
-        },
-        items: {
-          en: ["Smartphone 📱", "Yellow Pencil ✏️", "Wooden stick ❌", "Electric bicycle 🚲"],
-          correct: [true, true, false, true]
-        }
-      };
-    }
-
-    // 2. Specific password security lessons (young innovators / future builders)
-    if (titleLower.includes("password")) {
+    const titleLower = lesson?.title.en.toLowerCase() || "";
+    if (titleLower.includes("password") || titleLower.includes("safety") || titleLower.includes("browsing")) {
       return {
         text: {
           en: "Tap only the SAFEST password combinations to help Kobe secure his vault!",
@@ -527,9 +531,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         }
       };
     }
-
-    // 3. Specific UI wireframe lessons
-    if (titleLower.includes("wireframe")) {
+    if (titleLower.includes("design") || titleLower.includes("creat") || titleLower.includes("wireframe")) {
       return {
         text: {
           en: "Spot the layout cards that belong in our UI wireframe sketch!",
@@ -542,9 +544,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         }
       };
     }
-
-    // 4. Specific startup venture lessons
-    if (titleLower.includes("startup")) {
+    if (titleLower.includes("career") || titleLower.includes("leader") || titleLower.includes("startup")) {
       return {
         text: {
           en: "Help Kobe choose the right foundations for a tech startup!",
@@ -557,49 +557,19 @@ export const LessonContent: React.FC<LessonContentProps> = ({
         }
       };
     }
-
-    // No valid practice puzzle for this lesson — follow standard Video -> Quiz -> Reward flow
-    return null;
-  })();
-
-  // Verify that active puzzle contains valid items for Young Explorers practice
-  const hasValidPractice = Boolean(
-    activePuzzle &&
-    activePuzzle.items &&
-    Array.isArray(activePuzzle.items.en) &&
-    activePuzzle.items.en.length > 0 &&
-    Array.isArray(activePuzzle.items.correct) &&
-    activePuzzle.items.correct.some(Boolean)
-  );
-
-  const totalCorrectPuzzleItems = (hasValidPractice && activePuzzle)
-    ? activePuzzle.items.correct.filter(Boolean).length
-    : 0;
-
-  const isPuzzleCompleted = hasValidPractice &&
-    !!activePuzzle &&
-    totalCorrectPuzzleItems > 0 &&
-    activePuzzle.items.correct.every((isCorr, idx) => !isCorr || selectedTools.includes(activePuzzle.items.en[idx]));
-
-  // Auto-read practice instructions when entering practice step
-  useEffect(() => {
-    if (learningStep === "practice") {
-      gameMusic.startTheme("wonder_woods_hub");
-      if (voiceAssistActive && hasValidPractice && activePuzzle) {
-        const timer = setTimeout(() => {
-          speakText(activePuzzle.text[lang] || activePuzzle.text.en);
-        }, 450);
-        return () => clearTimeout(timer);
+    // Default fallback
+    return {
+      text: {
+        en: "Spot the helper technology tools used around us!",
+        ig: "Chọpụta ngwa teknụzụ dị n'akụkụ anyị!",
+        yo: "Mọ àwọn ohun èlò ìmọ̀-ẹ̀rọ tí wà lọ́wọ́ wa!"
+      },
+      items: {
+        en: ["Smartphone 📱", "Yellow Pencil ✏️", "Wooden stick ❌", "Electric bicycle 🚲"],
+        correct: [true, true, false, true]
       }
-    }
-  }, [learningStep, voiceAssistActive, lang, hasValidPractice, activePuzzle]);
-
-  // Safety fallback: if on practice step without valid practice puzzle data, transition cleanly to quiz without blank screen
-  useEffect(() => {
-    if (learningStep === "practice" && !hasValidPractice) {
-      setLearningStep("quiz");
-    }
-  }, [learningStep, hasValidPractice]);
+    };
+  })();
 
   // Reset lesson state cleanly when active lesson changes
   useEffect(() => {
@@ -607,7 +577,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     setCurrentSlideIndex(0);
     setSelectedTools([]);
     setToolFeedback("");
-    setLastWrongIndex(null);
     setCurrentQuizIndex(0);
     setQuizSelectedOption(null);
     setQuizFeedback("");
@@ -618,7 +587,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     setVideoUnavailable(false);
     setShowConceptPreview(false);
     setConceptPreviewAcknowledged(false);
-    practiceCompletionLoggedRef.current = false;
   }, [lesson?.id]);
 
   // Multi-choice dynamic syllabus quiz resolver
@@ -655,18 +623,18 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     return `Question ${qIdx + 1} of ${activeQuiz.length}: ${currentQ.q} Your options are: ${optsNarration}.`;
   };
 
-  // Auto-read quiz question & options when entering quiz or advancing to next question, and play subtle quiz music
+  // Auto-read quiz question & options when entering quiz or advancing to next question (no background music on quiz page)
   useEffect(() => {
+    gameMusic.stop();
     if (learningStep === "quiz") {
-      gameMusic.startTheme("quiz_quest");
+      setSidekickOpen(false);
+      setSidekickHintPrompt(null);
       if (voiceAssistActive) {
         const timer = setTimeout(() => {
           speakText(buildQuizQuestionNarration(currentQuizIndex));
         }, 450);
         return () => clearTimeout(timer);
       }
-    } else if (learningStep !== "practice") {
-      gameMusic.stop();
     }
   }, [learningStep, currentQuizIndex, voiceAssistActive]);
 
@@ -683,48 +651,18 @@ export const LessonContent: React.FC<LessonContentProps> = ({
   };
 
   const handleSelectPuzzleItem = (index: number) => {
-    if (!hasValidPractice || !activePuzzle || isPuzzleCompleted) return;
-    const itemName = activePuzzle.items.en[index];
-    if (selectedTools.includes(itemName)) return;
-
     const isCorrect = activePuzzle.items.correct[index];
+    const itemName = activePuzzle.items.en[index];
     if (isCorrect) {
       sfx.playCoin();
-      setLastWrongIndex(null);
-      const updatedSelected = [...selectedTools, itemName];
-      setSelectedTools(updatedSelected);
-
-      const allDone = totalCorrectPuzzleItems > 0 &&
-        activePuzzle.items.correct.every((isCorr, idx) => !isCorr || updatedSelected.includes(activePuzzle.items.en[idx]));
-
-      if (allDone) {
-        sfx.playCheer();
-        setToolFeedback(`🎉 Outstanding, ${child.name}! You found all the correct cards! Tap below to move to the Quiz.`);
-        speakText(`Outstanding! You found all the correct cards! Tap below to move to the quiz.`);
-
-        if (!practiceCompletionLoggedRef.current) {
-          practiceCompletionLoggedRef.current = true;
-          recordLearningEvent({
-            childId: child.id,
-            sourceType: 'practice',
-            sourceId: lesson?.id || 'lesson-u',
-            eventType: 'activity_completed',
-            skillId: 'curriculum.practice.activity',
-            success: true,
-            metadata: {
-              puzzleTitle: activePuzzle.text?.en || 'Practice Challenge',
-              selectedItemsCount: updatedSelected.length
-            }
-          });
-        }
-      } else {
-        setToolFeedback(`🌟 Perfect! "${itemName}" is a correct choice! Keep going, find the remaining cards.`);
-        speakText(`Perfect! ${itemName} is correct!`);
+      if (!selectedTools.includes(itemName)) {
+        setSelectedTools([...selectedTools, itemName]);
       }
+      setToolFeedback(`🌟 Perfect! "${itemName}" is a correct choice! Keep going, find the remaining cards.`);
+      speakText(`Perfect! ${itemName} is correct!`);
     } else {
       sfx.playBuzzer();
-      setLastWrongIndex(index);
-      setToolFeedback(`❌ Keep training your brain! "${itemName}" isn't correct for this challenge. Let's try another card.`);
+      setToolFeedback(`❌ Keep training your brain! "${itemName}" isn't correct for this puzzle challenge. Let's try another card.`);
       speakText(`Nice try! ${itemName} is not correct for this challenge. Think about that again.`);
     }
   };
@@ -869,15 +807,14 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     }
   };
 
-  const activeProgressProgress = hasValidPractice
-    ? (learningStep === "video" ? 25 : learningStep === "practice" ? 50 : learningStep === "quiz" ? 75 : 100)
-    : (learningStep === "video" ? 33 : learningStep === "quiz" ? 66 : 100);
+  const activeProgressProgress =
+    learningStep === "video" ? 33 : learningStep === "quiz" ? 66 : 100;
 
   const buildExcitedStarsSpeech = (xpAmount: number, scorePct: number): string => {
     const nextActionText = isLastLessonInModule
-      ? (isEarlyExplorers ? "You can choose to retake the quiz, or move on to the next pathway!" : "You can choose to retake the quiz, or move on to the next module!")
-      : (isEarlyExplorers ? "You can choose to retake the quiz, or move to the next level!" : "You can choose to retake the quiz, or move to the next lesson!");
-    return `Woohoo! Hurray, ${child.name}! I am so excited for you! You completed the quiz with a score of ${scorePct} percent, and you just got ${xpAmount} X P! ${nextActionText}`;
+      ? "You can choose to retake the quiz, or move on to the next module!"
+      : "You can choose to retake the quiz, or move to the next lesson!";
+    return `Woohoo! Hurray, ${child.name}! I am so excited for you! You completed the lesson quiz with a score of ${scorePct} percent, and you just got ${xpAmount} X P from this lesson quiz! ${nextActionText}`;
   };
 
   const triggerPartyStreamersAndCheer = (xpAmount: number, scorePct: number) => {
@@ -1024,78 +961,57 @@ export const LessonContent: React.FC<LessonContentProps> = ({
           style={{
             maxWidth: 600,
             margin: "0 auto",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 8,
             marginBottom: 24,
             background: getCardBackground(),
             border: `2px solid ${getBorderColor()}`,
             borderRadius: 24,
-            padding: "12px 14px"
+            padding: "10px 12px"
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: hasValidPractice ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr",
-              gap: 8,
-              marginBottom: 10
-            }}
-          >
-            {[
-              { id: "video", label: isEarlyExplorers ? "Watch" : "Lesson", icon: "📺" },
-              ...(hasValidPractice ? [{ id: "practice", label: isEarlyExplorers ? "Practice" : "Activity", icon: "🎯" }] : []),
-              { id: "quiz", label: "Quiz", icon: "🧩" },
-              { id: "reward", label: "Stars", icon: "🏆" }
-            ].map((st) => {
-              const isCompleted =
-                (st.id === "video" && learningStep !== "video") ||
-                (st.id === "practice" && (learningStep === "quiz" || learningStep === "reward")) ||
-                (st.id === "quiz" && learningStep === "reward");
-              const isActive = learningStep === st.id;
-              return (
+          {[
+            { id: "video", label: isEarlyExplorers ? "Story" : "Lesson", icon: "📖" },
+            { id: "quiz", label: "Quiz", icon: "🧩" },
+            { id: "reward", label: "Stars", icon: "🏆" }
+          ].map((st) => {
+            const isCompleted =
+              (st.id === "video" && learningStep !== "video") ||
+              (st.id === "quiz" && learningStep === "reward");
+            const isActive = learningStep === st.id;
+            return (
+              <div
+                key={st.id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  opacity: isActive || isCompleted ? 1 : 0.45
+                }}
+              >
                 <div
-                  key={st.id}
                   style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    background: isCompleted ? "#2EC4B6" : isActive ? "#0d9488" : "rgba(0,0,0,0.06)",
                     display: "flex",
-                    flexDirection: "column",
                     alignItems: "center",
-                    opacity: isActive || isCompleted ? 1 : 0.45
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: 900,
+                    color: "#ffffff"
                   }}
                 >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: "50%",
-                      background: isCompleted ? "#2EC4B6" : isActive ? "#0d9488" : "rgba(0,0,0,0.06)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 18,
-                      fontWeight: 900,
-                      color: "#ffffff"
-                    }}
-                  >
-                    {isCompleted ? "✓" : st.icon}
-                  </div>
-                  <span style={{ fontSize: 13, fontFamily: F.mono, marginTop: 4, fontWeight: isActive ? 900 : 500, color: getTextColor() }}>
-                    {st.label}
-                  </span>
+                  {isCompleted ? "✓" : st.icon}
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Stepper Linear Progress Bar (25% -> 50% -> 75% -> 100% when practice exists) */}
-          <div style={{ height: 6, width: "100%", background: colorMode === "night" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)", borderRadius: 99, overflow: "hidden" }}>
-            <div
-              style={{
-                height: "100%",
-                width: `${activeProgressProgress}%`,
-                background: "linear-gradient(90deg, #2EC4B6, #0d9488)",
-                borderRadius: 99,
-                transition: "width 0.4s ease"
-              }}
-            />
-          </div>
+                <span style={{ fontSize: 13, fontFamily: F.mono, marginTop: 4, fontWeight: isActive ? 900 : 500, color: getTextColor() }}>
+                  {st.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* -------------------------------------------------------------
@@ -1454,10 +1370,37 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               <div style={{ flexShrink: 0 }}>
                 <KobeAvatar character={companion} ageGroup={child.ageGroup} size={64} expression="happy" />
               </div>
-              <div style={{ textAlign: "left" }}>
-                <Txt size={11.5} weight={950} color="#0d9488" style={{ textTransform: "uppercase", display: "block", fontFamily: F.mono, marginBottom: 4 }}>
-                  💬 {compLabel} Explanation:
-                </Txt>
+              <div style={{ textAlign: "left", flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                  <Txt size={11.5} weight={950} color="#0d9488" style={{ textTransform: "uppercase", display: "block", fontFamily: F.mono }}>
+                    💬 {compLabel} Explanation:
+                  </Txt>
+                  <button
+                    onClick={() => {
+                      sfx.playTap();
+                      const explText = lesson?.companion_explanation || `${child.name}, technology helps us solve problems! Let's explore how we use tools and data.`;
+                      companionVoice.speakTTS(explText, companion, child.ageGroup, lang);
+                    }}
+                    style={{
+                      background: colorMode === "night" ? "rgba(46,196,182,0.2)" : "#e0f2fe",
+                      border: "1.5px solid #0284c7",
+                      borderRadius: 14,
+                      padding: "4px 10px",
+                      color: colorMode === "night" ? "#5eead4" : "#0369a1",
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5
+                    }}
+                    className="hover:scale-105 active:scale-95"
+                    title="Read explanation aloud"
+                  >
+                    <Volume2 size={13} />
+                    <span>Read Aloud</span>
+                  </button>
+                </div>
                 <Txt size={14.5 * getFontSizeMultiplier()} color={getTextColor()} style={{ fontStyle: "italic", lineHeight: 1.45, fontWeight: 700 }}>
                   "{lesson.companion_explanation || `${child.name}, technology helps us solve problems! Let's explore how we use tools and data.`}"
                 </Txt>
@@ -1468,11 +1411,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
             <button
               onClick={() => {
                 sfx.playTap();
-                if (hasValidPractice) {
-                  setLearningStep("practice");
-                } else {
-                  setLearningStep("quiz");
-                }
+                setLearningStep("quiz");
               }}
               disabled={
                 !videoUnavailable &&
@@ -1517,235 +1456,9 @@ export const LessonContent: React.FC<LessonContentProps> = ({
             >
               {!videoUnavailable && !showConceptPreview && !conceptPreviewAcknowledged && currentVideoData && watchedFraction < 0.8
                 ? `WATCH THE VIDEO FIRST (${Math.floor(watchedFraction * 100)}%) ⏳`
-                : hasValidPractice
-                ? (isEarlyExplorers ? "START PRACTICE ACTIVITY 🎯" : "CONTINUE TO PRACTICE 🎯")
                 : "TAKE LESSON QUIZ 🧩"
               }
             </button>
-          </div>
-        )}
-
-        {/* -------------------------------------------------------------
-            STAGE B: HANDS-ON PRACTICE ACTIVITY
-           ------------------------------------------------------------- */}
-        {learningStep === "practice" && hasValidPractice && activePuzzle && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            
-            {/* INSTRUCTION CARD */}
-            <div
-              style={{
-                background: getCardBackground(),
-                border: `2px solid ${getBorderColor()}`,
-                borderBottom: `6px solid ${getBorderColor()}`,
-                borderRadius: 24,
-                padding: "20px 24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 12
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 24 }}>🎯</span>
-                  <Txt size={12} weight={950} color="#0d9488" style={{ textTransform: "uppercase", fontFamily: F.mono, letterSpacing: 1 }}>
-                    {isEarlyExplorers ? "Practice Challenge" : "Hands-On Practice"}
-                  </Txt>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <button
-                    onClick={() => speakText(activePuzzle.text[lang] || activePuzzle.text.en)}
-                    title="Read instructions aloud"
-                    style={{
-                      background: isDark ? "#334155" : "#e2e8f0",
-                      border: "none",
-                      borderRadius: 12,
-                      padding: "6px 12px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      cursor: "pointer",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      color: getTextColor()
-                    }}
-                  >
-                    <Volume2 size={16} />
-                    <span>Listen</span>
-                  </button>
-
-                  <Chip bg={isPuzzleCompleted ? "rgba(16,185,129,0.15)" : isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9"} color={isPuzzleCompleted ? "#10b981" : getTextColor()}>
-                    {isPuzzleCompleted ? "✓ Solved!" : `Found ${selectedTools.length}/${totalCorrectPuzzleItems}`}
-                  </Chip>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-                <div style={{ flexShrink: 0, marginTop: 4 }}>
-                  <KobeAvatar character={companion} ageGroup={child.ageGroup} size={54} expression={isPuzzleCompleted ? "celebrating" : "thinking"} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Heading size={18 * getFontSizeMultiplier()} style={{ fontFamily: F.display, fontWeight: 900, color: getTextColor(), lineHeight: 1.35 }}>
-                    {activePuzzle.text[lang] || activePuzzle.text.en}
-                  </Heading>
-                  <Txt size={13} color={isDark ? "#94a3b8" : "#64748b"} style={{ display: "block", marginTop: 4, fontWeight: 600 }}>
-                    Tap each card you think belongs to this challenge!
-                  </Txt>
-                </div>
-              </div>
-            </div>
-
-            {/* INTERACTIVE CARDS GRID */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                gap: 14
-              }}
-            >
-              {activePuzzle.items.en.map((itemName, idx) => {
-                const isSelected = selectedTools.includes(itemName);
-                const isCorrect = activePuzzle.items.correct[idx];
-                const isWrongAttempt = lastWrongIndex === idx;
-
-                return (
-                  <button
-                    key={`${itemName}-${idx}`}
-                    onClick={() => handleSelectPuzzleItem(idx)}
-                    disabled={isPuzzleCompleted || isSelected}
-                    style={{
-                      background: isSelected
-                        ? (isDark ? "rgba(16,185,129,0.18)" : "#ecfdf5")
-                        : isWrongAttempt
-                        ? (isDark ? "rgba(244,63,94,0.18)" : "#fff1f2")
-                        : getCardBackground(),
-                      border: isSelected
-                        ? "3px solid #10b981"
-                        : isWrongAttempt
-                        ? "3px solid #f43f5e"
-                        : `2px solid ${getBorderColor()}`,
-                      borderBottom: isSelected
-                        ? "6px solid #059669"
-                        : isWrongAttempt
-                        ? "6px solid #e11d48"
-                        : `6px solid ${getBorderColor()}`,
-                      borderRadius: 22,
-                      padding: "20px 18px",
-                      textAlign: "center",
-                      cursor: (isPuzzleCompleted || isSelected) ? "default" : "pointer",
-                      transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                      position: "relative",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 8,
-                      boxShadow: isSelected ? "0 8px 20px rgba(16,185,129,0.25)" : "0 4px 12px rgba(0,0,0,0.04)"
-                    }}
-                    className={isPuzzleCompleted || isSelected ? "" : "hover:scale-[1.02] active:scale-[0.97]"}
-                  >
-                    <div style={{ fontSize: 32 }}>
-                      {isSelected ? "⭐" : isWrongAttempt ? "🤔" : "🔍"}
-                    </div>
-
-                    <Txt size={16 * getFontSizeMultiplier()} weight={900} color={getTextColor()}>
-                      {itemName}
-                    </Txt>
-
-                    {isSelected && (
-                      <span style={{ fontSize: 11, fontWeight: 900, color: "#10b981", background: "rgba(16,185,129,0.15)", padding: "2px 8px", borderRadius: 8 }}>
-                        ✓ Correct Choice!
-                      </span>
-                    )}
-
-                    {isWrongAttempt && (
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#f43f5e", background: "rgba(244,63,94,0.15)", padding: "2px 8px", borderRadius: 8 }}>
-                        Try another one!
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* FEEDBACK & HINT MESSAGE */}
-            {toolFeedback && (
-              <div
-                style={{
-                  background: toolFeedback.includes("🌟") || toolFeedback.includes("🎉")
-                    ? (isDark ? "rgba(16,185,129,0.12)" : "#ecfdf5")
-                    : (isDark ? "rgba(245,158,11,0.12)" : "#fffbeb"),
-                  border: `2px solid ${toolFeedback.includes("🌟") || toolFeedback.includes("🎉") ? "#10b981" : "#f59e0b"}`,
-                  borderRadius: 20,
-                  padding: "14px 18px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12
-                }}
-              >
-                <span style={{ fontSize: 24 }}>
-                  {toolFeedback.includes("🌟") || toolFeedback.includes("🎉") ? "🎉" : "💡"}
-                </span>
-                <Txt size={14 * getFontSizeMultiplier()} weight={800} color={getTextColor()} style={{ flex: 1 }}>
-                  {toolFeedback}
-                </Txt>
-              </div>
-            )}
-
-            {/* ACTION CONTINUE TO QUIZ BUTTON */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-              <button
-                onClick={() => {
-                  sfx.playTap();
-                  setLearningStep("quiz");
-                }}
-                disabled={!isPuzzleCompleted}
-                style={{
-                  width: "100%",
-                  background: !isPuzzleCompleted
-                    ? (isDark ? "#334155" : "#cbd5e1")
-                    : `linear-gradient(135deg, #10B981, #059669)`,
-                  color: !isPuzzleCompleted ? (isDark ? "#94a3b8" : "#64748b") : "#ffffff",
-                  border: "none",
-                  borderRadius: 20,
-                  padding: "16px 24px",
-                  fontSize: 18,
-                  fontWeight: 950,
-                  cursor: !isPuzzleCompleted ? "not-allowed" : "pointer",
-                  boxShadow: !isPuzzleCompleted ? "none" : "0 8px 24px rgba(16,185,129,0.3)"
-                }}
-                className={isPuzzleCompleted ? "hover:scale-[1.01] active:scale-[0.98]" : ""}
-              >
-                {!isPuzzleCompleted
-                  ? `FIND ALL CORRECT CARDS (${selectedTools.length}/${totalCorrectPuzzleItems}) 🎯`
-                  : "CONTINUE TO LESSON QUIZ 🧩 →"
-                }
-              </button>
-
-              {selectedTools.length > 0 && !isPuzzleCompleted && (
-                <button
-                  onClick={() => {
-                    sfx.playTap();
-                    setSelectedTools([]);
-                    setToolFeedback("");
-                    setLastWrongIndex(null);
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: isDark ? "#94a3b8" : "#64748b",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                    alignSelf: "center",
-                    padding: "4px 8px"
-                  }}
-                >
-                  Clear selections & try again 🔄
-                </button>
-              )}
-            </div>
-
           </div>
         )}
 
@@ -1820,39 +1533,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   >
                     <Volume2 size={14} />
                     <span>Read Question & Options</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      sfx.playTap();
-                      const currentQ = activeQuiz[currentQuizIndex];
-                      const optsText = Array.isArray(currentQ.opts)
-                        ? currentQ.opts.join(", ")
-                        : (currentQ.opts as any)?.en?.join?.(", ") || "";
-                      setSidekickHintPrompt(
-                        `I am answering this quiz question in "${lesson?.title?.en || "our lesson"}": "${currentQ.q}". The choices are: ${optsText}. Can you give me a gentle, encouraging Socratic hint without spoiling the answer?`
-                      );
-                      setSidekickOpen(true);
-                    }}
-                    style={{
-                      background: colorMode === "night" ? "rgba(245,158,11,0.22)" : "#fef3c7",
-                      border: "1.5px solid #f59e0b",
-                      borderRadius: 16,
-                      padding: "7px 12px",
-                      color: "#b45309",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      flexShrink: 0
-                    }}
-                    className="hover:scale-105 active:scale-95"
-                    title="Ask Kobe for a helpful hint"
-                  >
-                    <HelpCircle size={14} color="#f59e0b" />
-                    <span>Ask Kobe for a Hint</span>
                   </button>
                 </div>
               </div>
@@ -2002,7 +1682,6 @@ export const LessonContent: React.FC<LessonContentProps> = ({
               setCurrentSlideIndex(0);
               setSelectedTools([]);
               setToolFeedback("");
-              setLastWrongIndex(null);
               setCurrentQuizIndex(0);
               setQuizSelectedOption(null);
               setQuizFeedback("");
@@ -2142,11 +1821,7 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
                 <div style={{ display: "flex", justifySelf: "center", justifyContent: "center", gap: 8, marginBottom: 8, position: "relative", zIndex: 2 }}>
                   <Chip color={"#c084fc"} bg={"rgba(192, 132, 252, 0.15)"}>
-                    {(isModuleChallenge || isLastLessonInModule) && isEarlyExplorers
-                      ? "🏆 PATHWAY PASS EARNED!"
-                      : isModuleChallenge 
-                      ? "🏆 MODULE COMPLETE!" 
-                      : (isEarlyExplorers ? "🌟 LEVEL QUIZ COMPLETE!" : "🌟 LESSON QUIZ COMPLETE!")}
+                    {isModuleChallenge ? "🏆 MODULE COMPLETE!" : "🌟 LESSON QUIZ COMPLETE!"}
                   </Chip>
                 </div>
 
@@ -2251,10 +1926,8 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     className="hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {isLastLessonInModule
-                      ? (isNextModuleLocked 
-                          ? (isEarlyExplorers ? "⭐ Unlock Next Pathway" : "⭐ Unlock Next Module") 
-                          : (isEarlyExplorers ? "🚀 Move to Next Pathway →" : "🚀 Move to Next Module →"))
-                      : (isEarlyExplorers ? "🚀 Move to Next Level →" : "🚀 Move to Next Lesson →")}
+                      ? (isNextModuleLocked ? "⭐ Unlock Next Module" : "🚀 Move to Next Module →")
+                      : "🚀 Move to Next Lesson →"}
                   </button>
                 </div>
 
@@ -2290,12 +1963,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                     <span style={{ fontSize: 54 }}>🎓</span>
                     <div>
                       <Txt size={14} weight={900} color="#fdf4ff" style={{ textTransform: "uppercase", display: "block", letterSpacing: 1 }}>
-                        {isEarlyExplorers ? "PATHWAY PASS EARNED! 🎓" : "MODULE COMPLETED!"}
+                        MODULE COMPLETED!
                       </Txt>
                       <Txt size={20} weight={950} color="#ffffff">
-                        {isEarlyExplorers 
-                          ? "You've mastered all levels in this adventure pathway!" 
-                          : "You've mastered this entire section!"}
+                        You've mastered this entire section!
                       </Txt>
                     </div>
                   </div>
@@ -2427,13 +2098,11 @@ export const LessonContent: React.FC<LessonContentProps> = ({
                   }}
                 >
                   {isLastLessonInModule
-                    ? (isNextModuleLocked 
-                        ? (isEarlyExplorers ? "⭐ UNLOCK NEXT PATHWAY" : "⭐ UNLOCK NEXT MODULE") 
-                        : (isEarlyExplorers ? "START NEXT PATHWAY 🚀" : "START NEXT MODULE 🚀"))
-                    : (isEarlyExplorers ? "MOVE TO NEXT LEVEL →" : "MOVE TO NEXT LESSON →")}
+                    ? (isNextModuleLocked ? "⭐ UNLOCK NEXT MODULE" : "START NEXT MODULE 🚀")
+                    : "MOVE TO NEXT LESSON →"}
                   {isLastLessonInModule && nextModuleTitle && (
                     <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, opacity: 0.9 }}>
-                      {isEarlyExplorers ? nextModuleTitle.replace(/^Module\s*\d+:\s*/i, "Pathway: ") : nextModuleTitle}{isNextModuleLocked ? " (Premium Zone)" : ""}
+                      {nextModuleTitle}{isNextModuleLocked ? " (Premium Zone)" : ""}
                     </div>
                   )}
                 </button>
@@ -2485,45 +2154,47 @@ export const LessonContent: React.FC<LessonContentProps> = ({
 
       </div>
 
-      {/* KOBE IN-LESSON FLOATING COMPANION & VOICE SIDEKICK */}
-      <KobeLessonSidekick
-        child={child}
-        lesson={lesson}
-        lang={lang}
-        theme={colorMode === "night" ? "dark" : "light"}
-        onPauseMedia={() => {
-          companionVoice.stop();
-          if (learningStep === "video") {
-            setIsVideoPlaying(false);
-            try {
-              const player = ytPlayerRef.current;
-              const iframe = player?.getIframe?.();
-              if (player && iframe && iframe.src && typeof player.pauseVideo === "function") {
-                player.pauseVideo();
-              }
-            } catch {}
-          }
-        }}
-        onResumeMedia={() => {
-          if (learningStep === "video") {
-            try {
-              const player = ytPlayerRef.current;
-              const iframe = player?.getIframe?.();
-              if (player && iframe && iframe.src && typeof player.playVideo === "function") {
-                player.playVideo();
-                setIsVideoPlaying(true);
-              }
-            } catch {}
-          }
-        }}
-        currentQuizQuestion={learningStep === "quiz" ? activeQuiz[currentQuizIndex] : null}
-        isOpenExternal={sidekickOpen}
-        onCloseExternal={() => {
-          setSidekickOpen(false);
-          setSidekickHintPrompt(null);
-        }}
-        triggerHintPrompt={sidekickHintPrompt}
-      />
+      {/* KOBE IN-LESSON FLOATING COMPANION & VOICE SIDEKICK (Hidden on Quiz page) */}
+      {learningStep !== "quiz" && (
+        <KobeLessonSidekick
+          child={child}
+          lesson={lesson}
+          lang={lang}
+          theme={colorMode === "night" ? "dark" : "light"}
+          onPauseMedia={() => {
+            companionVoice.stop();
+            if (learningStep === "video") {
+              setIsVideoPlaying(false);
+              try {
+                const player = ytPlayerRef.current;
+                const iframe = player?.getIframe?.();
+                if (player && iframe && iframe.src && typeof player.pauseVideo === "function") {
+                  player.pauseVideo();
+                }
+              } catch {}
+            }
+          }}
+          onResumeMedia={() => {
+            if (learningStep === "video") {
+              try {
+                const player = ytPlayerRef.current;
+                const iframe = player?.getIframe?.();
+                if (player && iframe && iframe.src && typeof player.playVideo === "function") {
+                  player.playVideo();
+                  setIsVideoPlaying(true);
+                }
+              } catch {}
+            }
+          }}
+          currentQuizQuestion={null}
+          isOpenExternal={sidekickOpen}
+          onCloseExternal={() => {
+            setSidekickOpen(false);
+            setSidekickHintPrompt(null);
+          }}
+          triggerHintPrompt={sidekickHintPrompt}
+        />
+      )}
     </div>
   );
 };

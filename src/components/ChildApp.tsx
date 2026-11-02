@@ -218,24 +218,76 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Load narration preference
+  // Load narration preference (ON by default)
   const isYoungExplorer = child.ageGroup === "early explorers" || child.ageGroup === "young explorers";
   const [narrationOn, setNarrationOn] = useState(() => companionVoice.isNarrationEnabled(child.ageGroup));
+
+  useEffect(() => {
+    const handleNarrationSync = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.enabled === "boolean") {
+        setNarrationOn(customEvent.detail.enabled);
+      } else {
+        setNarrationOn(companionVoice.isNarrationEnabled(child.ageGroup));
+      }
+    };
+    window.addEventListener("clats-narration-change", handleNarrationSync);
+    return () => window.removeEventListener("clats-narration-change", handleNarrationSync);
+  }, [child.ageGroup]);
 
   // Young Explorers land directly on the Explorer Hub ("home").
   // They can launch missions or the learning map deliberately from the hub.
 
-  // Stop current voice playback whenever changing screens
+  // Stop current voice playback whenever changing screens, and narrate visible screen instructions when Reader Mode is ON
   useEffect(() => {
     companionVoice.stop();
-  }, [activeTab]);
+    if (!narrationOn) return;
+
+    if (activeTab === "map") {
+      const course = CURRICULUM[child.ageGroup || "early explorers"];
+      const modules = course?.modules || [];
+      const totalLevels = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+      const completedLevels = modules.reduce(
+        (acc, m) => acc + (m.lessons?.filter((l) => Boolean(child.completed?.[l.id])).length || 0),
+        0
+      );
+      let nextLessonTitle = "";
+      for (const m of modules) {
+        for (const l of m.lessons || []) {
+          if (!child.completed?.[l.id]) {
+            nextLessonTitle = l.title?.[lang] || l.title?.en || "";
+            break;
+          }
+        }
+        if (nextLessonTitle) break;
+      }
+      const mapNarration = nextLessonTitle
+        ? `Adventure Map. You have completed ${completedLevels} of ${totalLevels} levels. Your current quest is ${nextLessonTitle}. Tap the glowing level button to begin!`
+        : `Adventure Map. Amazing work! You have completed ${completedLevels} of ${totalLevels} levels. Select any unlocked level to explore!`;
+      const timer = setTimeout(() => {
+        companionVoice.speak(mapNarration, child.companion || "kobe", child.ageGroup);
+      }, 650);
+      return () => clearTimeout(timer);
+    }
+
+    if (activeTab === "progress") {
+      const completedCount = Object.values(child.completed || {}).filter(Boolean).length;
+      const profileNarration = `Explorer Profile for ${child.name}. You have earned ${child.xp || 0} X P and completed ${completedCount} ${completedCount === 1 ? "lesson" : "lessons"}. Keep up the great work!`;
+      const timer = setTimeout(() => {
+        companionVoice.speak(profileNarration, child.companion || "kobe", child.ageGroup);
+      }, 650);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, narrationOn, child.ageGroup, child.companion, child.completed, child.xp, child.name, lang]);
 
   const handleToggleNarration = () => {
     const nextVal = !narrationOn;
     companionVoice.setNarrationEnabled(child.ageGroup, nextVal);
     setNarrationOn(nextVal);
     if (nextVal) {
-      companionVoice.speak("Voice narration activated!", child.companion || "kobe", child.ageGroup, false);
+      if (activeTab !== "lesson" && activeTab !== "map" && activeTab !== "progress") {
+        companionVoice.speak("Voice narration activated!", child.companion || "kobe", child.ageGroup, false);
+      }
     } else {
       companionVoice.stop();
     }

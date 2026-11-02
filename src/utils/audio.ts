@@ -446,11 +446,14 @@ class CompanionVoice {
     if (typeof ageGroupOrEnabled === "boolean") {
       localStorage.setItem(this.TOGGLE_KEY + "_early", String(ageGroupOrEnabled));
       localStorage.setItem(this.TOGGLE_KEY + "_all", String(ageGroupOrEnabled));
+      window.dispatchEvent(new CustomEvent("clats-narration-change", { detail: { enabled: ageGroupOrEnabled } }));
       return;
     }
     const ag = (ageGroupOrEnabled || "").toLowerCase().replace(/\s+/g, "_");
     const key = (ag.includes("early") || ag.includes("explorers")) ? "early" : ag;
-    localStorage.setItem(this.TOGGLE_KEY + "_" + key, String(enabled ?? true));
+    const nextEnabled = enabled ?? true;
+    localStorage.setItem(this.TOGGLE_KEY + "_" + key, String(nextEnabled));
+    window.dispatchEvent(new CustomEvent("clats-narration-change", { detail: { enabled: nextEnabled } }));
   }
 
   // Deprecated legacy getter so other parts do not fail
