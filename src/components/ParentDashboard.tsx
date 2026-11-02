@@ -22,7 +22,7 @@ import { supabase } from "../utils/supabaseClient";
 import { CLATSLogo } from "./CLATSLogo";
 import { computeEffectiveStreak } from "../utils/streak";
 import { evaluateChildBadges } from "../utils/badges";
-import { resolveEffectiveScreenMonitoring, getApprovedSegmentByIdOrGroup } from "../utils/childMeta";
+import { resolveEffectiveScreenMonitoring, getApprovedSegmentByIdOrGroup, resolveChildApprovedSegment } from "../utils/childMeta";
 import {
   Sun,
   Moon,
@@ -364,7 +364,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   const streakDays = streakInfo.streak;
   const bestStreakDays = streakInfo.bestStreak;
   const effectiveMonitoring = child ? resolveEffectiveScreenMonitoring(child, parent.email) : null;
-  const assignedSegment = child ? getApprovedSegmentByIdOrGroup(child.ageGroup, child.age) : null;
+  const assignedSegment = child ? resolveChildApprovedSegment(child) : null;
 
   const quizResultsList = child?.quizResults ? Object.values(child.quizResults) as Array<{ score: number }> : [];
   const quizAverage = quizResultsList.length > 0

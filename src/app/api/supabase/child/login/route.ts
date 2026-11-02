@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { extractChildMeta, calculateAgeFromDob, resolveChildApprovedSegment } from "@/utils/childMeta";
 
 function getSupabaseClient() {
   const url = process.env.SUPABASE_URL;
@@ -42,27 +43,34 @@ export async function POST(req: NextRequest) {
         throw new Error(`Failed to fetch children data: ${childrenError.message}`);
       }
         
-      const children = (childrenData || []).map((kid: any) => ({
-        id: kid.id,
-        name: kid.name,
-        username: kid.username || kid.name.toLowerCase().replace(/\s+/g, "_"),
-        ageGroup: kid.age_group,
-        avatar: kid.avatar,
-        pin: kid.pin,
-        interests: kid.interests || [],
-        completed: kid.completed_lessons || {},
-        xp: kid.xp || 0,
-        stars: kid.stars || {},
-        quizResults: kid.quiz_results || {},
-        companion: kid.companion || "kobe",
-        child_tutorial_completed: kid.child_tutorial_completed || false,
-        last_active_at: kid.last_active_at || null,
-        streak: kid.streak_count || 0,
-        streak_count: kid.streak_count || 0,
-        best_streak: kid.best_streak || 0,
-        badges: kid.badges || [],
-        is_premium: kid.is_premium || false,
-      }));
+      const children = (childrenData || []).map((kid: any) => {
+        const meta = extractChildMeta(kid.badges);
+        const calculatedAge = calculateAgeFromDob(meta.enrolment?.dob) ?? meta.enrolment?.calculatedAge;
+        const resolvedSeg = resolveChildApprovedSegment(kid);
+        return {
+          id: kid.id,
+          name: kid.name,
+          username: kid.username || kid.name.toLowerCase().replace(/\s+/g, "_"),
+          ageGroup: resolvedSeg.ageGroup || kid.age_group,
+          age: calculatedAge ?? undefined,
+          dob: meta.enrolment?.dob ?? undefined,
+          avatar: kid.avatar,
+          pin: kid.pin,
+          interests: kid.interests || [],
+          completed: kid.completed_lessons || {},
+          xp: kid.xp || 0,
+          stars: kid.stars || {},
+          quizResults: kid.quiz_results || {},
+          companion: kid.companion || "kobe",
+          child_tutorial_completed: kid.child_tutorial_completed || false,
+          last_active_at: kid.last_active_at || null,
+          streak: kid.streak_count || 0,
+          streak_count: kid.streak_count || 0,
+          best_streak: kid.best_streak || 0,
+          badges: kid.badges || [],
+          is_premium: kid.is_premium || false,
+        };
+      });
 
       // Dual Mode A: Parent Gmail + Student's Private PIN code
       const matchedByPin = children.find((c: any) => c.pin === normalizedPassword);
@@ -106,11 +114,16 @@ export async function POST(req: NextRequest) {
         const kidUsername = (kid.username || kid.name.toLowerCase().replace(/\s+/g, "_")).toLowerCase();
         const kidName = kid.name.toLowerCase();
         if (kidUsername === normalizedQuery || kidName === normalizedQuery) {
+          const meta = extractChildMeta(kid.badges);
+          const calculatedAge = calculateAgeFromDob(meta.enrolment?.dob) ?? meta.enrolment?.calculatedAge;
+          const resolvedSeg = resolveChildApprovedSegment(kid);
           const child = {
             id: kid.id,
             name: kid.name,
             username: kid.username || kid.name.toLowerCase().replace(/\s+/g, "_"),
-            ageGroup: kid.age_group,
+            ageGroup: resolvedSeg.ageGroup || kid.age_group,
+            age: calculatedAge ?? undefined,
+            dob: meta.enrolment?.dob ?? undefined,
             avatar: kid.avatar,
             pin: kid.pin,
             interests: kid.interests || [],

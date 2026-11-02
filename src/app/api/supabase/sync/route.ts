@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { resolveChildApprovedSegment } from "@/utils/childMeta";
 
 function getSupabaseClient() {
   const url = process.env.SUPABASE_URL;
@@ -65,11 +66,12 @@ export async function POST(req: NextRequest) {
           validatedXp = 0;
         }
 
+        const resolvedSeg = resolveChildApprovedSegment(kid);
         const kidPayload: any = {
           id: kid.id,
           name: kid.name,
           username: kid.username || (kid.name ? kid.name.toLowerCase().replace(/\s+/g, "_") : undefined),
-          age_group: kid.ageGroup || kid.age_group,
+          age_group: resolvedSeg.ageGroup || kid.ageGroup || kid.age_group,
           avatar: kid.avatar,
           pin: kid.pin,
           interests: Array.isArray(kid.interests) ? kid.interests : [],

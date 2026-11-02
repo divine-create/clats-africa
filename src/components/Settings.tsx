@@ -110,7 +110,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
     if (nextDob !== undefined) setDob(nextDob);
     const seg = getApprovedSegmentForAge(clampedAge);
     setSegmentId(seg.id);
-    setAgeGroup(seg.curriculumKey as AgeGroup);
+    setAgeGroup(seg.ageGroup as AgeGroup);
     // Apply sensible age-appropriate screen monitoring defaults
     if (seg.id === "early_explorers") {
       setLimitMins(20);
@@ -133,7 +133,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
 
   const handleSelectSegment = (seg: typeof APPROVED_AGE_SEGMENTS[number]) => {
     setSegmentId(seg.id);
-    setAgeGroup(seg.curriculumKey as AgeGroup);
+    setAgeGroup(seg.ageGroup as AgeGroup);
     if (childAge < seg.minAge || childAge > seg.maxAge) {
       const midAge = Math.round((seg.minAge + seg.maxAge) / 2);
       setChildAge(midAge);
@@ -342,7 +342,8 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
           name: name.trim(),
           username: username.trim().toLowerCase().replace(/\s+/g, '_'),
           age: childAge,
-          ageGroup,
+          dob: dob || undefined,
+          ageGroup: activeSegment.ageGroup || ageGroup,
           pin,
           interests,
           completed: {},

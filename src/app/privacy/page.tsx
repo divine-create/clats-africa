@@ -42,7 +42,7 @@ export default function PrivacyPage() {
 
           <div className="prose prose-slate max-w-none text-sm text-slate-600 space-y-6 leading-relaxed">
             <p>
-              At CLATS (Coding & Learning for Tech Students), we prioritize the privacy and safety of children, parents, and sponsors. This Privacy Policy details how we collect, protect, process, and store personal and educational analytics data within our platform.
+              At CLATS, we prioritize the privacy and safety of children, parents, and sponsors. This Privacy Policy details how we collect, protect, process, and store personal and educational analytics data within our platform.
             </p>
 
             <h2 className="text-lg font-black text-slate-900 mt-8 border-b pb-2">1. Children's Data & COPPA Compliance</h2>

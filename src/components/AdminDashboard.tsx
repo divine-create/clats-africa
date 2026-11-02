@@ -18,6 +18,7 @@ import { S, pullCurriculumFromSupabase, getDynamicAgeGroups, saveDynamicAgeGroup
 import {
   APPROVED_AGE_SEGMENTS,
   getApprovedSegmentByIdOrGroup,
+  resolveChildApprovedSegment,
   extractChildMeta,
   getCleanBadges,
   mergeChildMetaOntoBadges,
@@ -466,8 +467,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
             // Map children (learners)
             const lList = (data.children || []).map((c: any) => {
               const completedCount = c.completed && typeof c.completed === "object" ? Object.keys(c.completed).length : 0;
-              const rawGroup = String(c.age_group || c.ageGroup || "young explorers").toLowerCase().trim();
-              const seg = getApprovedSegmentByIdOrGroup(rawGroup);
+              const seg = resolveChildApprovedSegment(c);
               const tabBucket: AgeGroupType =
                 seg.id === "early_explorers" || seg.id === "young_explorers"
                   ? "early"
@@ -717,8 +717,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
   // Pricing Settings
   const [monthlyPrice, setMonthlyPrice] = useState("5000");
   const [yearlyPrice, setYearlyPrice] = useState("50000");
-  const [monthlyPriceUsd, setMonthlyPriceUsd] = useState("12");
-  const [yearlyPriceUsd, setYearlyPriceUsd] = useState("120");
+  const [monthlyPriceUsd, setMonthlyPriceUsd] = useState("5");
+  const [yearlyPriceUsd, setYearlyPriceUsd] = useState("50");
 
   const fetchGatewaysAndPricing = async () => {
     try {

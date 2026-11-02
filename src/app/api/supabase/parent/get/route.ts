@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { extractChildMeta, calculateAgeFromDob, resolveChildApprovedSegment } from "@/utils/childMeta";
 
 function getSupabaseClient() {
   const url = process.env.SUPABASE_URL;
@@ -45,11 +46,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Map snake_case DB columns back to camelCase for the frontend
-    const children = (childrenData || []).map((kid: any) => ({
+    const children = (childrenData || []).map((kid: any) => {
+      const meta = extractChildMeta(kid.badges);
+      const calculatedAge = calculateAgeFromDob(meta.enrolment?.dob) ?? meta.enrolment?.calculatedAge;
+      const resolvedSeg = resolveChildApprovedSegment(kid);
+      return {
         id: kid.id,
         name: kid.name,
         username: kid.username || kid.name.toLowerCase().replace(/\s+/g, "_"),
-        ageGroup: kid.age_group,
+        ageGroup: resolvedSeg.ageGroup || kid.age_group,
+        age: calculatedAge ?? undefined,
+        dob: meta.enrolment?.dob ?? undefined,
         avatar: kid.avatar,
         pin: kid.pin,
         interests: kid.interests || [],
@@ -65,7 +72,8 @@ export async function POST(req: NextRequest) {
         best_streak: kid.best_streak || 0,
         badges: kid.badges || [],
         is_premium: kid.is_premium || false,
-    }));
+      };
+    });
 
     parent.children = children;
     

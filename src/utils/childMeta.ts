@@ -79,7 +79,7 @@ export const APPROVED_AGE_SEGMENTS: ApprovedAgeSegment[] = [
     segmentId: "young_explorers",
     ageGroup: "young explorers",
     appAgeGroup: "early explorers",
-    curriculumKey: "early explorers",
+    curriculumKey: "young explorers",
     label: "Young Explorers",
     ages: "6–10",
     agesLabel: "Ages 6–10",
@@ -99,7 +99,7 @@ export const APPROVED_AGE_SEGMENTS: ApprovedAgeSegment[] = [
     segmentId: "young_builders",
     ageGroup: "young builders",
     appAgeGroup: "young innovators",
-    curriculumKey: "young innovators",
+    curriculumKey: "young builders",
     label: "Young Builders",
     ages: "11–13",
     agesLabel: "Ages 11–13",
@@ -119,7 +119,7 @@ export const APPROVED_AGE_SEGMENTS: ApprovedAgeSegment[] = [
     segmentId: "future_innovators",
     ageGroup: "future innovators",
     appAgeGroup: "future builders",
-    curriculumKey: "future builders",
+    curriculumKey: "future innovators",
     label: "Future Innovators",
     ages: "14–18",
     agesLabel: "Ages 14–18",
@@ -177,19 +177,88 @@ export function getApprovedSegmentByIdOrGroup(
   if (norm.includes("2-5") || norm.includes("2–5") || norm === "tots" || norm === "early_explorers" || norm === "early_explorers_2_5") {
     return APPROVED_AGE_SEGMENTS[0];
   }
-  if (norm === "early explorers" && !segmentIdOrAge) {
+  if (norm === "early explorers") {
     return APPROVED_AGE_SEGMENTS[0];
   }
-  if (norm.includes("young explorer") || norm === "early") {
+  if (norm === "young explorers" || norm.includes("young explorer") || norm === "young_explorers") {
     return APPROVED_AGE_SEGMENTS[1];
   }
-  if (norm.includes("innovator") || norm.includes("young builder") || norm === "young") {
+  if (norm === "early") {
+    return APPROVED_AGE_SEGMENTS[1];
+  }
+  if (norm.includes("innovator") || norm.includes("young builder") || norm === "young" || norm === "young_builders") {
     return APPROVED_AGE_SEGMENTS[2];
   }
-  if (norm.includes("future")) {
+  if (norm.includes("future") || norm === "future_innovators") {
     return APPROVED_AGE_SEGMENTS[3];
   }
   return APPROVED_AGE_SEGMENTS[1];
+}
+
+/**
+ * Authoritative resolver for a child's approved learning stage.
+ * Strictly adheres to:
+ * 1. Date of Birth (DOB) -> authoritative calculated age
+ * 2. Stored numeric age (2–18)
+ * 3. Enrolment metadata assignedSegmentId
+ * 4. Stored age_group / ageGroup
+ * 
+ * Never uses XP, stars, badges, completed lessons, or streaks.
+ */
+export function resolveChildApprovedSegment(
+  childOrGroup?: any,
+  fallbackAge?: number | null
+): ApprovedAgeSegment {
+  if (!childOrGroup) {
+    if (typeof fallbackAge === "number" && fallbackAge >= 2 && fallbackAge <= 18) {
+      return getApprovedSegmentForAge(fallbackAge);
+    }
+    return APPROVED_AGE_SEGMENTS[1];
+  }
+
+  // If passed an object (Partial<Child> or any learner record)
+  if (typeof childOrGroup === "object") {
+    const child = childOrGroup;
+    const meta = extractChildMeta(child);
+
+    // 1. Authoritative: Date of Birth (DOB)
+    const rawDob = child.dob || child.date_of_birth || meta.enrolment?.dob;
+    const calculatedAgeFromDob = calculateAgeFromDob(rawDob);
+    if (calculatedAgeFromDob !== null && calculatedAgeFromDob >= 2 && calculatedAgeFromDob <= 18) {
+      return getApprovedSegmentForAge(calculatedAgeFromDob);
+    }
+
+    // 2. Authoritative numeric age
+    const numericAge =
+      (typeof child.age === "number" && child.age >= 2 && child.age <= 18 ? child.age : null) ??
+      (typeof meta.enrolment?.calculatedAge === "number" && meta.enrolment.calculatedAge >= 2 && meta.enrolment.calculatedAge <= 18 ? meta.enrolment.calculatedAge : null) ??
+      (typeof meta.enrolment?.age === "number" && meta.enrolment.age >= 2 && meta.enrolment.age <= 18 ? meta.enrolment.age : null) ??
+      (typeof fallbackAge === "number" && fallbackAge >= 2 && fallbackAge <= 18 ? fallbackAge : null);
+
+    if (numericAge !== null) {
+      return getApprovedSegmentForAge(numericAge);
+    }
+
+    // 3. Stored assigned segment ID from enrolment metadata
+    const assignedSegId = meta.enrolment?.assignedSegmentId || meta.enrolment?.segmentId;
+    if (assignedSegId) {
+      const match = APPROVED_AGE_SEGMENTS.find(
+        (s) => s.id === assignedSegId || s.segmentId === assignedSegId || s.ageGroup === assignedSegId
+      );
+      if (match) return match;
+    }
+
+    // 4. Stored age_group / ageGroup
+    const rawGroup = child.ageGroup || child.age_group;
+    if (rawGroup) {
+      return getApprovedSegmentByIdOrGroup(rawGroup, undefined, undefined);
+    }
+
+    return APPROVED_AGE_SEGMENTS[1];
+  }
+
+  // If passed a string (ageGroup or segment ID)
+  return getApprovedSegmentByIdOrGroup(childOrGroup, fallbackAge, fallbackAge);
 }
 
 export function isYoungExplorerGroup(ageGroup?: string | null): boolean {
@@ -287,6 +356,7 @@ export interface ChildEnrolmentMeta {
   enrolledAt?: string;
   dob?: string;
   age?: number;
+  calculatedAge?: number;
   segmentId?: ApprovedSegmentId;
   assignedSegmentId?: string;
   assignedSegmentLabel?: string;

@@ -49,7 +49,7 @@ import {
   getEncouragingStreakMessage
 } from "../utils/streak";
 import { evaluateChildBadges } from "../utils/badges";
-import { APPROVED_AGE_SEGMENTS, getApprovedSegmentByIdOrGroup } from "../utils/childMeta";
+import { APPROVED_AGE_SEGMENTS, getApprovedSegmentByIdOrGroup, resolveChildApprovedSegment, extractChildMeta, calculateAgeFromDob } from "../utils/childMeta";
 
 interface ChildProgressScreenProps {
   child: Child;
@@ -485,21 +485,22 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
                   <div className="flex flex-col sm:flex-row items-center gap-2 justify-center sm:justify-start">
                     <h2 className="text-3xl font-black tracking-tight">{child.name}</h2>
                     <span className="scale-95">
-                      {child.ageGroup === "early explorers" && (
-                        <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-black border border-amber-200">
-                          🌈 Early Explorer
-                        </span>
-                      )}
-                      {child.ageGroup === "young innovators" && (
-                        <span className="bg-cyan-100 text-cyan-800 text-xs px-2.5 py-1 rounded-full font-black border border-cyan-200">
-                          🚀 Young Innovator
-                        </span>
-                      )}
-                      {child.ageGroup === "future builders" && (
-                        <span className="bg-purple-100 text-purple-850 text-xs px-2.5 py-1 rounded-full font-black border border-purple-200">
-                          🎯 Future Builder
-                        </span>
-                      )}
+                      {(() => {
+                        const seg = resolveChildApprovedSegment(child);
+                        const pillStyles: Record<string, string> = {
+                          early_explorers: "bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-950/50 dark:text-pink-300 dark:border-pink-800",
+                          young_explorers: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
+                          young_builders: "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800",
+                          future_innovators: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800"
+                        };
+                        const style = pillStyles[seg.id] || "bg-teal-100 text-teal-800 border-teal-200";
+                        return (
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-black border flex items-center gap-1 ${style}`}>
+                            <span>{seg.emoji}</span>
+                            <span>{seg.label}</span>
+                          </span>
+                        );
+                      })()}
                     </span>
                   </div>
 
@@ -554,9 +555,12 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
             {/* AGE GROUP CLARIFICATION: ACTIVE LEARNER STAGE & GROWTH ROADMAP */}
             {(() => {
-              const activeSeg = getApprovedSegmentByIdOrGroup(child.ageGroup, child.age);
+              const activeSeg = resolveChildApprovedSegment(child);
+              const meta = extractChildMeta(child);
+              const calculatedAge = calculateAgeFromDob((child as any).dob || (child as any).date_of_birth || meta.enrolment?.dob) ??
+                (typeof child.age === "number" && child.age >= 2 ? child.age : meta.enrolment?.calculatedAge);
               const activeIndex = APPROVED_AGE_SEGMENTS.findIndex(s => s.id === activeSeg.id);
-              const displayAge = typeof child.age === "number" && child.age >= 2 ? `${child.age} years old` : `Ages ${activeSeg.rangeLabel}`;
+              const displayAge = typeof calculatedAge === "number" && calculatedAge >= 2 ? `${calculatedAge} years old` : `Ages ${activeSeg.rangeLabel}`;
 
               return (
                 <div className="space-y-4">
