@@ -8,10 +8,14 @@ export async function GET(
   const params = await context.params;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-  const childId = params.childId;
+  const childId = params?.childId;
 
   if (!url || !key || url.includes("your-project-id")) {
     return NextResponse.json({ ok: false, msg: "Supabase not configured." });
+  }
+
+  if (!childId) {
+    return NextResponse.json({ ok: false, msg: "childId is required." }, { status: 400 });
   }
 
   const sb = createClient(url, key, { auth: { persistSession: false } });
@@ -26,10 +30,10 @@ export async function GET(
       throw new Error(error.message);
     }
 
-    return NextResponse.json({
-      ok: true,
-      sessions: sessions || []
-    });
+    return NextResponse.json(
+      { ok: true, sessions: sessions || [] },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
   } catch (err: any) {
     return NextResponse.json({ ok: false, msg: err.message }, { status: 500 });
   }

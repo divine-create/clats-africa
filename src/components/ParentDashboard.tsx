@@ -204,27 +204,45 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
       return;
     }
     let active = true;
+    let abortCtrl: AbortController | null = null;
     setLoadingSessions(true);
 
-    const fetchSessions = () => {
-      fetch(`/api/supabase/sessions/child/${child.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (active && data.ok) {
-            setChildSessions(data.sessions || []);
-          }
-        })
-        .catch(err => console.error("Error fetching sessions in parent dashboard:", err))
-        .finally(() => {
-          if (active) setLoadingSessions(false);
+    const fetchSessions = async () => {
+      try {
+        abortCtrl = new AbortController();
+        const timeoutId = setTimeout(() => {
+          try { abortCtrl?.abort(); } catch {}
+        }, 8000);
+
+        const res = await fetch(`/api/supabase/sessions/child/${encodeURIComponent(child.id)}`, {
+          signal: abortCtrl.signal,
+          headers: { "Cache-Control": "no-cache" }
         });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          if (active) setLoadingSessions(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (active && data?.ok) {
+          setChildSessions(data.sessions || []);
+        }
+      } catch (err: any) {
+        // Silently tolerate aborts or transient offline network drops
+        // without triggering the Next.js Turbopack error overlay
+      } finally {
+        if (active) setLoadingSessions(false);
+      }
     };
 
     const timer = setTimeout(fetchSessions, 600);
-    const interval = setInterval(fetchSessions, 15000);
+    const interval = setInterval(fetchSessions, 30000);
 
     return () => {
       active = false;
+      try { abortCtrl?.abort(); } catch {}
       clearTimeout(timer);
       clearInterval(interval);
     };
