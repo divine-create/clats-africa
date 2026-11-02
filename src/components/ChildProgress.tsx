@@ -783,7 +783,7 @@ export const ChildProgressScreen: React.FC<ChildProgressScreenProps> = ({
 
                     <div className="flex justify-between items-center flex-wrap gap-2 text-xs">
                       <span className="font-extrabold text-slate-400">
-                        ⭐ XP Gained: {completedAiLessonsCount * 150} XP
+                        ⭐ Total XP: <strong className="text-amber-500 font-black">{currentXP} XP</strong>
                       </span>
                       <button
                         onClick={() => {

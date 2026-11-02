@@ -584,9 +584,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
     } else {
       // Completed! Save states & show claim screen
       sfx.playLevelUp();
-      const updated = [...completedGames];
-      if (!updated.includes(gameId)) {
-        updated.push(gameId);
+      const isAlreadyDone = completedGames.includes(gameId);
+      if (!isAlreadyDone) {
+        const updated = [...completedGames, gameId];
         setCompletedGames(updated);
         try {
           localStorage.setItem(`clats_game_completed_${child.id}_${gameId}`, "true");
@@ -596,7 +596,7 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
       }
       setIsGameCompleted(true);
       setShowXPClaimModal({
-        xp: xlAward,
+        xp: isAlreadyDone ? 0 : xlAward,
         title: gameId === "ai-sorting" ? "AI Sorting Challenge" : gameId === "smart-machine" ? "Smart Machine Match" : "Train the Robot"
       });
     }
@@ -604,7 +604,9 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
 
   const finishQuestXPClaim = (award: number) => {
     sfx.playCoin();
-    onAddXP(award);
+    if (award > 0) {
+      onAddXP(award);
+    }
     setActiveGameModal(null);
     setIsGameCompleted(false);
     setShowXPClaimModal(null);
@@ -1481,35 +1483,23 @@ export const ChildGames: React.FC<ChildGamesProps> = ({
                   setActiveGameModal(null);
                 }}
                 onComplete={async (xp) => {
+                  const isAlreadyDone = completedGames.includes("smart-city-builder");
+                  const xpToAward = isAlreadyDone ? 0 : xp;
                   try {
-                    const completedKeys = [...completedGames, "smart-city-builder"];
+                    const completedKeys = Array.from(new Set([...completedGames, "smart-city-builder"]));
                     setCompletedGames(completedKeys);
                     localStorage.setItem(`clats_game_completed_${child.id}_smart-city-builder`, "true");
 
-                    // Sync game completion progress to Supabase
-                    const syncRes = await fetch("/api/supabase/sync", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        childId: child.id,
-                        xp: child.xp + xp,
-                        completedLessons: {
-                          ...(child.completedLessons || {}),
-                          "smart-city-builder": true
-                        }
-                      })
-                    });
-
-                    if (syncRes.ok) {
-                      console.log("Successfully synchronized Smart City game completion to Supabase.");
+                    if (xpToAward > 0) {
+                      onAddXP(xpToAward);
                     }
                   } catch (e) {
-                    console.error("Failed to sync Smart City completion:", e);
+                    console.error("Failed to complete Smart City:", e);
                   }
 
                   setIsGameCompleted(true);
                   setShowXPClaimModal({
-                    xp,
+                    xp: xpToAward,
                     title: "Smart City Builder"
                   });
                 }}

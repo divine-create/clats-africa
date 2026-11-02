@@ -24,6 +24,7 @@ import {
   resolveEffectiveScreenMonitoring,
 } from "../utils/childMeta";
 import { getSystemStreakRules, saveSystemStreakRules, SystemStreakRules } from "../utils/streak";
+import { auditAndReconcileChildXp } from "../utils/xp";
 
 // Types
 type AdminRole = 
@@ -2905,14 +2906,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "ov
                         <div className={`mt-4 pt-3 border-t flex flex-wrap justify-between gap-1 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                           <button
                             onClick={async () => {
-                              const nextXp = (ch.xp || 0) + 50;
-                              setLearners(learners.map(l => l.id === ch.id ? { ...l, xp: nextXp } : l));
-                              await persistLearnerUpdateToSupabase(ch.id, { xp: nextXp });
-                              showToast(`Granted +50 XP to ${ch.name} (synced to DB)`);
+                              const audit = auditAndReconcileChildXp(ch);
+                              if (audit.isAccurate) {
+                                showToast(`Verified ${ch.name}'s XP: ${ch.xp} XP (100% genuine and reconciled)`);
+                              } else {
+                                const confirmReconcile = confirm(
+                                  `XP Audit for ${ch.name}:\n` +
+                                  `• Current Recorded XP: ${audit.currentRecordedXp}\n` +
+                                  `• Verified Earned XP (from passed quizzes & verified milestones): ${audit.verifiedEarnedXp}\n` +
+                                  `• Quizzes Passed: ${audit.breakdown.passedQuizzesCount}\n\n` +
+                                  `Would you like to reconcile ${ch.name}'s XP to ${audit.verifiedEarnedXp} XP?`
+                                );
+                                if (confirmReconcile) {
+                                  setLearners(learners.map(l => l.id === ch.id ? { ...l, xp: audit.verifiedEarnedXp } : l));
+                                  await persistLearnerUpdateToSupabase(ch.id, { xp: audit.verifiedEarnedXp });
+                                  showToast(`Reconciled ${ch.name}'s XP to ${audit.verifiedEarnedXp} XP`);
+                                }
+                              }
                             }}
                             className="text-[9px] bg-[#2EC4B6]/10 text-[#2EC4B6] font-bold px-2 py-1 rounded cursor-pointer"
+                            title="Audit and verify genuine earned XP against passed quizzes and milestones"
                           >
-                            +50 XP
+                            Audit XP
                           </button>
                           <button
                             onClick={async () => {

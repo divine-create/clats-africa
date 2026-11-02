@@ -51,6 +51,20 @@ export async function POST(req: NextRequest) {
         const resolvedStreak = Math.max(Number(kid.streak_count) || 0, Number(kid.streak) || 0);
         const resolvedBestStreak = Math.max(Number(kid.best_streak) || 0, resolvedStreak);
 
+        // Server-Side XP Validation & Integrity Guard
+        const rawXp = Number(kid.xp);
+        let validatedXp = (isNaN(rawXp) || rawXp < 0) ? 0 : Math.floor(rawXp);
+
+        const completedMap = kid.completed || kid.completed_lessons || {};
+        const quizMap = kid.quizResults || kid.quiz_results || {};
+        const completedCount = Object.keys(completedMap).length;
+        const quizCount = Object.keys(quizMap).length;
+
+        // A child with no completed lessons, quizzes, or milestones must have 0 XP
+        if (completedCount === 0 && quizCount === 0 && (!Array.isArray(kid.badges) || kid.badges.length === 0)) {
+          validatedXp = 0;
+        }
+
         const kidPayload: any = {
           id: kid.id,
           name: kid.name,
@@ -59,10 +73,10 @@ export async function POST(req: NextRequest) {
           avatar: kid.avatar,
           pin: kid.pin,
           interests: Array.isArray(kid.interests) ? kid.interests : [],
-          completed_lessons: kid.completed || kid.completed_lessons || {},
-          xp: kid.xp || 0,
+          completed_lessons: completedMap,
+          xp: validatedXp,
           stars: kid.stars || {},
-          quiz_results: kid.quizResults || kid.quiz_results || {},
+          quiz_results: quizMap,
           companion: kid.companion || "kobe",
           child_tutorial_completed: kid.child_tutorial_completed,
           streak_count: resolvedStreak,

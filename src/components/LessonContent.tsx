@@ -760,7 +760,10 @@ export const LessonContent: React.FC<LessonContentProps> = ({
       const score = Math.round((countCorrect / totalQ) * 100);
       const isPassed = score >= 50;
 
-      const xpToAward = isPassed ? (score === 100 ? 50 : 35) : 10;
+      const lessonId = lesson?.id || "lesson-u";
+      const isAlreadyCompleted = Boolean(child.completed && child.completed[lessonId]);
+      // Genuine XP: Only awarded on passing quiz AND only on first completion (no duplicate XP)
+      const xpToAward = (isPassed && !isAlreadyCompleted) ? (score === 100 ? 50 : 35) : 0;
       setEarnedXpState(xpToAward);
 
       const lessonTitle = typeof lesson?.title === "string" ? lesson.title : (lesson?.title ? (lesson.title as any)[lang] || (lesson.title as any).en || "Lesson" : "Lesson");
@@ -814,7 +817,12 @@ export const LessonContent: React.FC<LessonContentProps> = ({
     const nextActionText = isLastLessonInModule
       ? "You can choose to retake the quiz, or move on to the next module!"
       : "You can choose to retake the quiz, or move to the next lesson!";
-    return `Woohoo! Hurray, ${child.name}! I am so excited for you! You completed the lesson quiz with a score of ${scorePct} percent, and you just got ${xpAmount} X P from this lesson quiz! ${nextActionText}`;
+    if (xpAmount > 0) {
+      return `Woohoo! Hurray, ${child.name}! I am so excited for you! You completed the lesson quiz with a score of ${scorePct} percent, and you just got ${xpAmount} X P from this lesson quiz! ${nextActionText}`;
+    }
+    return scorePct >= 50
+      ? `Great job, ${child.name}! You scored ${scorePct} percent! This lesson was already completed earlier, so no extra XP was needed. ${nextActionText}`
+      : `Good effort, ${child.name}! You scored ${scorePct} percent. Review the questions and try again to pass and earn XP!`;
   };
 
   const triggerPartyStreamersAndCheer = (xpAmount: number, scorePct: number) => {

@@ -264,7 +264,8 @@ export const PracticeSandbox: React.FC<PracticeSandboxProps> = ({
       setProgressMap({ ...updated });
       speakText(`${activity.successMessage} ${activity.learningObjective}`);
       if (onCompleteActivity) {
-        onCompleteActivity(activity.id, wasAlreadyDone ? 5 : 25);
+        // Genuine XP: Awarded strictly on first-time completion (0 XP on replay)
+        onCompleteActivity(activity.id, wasAlreadyDone ? 0 : 25);
       }
     },
     [child.id, speakText, progressMap, onCompleteActivity]

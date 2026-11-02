@@ -346,7 +346,7 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
           pin,
           interests,
           completed: {},
-          xp: microQuestSolved ? 20 : 0,
+          xp: 0,
           stars: {},
           badges: initialBadges,
           createdAt: Date.now(),
@@ -883,13 +883,13 @@ export const ChildSetupScreen: React.FC<ChildSetupScreenProps> = ({
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <Txt size={12} weight={900} color={microQuestSolved ? "#059669" : "#b45309"} style={{ textTransform: "uppercase" }}>
-                    🚀 {microQuestSolved ? "Starter Micro-Quest Solved!" : `Warm-Up with ${companion === "chibi" ? "Chibi" : "Kobe"}`}
+                    🚀 {microQuestSolved ? "Starter Warm-Up Ready!" : `Warm-Up with ${companion === "chibi" ? "Chibi" : "Kobe"}`}
                   </Txt>
-                  {microQuestSolved && <Chip color="#10b981" bg="#d1fae5">+20 STARTER XP</Chip>}
+                  {microQuestSolved && <Chip color="#10b981" bg="#d1fae5">READY TO LEARN</Chip>}
                 </div>
                 <Txt size={12.5} color={text} style={{ display: "block", marginBottom: 10 }}>
                   {microQuestSolved
-                    ? `Awesome work! ${name || "Your child"} unlocked +20 Starter XP with ${companion === "chibi" ? "Chibi" : "Kobe"}!`
+                    ? `Awesome work! ${name || "Your child"} powered up ${companion === "chibi" ? "Chibi" : "Kobe"}'s adventure ship!`
                     : `Tap a clean energy source to power up ${companion === "chibi" ? "Chibi" : "Kobe"}'s adventure ship:`}
                 </Txt>
                 {!microQuestSolved ? (

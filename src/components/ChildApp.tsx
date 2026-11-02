@@ -30,6 +30,7 @@ import { PaywallModal } from "./PaywallModal";
 import { computeEffectiveStreak, recordDailyActivityStreak, toLocalDateStr } from "../utils/streak";
 import { evaluateChildBadges, UNIFIED_BADGE_MAP } from "../utils/badges";
 import { resolveEffectiveScreenMonitoring, isWithinPreferredHours } from "../utils/childMeta";
+import { awardGenuinelyEarnedXp, isActivityAlreadyRewarded } from "../utils/xp";
 
 interface ChildAppProps {
   child: Child;
@@ -579,9 +580,10 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       status: "Passed" | "Needs Review";
     }
   ) => {
-    const isPass = !quizResult || quizResult.status === "Passed";
+    const isPass = !quizResult || (quizResult.status === "Passed" && quizResult.score >= 50);
 
-    const alreadyCompleted = child.completed && child.completed[lessonId];
+    const alreadyCompleted = Boolean(child.completed && child.completed[lessonId]);
+    const alreadyRewarded = alreadyCompleted || isActivityAlreadyRewarded(child, "lesson_quiz", lessonId);
 
     const freshCompleted = isPass
       ? { ...child.completed, [lessonId]: true }
@@ -592,7 +594,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       ? { ...child.stars, [lessonId]: starsEarned }
       : { ...child.stars };
 
-    const actualXpEarned = (isPass && !alreadyCompleted) ? xpEarned : (isPass ? Math.min(xpEarned, 15) : xpEarned);
+    // Strictly enforce: No XP awarded if quiz not passed, and No duplicate XP if already completed/rewarded
+    const actualXpEarned = (isPass && !alreadyRewarded && xpEarned > 0) ? xpEarned : 0;
     const freshXP = (child.xp || 0) + actualXpEarned;
 
     const priorQuizResults = child.quizResults || {};
@@ -637,7 +640,7 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     );
     const currentBadges = streakUpdate.badges || child.badges || [];
 
-    const candidateChild: Child = {
+    let candidateChild: Child = {
       ...child,
       completed: freshCompleted,
       stars: freshStars,
@@ -649,6 +652,22 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       last_active_at: finalLastActive,
       badges: currentBadges
     };
+
+    // If genuine XP was earned, record it in child's ledger
+    if (actualXpEarned > 0) {
+      const awarded = awardGenuinelyEarnedXp(child, {
+        activityId: lessonId,
+        category: "lesson_quiz",
+        amount: actualXpEarned,
+        reason: `Passed lesson quiz: ${lessonId} (${quizResult ? `${quizResult.score}%` : "Completed"})`,
+        conditionSatisfied: isPass
+      });
+      candidateChild = {
+        ...candidateChild,
+        xp: awarded.updatedChild.xp,
+        badges: awarded.updatedChild.badges
+      };
+    }
 
     const evaluatedAfter = evaluateChildBadges(candidateChild);
     const badgesToUnlock = evaluatedAfter
@@ -682,10 +701,8 @@ export const ChildApp: React.FC<ChildAppProps> = ({
       setCelebrationQueue(prev => [...prev, ...badgesToUnlock]);
     }
 
-    // Combine existing badges with newly unlocked ones
-    const newBadgesList = Array.from(new Set([...currentBadges, ...badgesToUnlock]));
+    const newBadgesList = Array.from(new Set([...(candidateChild.badges || []), ...badgesToUnlock]));
 
-    // Persist changes (onUpdateChild automatically syncs to /api/supabase/sync or /api/supabase/b2b/manage-student)
     const updated: Child = {
       ...candidateChild,
       badges: newBadgesList
@@ -694,20 +711,31 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     onUpdateChild(updated);
   };
 
-  const handleAddGamesXP = async (amount: number) => {
-    const freshXP = (child.xp || 0) + amount;
-    const streakUpdate = recordDailyActivityStreak(child);
+  const handleAddGamesXP = async (amount: number, gameId?: string) => {
+    // Strictly positive amount and only if not already awarded
+    if (typeof amount !== "number" || amount <= 0) return;
+    const actId = gameId || `game_${Date.now()}`;
+    if (isActivityAlreadyRewarded(child, "educational_game", actId)) return;
+
+    const awarded = awardGenuinelyEarnedXp(child, {
+      activityId: actId,
+      category: "educational_game",
+      amount,
+      reason: `Completed educational game: ${actId}`,
+      conditionSatisfied: true
+    });
+
+    const streakUpdate = recordDailyActivityStreak(awarded.updatedChild);
 
     const previouslyUnlockedIds = new Set(
       evaluateChildBadges(child)
         .filter((b) => b.unlocked)
         .map((b) => b.id)
     );
-    const currentBadges = streakUpdate.badges || child.badges || [];
+    const currentBadges = streakUpdate.badges || awarded.updatedChild.badges || [];
 
     const candidateChild: Child = {
-      ...child,
-      xp: freshXP,
+      ...awarded.updatedChild,
       streak: streakUpdate.streak_count,
       streak_count: streakUpdate.streak_count,
       best_streak: streakUpdate.best_streak,
@@ -732,8 +760,26 @@ export const ChildApp: React.FC<ChildAppProps> = ({
     onUpdateChild(updated);
   };
 
-  const handleSandboxComplete = async (_activityId: string, xpEarned: number) => {
-    await handleAddGamesXP(xpEarned);
+  const handleSandboxComplete = async (activityId: string, xpEarned: number) => {
+    if (typeof xpEarned !== "number" || xpEarned <= 0) return;
+    if (isActivityAlreadyRewarded(child, "wonder_lab", activityId)) return;
+
+    const awarded = awardGenuinelyEarnedXp(child, {
+      activityId,
+      category: "wonder_lab",
+      amount: xpEarned,
+      reason: `Completed Wonder Lab activity: ${activityId}`,
+      conditionSatisfied: true
+    });
+
+    const streakUpdate = recordDailyActivityStreak(awarded.updatedChild);
+    onUpdateChild({
+      ...awarded.updatedChild,
+      streak: streakUpdate.streak_count,
+      streak_count: streakUpdate.streak_count,
+      best_streak: streakUpdate.best_streak,
+      last_active_at: streakUpdate.last_active_at
+    });
   };
 
   const BADGE_MAP = UNIFIED_BADGE_MAP;

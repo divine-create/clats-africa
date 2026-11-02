@@ -105,7 +105,10 @@ export async function POST(req: NextRequest) {
     const updatePayload: any = {};
 
     if (action === "update_progress") {
-      if (xp !== undefined) updatePayload.xp = xp;
+      if (xp !== undefined) {
+        const raw = Number(xp);
+        updatePayload.xp = (isNaN(raw) || raw < 0) ? 0 : Math.floor(raw);
+      }
       
       // The frontend object uses `.completed`, but the DB column is `completed_lessons`.
       if (completed !== undefined) {
