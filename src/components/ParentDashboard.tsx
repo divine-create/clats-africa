@@ -1865,23 +1865,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               /* SCREEN LIMITS & SETTINGS TAB VIEW */
               /* ========================================================= */
               <div className="space-y-6">
-                <div className="flex items-center justify-between pb-1">
-                  <button
-                    onClick={() => setActiveTab("overview")}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                      isDark
-                        ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
-                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
-                    }`}
-                  >
-                    <ChevronLeft size={14} />
-                    <span>Back to Overview</span>
-                  </button>
-                  <span className="text-xs font-mono font-bold text-slate-400">
-                    ⚙️ Screen Limits & Guardian Controls
-                  </span>
-                </div>
-
                 <div className={`rounded-3xl border overflow-hidden shadow-sm ${
                   isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200"
                 }`}>
@@ -1901,23 +1884,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
               /* PARENT COMMUNITY HUB TAB VIEW */
               /* ========================================================= */
               <div className="space-y-6">
-                <div className="flex items-center justify-between pb-1">
-                  <button
-                    onClick={() => setActiveTab("overview")}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                      isDark
-                        ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
-                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
-                    }`}
-                  >
-                    <ChevronLeft size={14} />
-                    <span>Back to Overview</span>
-                  </button>
-                  <span className="text-xs font-mono font-bold text-[#7A6FF0]">
-                    👥 Parent Academy & Community Hub
-                  </span>
-                </div>
-
                 <div className={`rounded-3xl border overflow-hidden shadow-sm ${
                   isDark ? "bg-[#0F172A] border-slate-800" : "bg-white border-slate-200"
                 }`}>
